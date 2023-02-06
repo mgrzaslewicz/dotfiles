@@ -1,0 +1,2 @@
+# Exclude file name from the results
+grep -h

@@ -1,0 +1,5 @@
+# Upload file
+sftp -i "${SSH_KEY}" "${USER}@${HOST}:${REMOTE_DESTINATION} <<< $'put ${LOCAL_SOURCE}'
+
+# Download file
+sftp -P ${SSH_PORT} -i "${SSH_KEY}" "${USER}@${HOST}:${REMOTE_DESTINATION}"

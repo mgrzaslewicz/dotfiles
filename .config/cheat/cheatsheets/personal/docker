@@ -1,0 +1,16 @@
+# Commit the stopped image
+docker commit 0dfd54557799 debug/ubuntu
+
+## now we have a new image
+docker images list
+REPOSITORY    TAG     IMAGE ID       CREATED         SIZE  
+debug/ubuntu  <none>  cc9db32dcc2d   2 seconds ago   64.3MB
+
+
+## create a new container from the "broken" image
+docker run -it --rm --entrypoint sh debug/ubuntu
+## inside of the container we can inspect - for example, the file system
+$ ls /app
+
+# Make container availabler under given hostname for other containers
+docker run -d --net-alias=${MY_NEW_DNS_NAME} --net=my-test-env --name=my-docker-name-test <dokcer-container>

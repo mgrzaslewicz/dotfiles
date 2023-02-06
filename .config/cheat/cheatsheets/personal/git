@@ -1,0 +1,9 @@
+# Change author of all commits starting from given revision X. Takes author name from global settings
+git rebase -r X --exec 'git commit --amend --no-edit --reset-author'
+
+# Use specific ssh key to clone the repository
+git clone git@provider.com:userName/projectName.git --config core.sshCommand="ssh -i ~/location/to/private_ssh_key"
+
+# Use non-default .git directory
+GIT_DIR=.git-xyz git <command>
+git --git-dir=.git-xyz <command>

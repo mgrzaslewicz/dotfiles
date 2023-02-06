@@ -1,0 +1,6 @@
+# Search in logs ssh commands to log into provisioned hosts
+grep "Remote access" -A 1 jira-software-tests/build/detailed.log
+# Delete stack created by me
+./gradlew awsDeleteMyStacks  
+# grant temporary permission to publish to maven
+atlas packages permission grant -u mgrzaslewicz
