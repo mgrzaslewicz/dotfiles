@@ -1,0 +1,38 @@
+[alias]
+    ## push
+    pu = push
+    # push with overwrite, but only if there are no new commits. That makes sense especially when you ammended your commit
+    puf = push --force-with-lease
+
+    ## pull
+    # use --rebase as default to have your changes on top
+    p = pull --rebase
+
+    ## reset
+    rh = reset --hard
+    rh1 = reset --hard HEAD~1
+    rs1 = reset HEAD~1
+
+    ## tags
+    taglocaldel = tag -d
+    tagremotedel = push origin --delete origin
+
+    ## branches
+    br = branch -avv
+    b = branch
+    bt = !"git for-each-ref --sort=committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'" #https://stackoverflow.com/questions/9236219/git-list-git-branches-sort-by-and-show-date#16961359
+    # delete a branch
+    bdel = branch -D
+    bren = branch -m
+    cob = checkout -b
+
+    ## rebasing
+    remaster = pull --rebase origin master
+    rbi = rebase --interactive
+    rc = rebase --continue
+    ra = rebase --abort
+
+    ## wip amend (work in progress --amend)
+    wipa = !"git add --all; git ls-files --deleted -z | xargs -0 git rm; git commit --amend --no-edit"
+
+    repo = config --get remote.origin.url
