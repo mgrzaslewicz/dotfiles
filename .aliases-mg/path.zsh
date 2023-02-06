@@ -1,5 +1,5 @@
 # apps
 export APPS=~/apps
-mkdir $APPS
+mkdir -p $APPS
 export PATH="$PATH:$APPS/intellij/bin"
 alias apps="cd $APPS"
