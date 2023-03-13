@@ -1,1 +1,1 @@
-alias intellij="idea ."
+alias intellij="intellij-idea-ultimate ."
