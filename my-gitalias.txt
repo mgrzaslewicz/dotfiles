@@ -15,7 +15,7 @@
 
     ## tags
     taglocaldel = tag -d
-    tagremotedel = push origin --delete origin
+    tagremotedel = push --delete origin
 
     ## branches
     br = branch -avv
