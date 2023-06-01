@@ -7,6 +7,8 @@
 :set ignorecase
 :set smartcase
 set virtualedit=all
-call plug#begin()
-Plug 'mtdl9/vim-log-highlighting'
-call plug#end()
+if !has('nvim')
+  call plug#begin()
+    Plug 'mtdl9/vim-log-highlighting'
+  call plug#end()
+endif
