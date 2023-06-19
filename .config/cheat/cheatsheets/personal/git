@@ -10,3 +10,4 @@ git --git-dir=.git-xyz <command>
 
 # Reset hard single file
 git checkout HEAD -- <file>
+git restore <file>
