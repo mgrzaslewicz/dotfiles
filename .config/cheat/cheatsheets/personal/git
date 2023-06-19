@@ -7,3 +7,6 @@ git clone git@provider.com:userName/projectName.git --config core.sshCommand="ss
 # Use non-default .git directory
 GIT_DIR=.git-xyz git <command>
 git --git-dir=.git-xyz <command>
+
+# Reset hard single file
+git checkout HEAD -- <file>
