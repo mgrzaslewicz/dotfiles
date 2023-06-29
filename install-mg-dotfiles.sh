@@ -12,5 +12,9 @@ git config --unset core.bare
 git fetch origin
 git checkout master
 git pull --rebase
+git config --global include.path ~/gitalias.txt
+git config --global include.path ~/my-gitalias.txt
+git config --global user.email mikolaj.grzaslewicz@gmail.com
+git config --global user.name Mikolaj Grzaslewicz
 
 (cd ~/.aliases-mg && ./install-zsh-aliases.sh)
