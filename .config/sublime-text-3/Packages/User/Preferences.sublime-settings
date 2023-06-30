@@ -1,0 +1,49 @@
+{
+	"always_show_minimap_viewport": true,
+	"animation_enabled": false,
+	"atomic_save": true,
+	"binary_file_patterns":
+	[
+		"*.jpg",
+		"*.jpeg",
+		"*.png",
+		"*.gif",
+		"*.ttf",
+		"*.tga",
+		"*.dds",
+		"*.ico",
+		"*.eot",
+		"*.pdf",
+		"*.swf",
+		"*.jar",
+		"*.zip"
+	],
+	"draw_minimap_border": true,
+	"folder_exclude_patterns":
+	[
+		".svn",
+		".git",
+		".hg"
+	],
+	"font_face": "JetBrains Mono",
+	"font_options":
+	[
+		"subpixel_antialias"
+	],
+	"font_size": 8,
+	"highlight_line": true,
+	"highlight_modified_tabs": true,
+	"ignored_packages":
+	[
+	],
+	"indent_guide_options":
+	[
+		"draw_normal",
+		"draw_active"
+	],
+	"match_brackets_angle": true,
+	"save_on_focus_lost": true,
+	"tree_animation_enabled": false,
+	"trim_trailing_white_space_on_save": true,
+	"theme": "Darkmatter.sublime-theme",
+}
