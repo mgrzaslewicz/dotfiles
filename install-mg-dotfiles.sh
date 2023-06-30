@@ -12,7 +12,12 @@ git config --unset core.bare
 git fetch origin
 git checkout master
 git pull --rebase
-git config --global include.path ~/gitalias.txt ~/my-gitalias.txt
+
+# when the list is empty, it will return non-zero code so prevent it
+git config --global --unset-all include.path || true
+git config --global --add include.path ~/gitalias.txt
+git config --global --add include.path ~/my-gitalias.txt
+
 git config --global user.email "mikolaj.grzaslewicz@gmail.com"
 git config --global user.name "Mikolaj Grzaslewicz"
 
