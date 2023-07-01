@@ -7,5 +7,5 @@ for file in ./*.zsh; do
   fi
   source=$(realpath "$file")
   echo "Creating symlink $source -> $target"
-  ln -s "$source" "$target"
+  ln -sf "$source" "$target"
 done
