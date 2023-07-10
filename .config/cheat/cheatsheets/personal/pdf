@@ -1,0 +1,2 @@
+# Convert images to a single PDF file
+convert *.jpg -auto-orient pictures.pdf
