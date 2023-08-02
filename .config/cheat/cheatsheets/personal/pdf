@@ -1,2 +1,5 @@
 # Convert images to a single PDF file
 convert *.jpg -auto-orient pictures.pdf
+
+# Combine multiple PDF files
+gs -dBATCH -dNOPAUSE -q -sDEVICE=pdfwrite -dAutoRotatePages=/None -sOutputFile=finished.pdf  file1.pdf file2.pdf
