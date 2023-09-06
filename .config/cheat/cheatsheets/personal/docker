@@ -14,3 +14,6 @@ $ ls /app
 
 # Make container availabler under given hostname for other containers
 docker run -d --net-alias=${MY_NEW_DNS_NAME} --net=my-test-env --name=my-docker-name-test <dokcer-container>
+
+# Remove all containers with their data and images
+docker rm -vf $(docker ps -aq); docker rmi -f $(docker images -aq)
