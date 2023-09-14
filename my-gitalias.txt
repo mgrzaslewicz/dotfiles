@@ -36,3 +36,7 @@
     wipa = !"git add --all; git ls-files --deleted -z | xargs -0 git rm; git commit --amend --no-edit"
 
     repo = config --get remote.origin.url
+
+    ## worktree
+    wa = "!sh -c \"cd $(git rev-parse --git-common-dir) && git worktree add --no-track '$1' '$2'\" -"
+    wac = "!sh -c \"cd $(git rev-parse --git-common-dir) && git worktree add --no-track -b '$1' '$1' '$2'\" -"
