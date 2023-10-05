@@ -40,3 +40,11 @@
     ## worktree
     wa = "!sh -c \"cd $(git rev-parse --git-common-dir) && git worktree add --no-track '$1' '$2'\" -"
     wac = "!sh -c \"cd $(git rev-parse --git-common-dir) && git worktree add --no-track -b '$1' '$1' '$2'\" -"
+
+    ## file history
+    file-history = log -p -- 
+
+    ## tag listing
+    tags-containing-commit = tag -n1 --sort=committerdate --contains 
+    # sort=taggerdate might be an alternative
+    tags-sorted = tag -n1 --sort=committerdate 
