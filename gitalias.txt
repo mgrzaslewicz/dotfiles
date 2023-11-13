@@ -201,6 +201,12 @@
 
   ### log aliases ###
 
+  # log commits from current branch only. Assuming parent branch is 'master'
+  lb = log master..
+
+  # log commits from current branch only, colorized version. Assuming parent branch is 'master'
+  lbc = log --no-merges --pretty='%C(yellow)%h%d %Creset%an %Cgreen%ar:%Creset %s' --graph master.. 
+
   # log with a text-based graphical representation of the commit history.
   lg = log --graph
 
