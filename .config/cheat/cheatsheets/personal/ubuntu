@@ -1,0 +1,4 @@
+# Resolve problem with keys and signatures - inspect sources
+ls /etc/apt/sources.list.d/
+vi /etc/apt/sources.list
+ls /usr/share/keyrings
