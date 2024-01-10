@@ -1,0 +1,12 @@
+imap kj <Esc>
+let mapleader = " "
+map <leader>a :action $SelectAll<CR>
+:set incsearch
+:set cursorline
+:set so=999
+:set ignorecase
+:set smartcase
+:set relativenumber
+:set number
+Plug 'machakann/vim-highlightedyank'
+Plug 'tpope/vim-commentary'
