@@ -1,0 +1,28 @@
+<% REPO_BASE = "~/repos/performance-explainer" %>
+project_name: performance-explainer
+project_root: <%= REPO_BASE %>
+windows:
+  - perf-explainer:
+      root: <%= REPO_BASE %>
+      layout: even-horizontal
+      panes:
+        - <%= REPO_BASE %>/performance-explainer
+        - <%= REPO_BASE %>/performance-explainer
+  - perf-explainer-app:
+      root: <%= REPO_BASE %>/performance-explainer-webapp
+      layout: even-horizontal
+      panes:
+        - <%= REPO_BASE %>/performance-explainer-webapp
+        - <%= REPO_BASE %>/performance-explainer-webapp/frontend
+  - tmp:
+      root: ~/tmp/performance-explainer
+      layout: even-horizontal
+      panes:
+        - ~/tmp/performance-explainer
+        - ~/tmp/performance-explainer
+  - cache:
+      root: ~/.cache/performance-explainer
+      layout: even-horizontal
+      panes:
+        - ~/.cache/performance-explainer
+        - ~/.cache/performance-explainer
