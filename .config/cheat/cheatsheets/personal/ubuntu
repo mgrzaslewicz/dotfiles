@@ -3,3 +3,6 @@ ls /etc/apt/sources.list.d/
 vi /etc/apt/sources.list
 ls /usr/share/keyrings/
 ls /etc/apt/trusted.gpg.d/
+
+# Check release version
+lsb_release -a
