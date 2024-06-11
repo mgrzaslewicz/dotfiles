@@ -14,3 +14,15 @@ git restore <file>
 
 # Edit commit dates
 GIT_COMMITTER_DATE="2023-11-15T15:18:14" git commit --amend --date="2023-11-15T15:18:14" --no-edit
+
+# Search commit message
+git log --grep="string" --after="2024-10-21" --author="John Rambo"
+
+# Search by file
+git log -- FileName.txt
+
+# Search by content
+git log -S"string to find"
+
+# Search by regex
+git log -G"regex to find"
