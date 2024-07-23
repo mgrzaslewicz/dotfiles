@@ -12,8 +12,8 @@ windows:
       root: <%= REPO_BASE %>/performance-explainer-webapp
       layout: even-horizontal
       panes:
-        - <%= REPO_BASE %>/performance-explainer-webapp
         - <%= REPO_BASE %>/performance-explainer-webapp/frontend
+        - <%= REPO_BASE %>/performance-explainer-webapp/backend
   - tmp:
       root: ~/tmp/performance-explainer
       layout: even-horizontal
