@@ -2,17 +2,23 @@
 project_name: performance-explainer
 project_root: <%= REPO_BASE %>
 windows:
-  - perf-explainer:
+  - lib:
       root: <%= REPO_BASE %>
       layout: even-horizontal
       panes:
         - <%= REPO_BASE %>/performance-explainer
         - <%= REPO_BASE %>/performance-explainer
-  - perf-explainer-app:
-      root: <%= REPO_BASE %>/performance-explainer-webapp
+  - frontend:
+      root: <%= REPO_BASE %>/performance-explainer-webapp/frontend
       layout: even-horizontal
       panes:
+        - ng serve
         - <%= REPO_BASE %>/performance-explainer-webapp/frontend
+  - backend:
+      root: <%= REPO_BASE %>/performance-explainer-webapp/backend
+      layout: even-horizontal
+      panes:
+        - <%= REPO_BASE %>/performance-explainer-webapp/backend
         - <%= REPO_BASE %>/performance-explainer-webapp/backend
   - tmp:
       root: ~/tmp/performance-explainer
