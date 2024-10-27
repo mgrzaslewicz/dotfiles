@@ -20,6 +20,12 @@ windows:
       panes:
         - <%= REPO_BASE %>/performance-explainer-webapp/backend
         - <%= REPO_BASE %>/performance-explainer-webapp/backend
+  - deployment:
+      root: <%= REPO_BASE %>/performance-explainer-webapp/deployment
+      layout: even-horizontal
+      panes:
+        - <%= REPO_BASE %>/performance-explainer-webapp/deployment
+        - <%= REPO_BASE %>/performance-explainer-webapp/deployment/test/vagrant
   - tmp:
       root: ~/tmp/performance-explainer
       layout: even-horizontal
