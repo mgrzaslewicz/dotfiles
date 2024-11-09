@@ -1,0 +1,6 @@
+---
+tags: [ ssh ]
+---
+# Create tunnel for specific port
+ssh -i $SSH_KEY -p $SSH_PORT -NL $LOCAL_PORT:$SSH_HOST:$REMOTE_PORT $SSH_USER@$SSH_HOST
+
