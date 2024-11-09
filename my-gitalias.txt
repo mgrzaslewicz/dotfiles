@@ -48,3 +48,6 @@
     tags-containing-commit = tag -n1 --sort=committerdate --contains 
     # sort=taggerdate might be an alternative
     tags-sorted = tag -n1 --sort=committerdate 
+
+    ## list files for given commit, pass commit at the end, e.g. HEAD
+    ls-commit = ls-tree --full-tree -r --name-only
