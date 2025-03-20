@@ -26,3 +26,6 @@ git log -S"string to find"
 
 # Search by regex
 git log -G"regex to find"
+
+# Repack repository and reduce its size
+git repack -adf --name-hash-version=2
