@@ -3,3 +3,6 @@ mvn dependency:sources dependency:resolve -DincludeGroupIds=org.hamcrest        
 
 # Start new project
 mvn archetype:generate -DgroupId=com.deploymenteveryday.webcrawler -DartifactId=webcrawler -DarchetypeArtifactId=maven-archetype-quickstart -DinteractiveMode=false
+
+# Download artifact
+mvn dependency:get -Dartifact=group-id:artefact-id:version
