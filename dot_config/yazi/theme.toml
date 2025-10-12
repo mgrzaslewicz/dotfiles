@@ -1,0 +1,6 @@
+[filetype]
+
+rules = [
+    # Customize folder appearance
+    { name = "*/", fg = "lightblue" },
+]
