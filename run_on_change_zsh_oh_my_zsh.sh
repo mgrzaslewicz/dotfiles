@@ -3,4 +3,4 @@ set -e
 set -x
 
 source "${HOME}/.oh-my-zsh/lib/cli.zsh"
-omz theme set amuse
+omz theme set fino-time
