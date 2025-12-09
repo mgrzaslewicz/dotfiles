@@ -1,10 +1,17 @@
 # tmux helpers and optional auto-start
 alias tmux-print-screen="tmux capture-pane -pS -1000000"
 if [[ -z "$TMUX" ]]; then
-  if tmux has-session -t "$USER" 2>/dev/null; then
-    tmux new-window -t "$USER" -c "$PWD"
-    tmux attach-session -t "$USER"
+  # Sanitize working directory for tmux session name (replace / with -)
+  SESSION_NAME="${PWD//\//-}"
+  # Remove leading - if path starts with /
+  SESSION_NAME="${SESSION_NAME#-}"
+  # Use root as session name if we're at /
+  [[ -z "$SESSION_NAME" ]] && SESSION_NAME="root"
+
+  if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
+    tmux new-window -t "$SESSION_NAME" -c "$PWD"
+    tmux attach-session -t "$SESSION_NAME"
   else
-    tmux new-session -s "$USER" -c "$PWD"
+    tmux new-session -s "$SESSION_NAME" -c "$PWD"
   fi
 fi
