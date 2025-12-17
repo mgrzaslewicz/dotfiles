@@ -5,6 +5,7 @@ set -x
 git config --global --unset-all include.path || true
 git config --global --add include.path ~/gitalias.txt
 git config --global --add include.path ~/my-gitalias.txt
+git config --global push.autoSetupRemote true
 
 git config --global user.email "mikolaj.grzaslewicz@gmail.com"
 git config --global user.name "Mikolaj Grzaslewicz"
