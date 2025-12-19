@@ -20,7 +20,7 @@
     ## branches
     br = branch -avv
     b = branch
-    bt = !"git for-each-ref --sort=committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'" #https://stackoverflow.com/questions/9236219/git-list-git-branches-sort-by-and-show-date#16961359
+    bt =!"git for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'" #https://stackoverflow.com/questions/9236219/git-list-git-branches-sort-by-and-show-date#16961359
     # delete a branch
     bdel = branch -D
     bren = branch -m
@@ -45,7 +45,7 @@
     file-history = log -p -- 
 
     ## tag listing
-    tags-containing-commit = tag -n1 --sort=committerdate --contains 
+    tags-containing-commit = tag -n1 --sort=committerdate --contains
     # sort=taggerdate might be an alternative
     tags-sorted = tag -n1 --sort=committerdate 
 
