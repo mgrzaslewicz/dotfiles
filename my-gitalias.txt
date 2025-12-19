@@ -20,8 +20,8 @@
     ## branches
     br = branch -avv
     b = branch
-    bt =!"git for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'" #https://stackoverflow.com/questions/9236219/git-list-git-branches-sort-by-and-show-date#16961359
-    btrel = !"git for-each-ref --sort=-committerdate refs/heads/ --format='%(committerdate:short) %(refname:short) %(committerdate:relative)'"
+    bt =!"git for-each-ref --sort=committerdate refs/heads/ --format='%(committerdate:short) %(refname:short)'" #https://stackoverflow.com/questions/9236219/git-list-git-branches-sort-by-and-show-date#16961359
+    btrel = !"git for-each-ref --sort=committerdate refs/heads/ --format='%(committerdate:short) %(refname:short) %(committerdate:relative)'"
     # delete a branch
     bdel = branch -D
     bren = branch -m
