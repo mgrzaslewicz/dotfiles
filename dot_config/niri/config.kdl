@@ -646,3 +646,10 @@ binds {
     Mod+Space { spawn "~/.config/niri/scripts/window-switcher.sh"; }
     Alt+Space { spawn "~/.config/niri/scripts/window-switcher.sh"; }
 }
+include "dms/binds.kdl"
+
+include "dms/cursor.kdl"
+
+include "dms/outputs.kdl"
+
+include "dms/windowrules.kdl"
