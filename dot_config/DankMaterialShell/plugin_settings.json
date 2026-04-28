@@ -1,0 +1,14 @@
+{
+  "dankHyprlandWindows": {
+    "enabled": true
+  },
+  "niriWindows": {
+    "enabled": true
+  },
+  "dankLauncherKeys": {
+    "enabled": false
+  },
+  "commandRunner": {
+    "enabled": false
+  }
+}
