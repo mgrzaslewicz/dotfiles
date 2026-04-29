@@ -280,8 +280,8 @@ layout {
 
 // This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "waybar"
-spawn-at-startup "yakuake"
 spawn-at-startup "dropbox start"
+spawn-at-startup "alacritty"
 
 // To run a shell command (with variables, pipes, etc.), use spawn-sh-at-startup:
 // spawn-sh-at-startup "qs -c ~/source/qs/MyAwesomeShell"
@@ -363,6 +363,19 @@ window-rule {
     match app-id="yakuake"
     open-floating true
 // Optional: Remove the border and focus ring for that clean "overlay" look
+    border { off; }
+    focus-ring { off; }
+}
+
+workspace "1"
+workspace "2"
+workspace "3"
+workspace "4"
+
+window-rule {
+    match app-id=r#"(?i)^alacritty$"#
+    open-on-workspace "2"
+    open-fullscreen true
     border { off; }
     focus-ring { off; }
 }
