@@ -1,0 +1,3 @@
+binds {
+    Super+space hotkey-overlay-title="App Launcher: Toggle" { spawn "dms" "ipc" "call" "spotlight" "toggle"; }
+}
