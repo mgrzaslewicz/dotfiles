@@ -9,6 +9,6 @@
     "enabled": false
   },
   "commandRunner": {
-    "enabled": false
+    "enabled": true
   }
 }
