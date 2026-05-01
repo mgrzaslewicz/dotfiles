@@ -1,0 +1,9 @@
+[Unit]
+Description=Backup multiple directories to target
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/backup.sh
+
+[Install]
+WantedBy=default.target

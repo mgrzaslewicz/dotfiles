@@ -1,0 +1,10 @@
+[Unit]
+Description=Run directory sync every minute
+
+[Timer]
+OnCalendar=*:0/1
+Persistent=true
+Unit=backup.service
+
+[Install]
+WantedBy=timers.target
