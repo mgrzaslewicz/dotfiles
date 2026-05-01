@@ -10,5 +10,10 @@
   },
   "commandRunner": {
     "enabled": true
+  },
+  "calculator": {
+-   "enabled": true,
+-   "trigger": "="
++   "enabled": true
   }
 }
