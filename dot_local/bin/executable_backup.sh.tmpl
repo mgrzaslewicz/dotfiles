@@ -33,6 +33,7 @@ if [ -d "$HOME/Logseq" ]; then
         # Only commit if there are changes
         if ! git diff-index --quiet HEAD --; then
             git commit -m "Auto save by scheduled job"
+            git pull --rebase
             git push
         else
             echo "No changes in Logseq to commit."
