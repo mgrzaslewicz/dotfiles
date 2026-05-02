@@ -33,8 +33,16 @@ if [ -d "$HOME/Logseq" ]; then
         # Only commit if there are changes
         if ! git diff-index --quiet HEAD --; then
             git commit -m "Auto save by scheduled job"
-            git pull --rebase
-            git push
+            if ! git pull --rebase; then
+                if git status | grep -q "unmerged paths"; then
+                    notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required." -u critical
+                else
+                    notify-send "Logseq Backup Error" "Failed to pull Logseq changes (network error or other)." -u critical
+                fi
+                git rebase --abort
+            elif ! git push; then
+                notify-send "Logseq Backup Error" "Failed to push Logseq changes to remote." -u critical
+            fi
         else
             echo "No changes in Logseq to commit."
         fi
