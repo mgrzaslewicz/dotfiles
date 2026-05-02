@@ -23,3 +23,22 @@ for SOURCE in "${SOURCES[@]}"; do
         echo "Warning: Source $SOURCE not found or not a directory. Skipping."
     fi
 done
+
+# Special handling for Logseq: commit and push changes
+if [ -d "$HOME/Logseq" ]; then
+    echo "Processing Logseq repository..."
+    pushd "$HOME/Logseq" > /dev/null
+    if [ -d ".git" ]; then
+        git add .
+        # Only commit if there are changes
+        if ! git diff-index --quiet HEAD --; then
+            git commit -m "Auto save by scheduled job"
+            git push
+        else
+            echo "No changes in Logseq to commit."
+        fi
+    else
+        echo "Warning: $HOME/Logseq is not a git repository."
+    fi
+    popd > /dev/null
+fi
