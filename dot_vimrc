@@ -18,9 +18,6 @@ set backup
 
 " Define where backups are stored (double // preserves full path structure)
 set backupdir=~/.vim/backup//
-" for some reason ~ is not expanded into home directory
-" set backupskip+=~/.vim/backup/*
-execute 'set backupskip+=' . escape(expand('~/.vim/backup/*'), ' \')
 
 " Create backup before overwriting the current buffer
 set writebackup
