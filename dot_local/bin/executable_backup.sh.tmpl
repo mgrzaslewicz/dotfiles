@@ -18,8 +18,11 @@ if [ -n "$TARGET" ]; then
           # rsync -a: archive, -u: update, -z: compress
           # --delete: removes files in target that aren't in source
           DIR_NAME=$(basename "$SOURCE")
-          mkdir -p "$TARGET/$DIR_NAME"
-          rsync -auz --delete "$SOURCE/" "$TARGET/$DIR_NAME/"
+          TARGET_DIR="$TARGET/$DIR_NAME"
+          mkdir -p $TARGET_DIR
+          echo "Backing up $SOURCE -> $TARGET_DIR ..."
+          rsync -auz --delete "$SOURCE/" "$TARGET_DIR/"
+          echo "Backing up $SOURCE -> $TARGET_DIR finished"
       else
           echo "Warning: Source $SOURCE not found or not a directory. Skipping."
       fi
