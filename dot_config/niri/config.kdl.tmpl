@@ -665,3 +665,8 @@ include "dms/cursor.kdl"
 include "dms/outputs.kdl"
 
 include "dms/windowrules.kdl"
+
+{{- if index . "tablet_screen" }}{{/* configuration file cannot be empty so either include the whole config or skip the file */}}
+
+include "tablet.kdl"
+{{- end }}
