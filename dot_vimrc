@@ -12,3 +12,18 @@ if !has('nvim')
     Plug 'mtdl9/vim-log-highlighting'
   call plug#end()
 endif
+
+" Enable backup feature
+set backup
+
+" Define where backups are stored (double // preserves full path structure)
+set backupdir=~/.vim/backup//
+" for some reason ~ is not expanded into home directory
+" set backupskip+=~/.vim/backup/*
+execute 'set backupskip+=' . escape(expand('~/.vim/backup/*'), ' \')
+
+" Create backup before overwriting the current buffer
+set writebackup
+
+" Customize backup filename to include timestamp (e.g., file.py@2026-05-03.10:30)
+autocmd BufWritePre * let &backupext = '@' . strftime("%F.%H:%M")

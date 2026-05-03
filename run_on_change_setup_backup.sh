@@ -11,3 +11,5 @@ systemctl --user start backup.timer
 
 echo "Check backup.service status: systemctl --user status backup.service"
 echo "View backup.service logs: journalctl --user-unit backup.service -f"
+
+mkdir -p ~/.vim/backup
