@@ -1,5 +1,5 @@
 {{- $sync_sources := list "/path/to/source1" "/path/to/source2" -}}
-{{- $sync_target := "/path/to/unified_target" -}}
+{{- $sync_target := "" -}}{{ /* e.g. /backup/location. When empty, backing up sync_sources will be skipped  */ }}
 {{- $tablet_screen := "" -}}
 
 [data]
