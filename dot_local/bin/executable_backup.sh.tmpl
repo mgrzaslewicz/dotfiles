@@ -45,7 +45,7 @@ if [ -d "$HOME/Logseq" ]; then
                 if git status | grep -q "unmerged paths"; then
                     notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required. Output: $OUTPUT" -u critical
                 else
-                    notify-send "Logseq Backup Error" "Failed to pull Logseq changes. Output: $OUTPUT" -u critical
+                    echo "Logseq Backup Error: failed to pull Logseq changes. Output: $OUTPUT"
                 fi
                 git rebase --abort
             elif ! OUTPUT=$(git push 2>&1); then
