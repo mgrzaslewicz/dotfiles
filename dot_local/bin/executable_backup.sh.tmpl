@@ -48,7 +48,8 @@ if [ -d "$HOME/Logseq" ]; then
                     echo "Logseq Backup Error: failed to pull Logseq changes. Output: $OUTPUT"
                 fi
                 git rebase --abort
-            elif ! OUTPUT=$(git push 2>&1); then
+            fi
+            if ! OUTPUT=$(git push 2>&1); then
                 notify-send "Logseq Backup Error" "Failed to push Logseq changes to remote. Output: $OUTPUT" -u critical
             fi
         else
