@@ -24,3 +24,7 @@ set writebackup
 
 " Customize backup filename to include timestamp (e.g., file.py@2026-05-03.10:30)
 autocmd BufWritePre * let &backupext = '@' . strftime("%F.%H:%M")
+
+" Make the highlighted column readable
+:highlight CursorColumn ctermfg=Black
+:highlight CursorColumn ctermbg=DarkBlue
