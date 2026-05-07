@@ -2,8 +2,10 @@
 {{/* e.g. /backup/location. When empty, backing up sync_sources will be skipped  */}}
 {{- $sync_target := "" -}}
 {{- $tablet_screen := "" -}}
+{{- $niri_output_settings := dict -}}
 
 [data]
     sync_sources = {{ $sync_sources | toJson }}
     sync_target = {{ $sync_target | quote }}
     tablet_screen = {{ $tablet_screen | quote }}
+    niri_output_settings = {{ if kindOf $niri_output_settings | eq "string" }}{{ $niri_output_settings | quote }}{{ else }}{{ $niri_output_settings | toJson | quote }}{{ end }}
