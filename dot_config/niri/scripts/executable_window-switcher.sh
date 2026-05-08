@@ -7,10 +7,10 @@
 # 5. Tell Niri to focus that ID
 
 SELECTION=$(niri msg --json windows | jq -r '
-  .[] 
-  | select(.is_focused == false) 
+  .[]
+  | select(.is_focused == false)
   | "\(.id) | \(.app_id // "unknown"): \(.title)\u0000icon\u001f\(.app_id // "window-manager")"
-' | fuzzel --dmenu --prompt="Switch To > ")
+' | fuzzel --width 50 --dmenu --prompt="Switch To > ")
 
 # If nothing selected, exit
 if [ -z "$SELECTION" ]; then
