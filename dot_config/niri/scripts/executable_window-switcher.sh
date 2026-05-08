@@ -9,7 +9,7 @@
 SELECTION=$(niri msg --json windows | jq -r '
   .[] 
   | select(.is_focused == false) 
-  | "\(.id) | \(.app_id): \(.title)"
+  | "\(.id) | \(.app_id // "unknown"): \(.title)\u0000icon\u001f\(.app_id // "window-manager")"
 ' | fuzzel --dmenu --prompt="Switch To > ")
 
 # If nothing selected, exit
