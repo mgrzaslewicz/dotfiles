@@ -9,7 +9,8 @@
 SELECTION=$(niri msg --json windows | jq -r '
   .[]
   | select(.is_focused == false)
-  | "\(.id) | \(.app_id // "unknown"): \(.title)\u0000icon\u001f\(.app_id // "window-manager")"
+  | ((.id | tostring) | (3 - length) as $l | (if $l > 0 then "   "[0:$l] + . else . end)) as $id
+  | "\($id) | \(.app_id // "unknown"): \(.title)\u0000icon\u001f\(.app_id // "window-manager")"
 ' | fuzzel --width 50 --dmenu --prompt="Switch To > ")
 
 # If nothing selected, exit
@@ -17,8 +18,8 @@ if [ -z "$SELECTION" ]; then
     exit 0
 fi
 
-# Extract the ID (the first field before the pipe)
-WINDOW_ID=$(echo "$SELECTION" | awk -F ' | ' '{print $1}')
+# Extract the ID (the first field)
+WINDOW_ID=$(echo "$SELECTION" | awk '{print $1}')
 
 # Focus the window
 niri msg action focus-window --id "$WINDOW_ID"
