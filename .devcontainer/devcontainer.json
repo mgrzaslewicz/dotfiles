@@ -1,0 +1,37 @@
+{
+    "name": "Dotfiles Development",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": ".."
+    },
+    "customizations": {
+        "user1": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "zsh"
+            },
+            "extensions": [
+                "streetsidesoftware.code-spell-checker"
+            ]
+        }
+    },
+    "remoteUser": "user1",
+    "workspaceFolder": "/workspaces/dotfiles",
+    // Data Isolation: The project is bind-mounted into the container.
+    // By default, the container does not have access to the host's home directory,
+    // which prevents any AI extensions from accessing files outside this project.
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/dotfiles,type=bind,consistency=cached",
+
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils:2": {
+            "installZsh": true,
+            "configureZshAsDefaultShell": true,
+            "upgradePackages": true,
+            "username": "user1"
+        },
+        "ghcr.io/devcontainer-community/devcontainer-features/chezmoi.io" : {},
+    },
+
+    // Initialize and apply the dotfiles to the container environment.
+    // This allows testing the dotfiles in an isolated Ubuntu environment.
+    "postCreateCommand": "chezmoi init --apply --source /workspaces/dotfiles"
+}
