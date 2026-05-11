@@ -25,7 +25,6 @@
         "ghcr.io/devcontainers/features/common-utils:2": {
             "installZsh": true,
             "configureZshAsDefaultShell": true,
-            "upgradePackages": true,
             "username": "user1"
         },
         "ghcr.io/devcontainer-community/devcontainer-features/chezmoi.io" : {},
