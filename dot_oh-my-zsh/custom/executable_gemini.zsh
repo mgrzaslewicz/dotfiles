@@ -8,5 +8,11 @@ gemini() {
       "$DOTFILES_DIR/containers/gemini"
   fi
   mkdir -p "${HOME}/gemini"
-  docker run -it --rm -v "$PWD:/workspace:rw" -v "${HOME}/.gemini:/home/gemini-user/.gemini" gemini-toolbox:latest
+  docker run \
+    -it \
+    --rm \
+    -v "$PWD:/workspace:rw" \
+    -v "${HOME}/.gemini:/home/gemini-user/.gemini" \
+    --env TERM="${TERM:-xterm-256color}" \
+    gemini-toolbox:latest
 }
