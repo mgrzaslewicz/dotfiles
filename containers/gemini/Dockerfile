@@ -12,8 +12,7 @@ RUN apt-get update \
         curl \
         less \
         libatomic1 \
-        # Without tini: `error during container init: exec: "/usr/bin/tini": stat /usr/bin/tini: no such file or directory`
-        #tini \
+        tini \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -53,4 +52,5 @@ ENV HOME=/home/gemini-user
 ENV XDG_CONFIG_HOME=/home/gemini-user/.config
 ENV XDG_CACHE_HOME=/home/gemini-user/.cache
 
-ENTRYPOINT ["/bin/bash"]
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["gemini"]
