@@ -367,14 +367,8 @@ window-rule {
     focus-ring { off; }
 }
 
-workspace "1"
-workspace "2"
-workspace "3"
-workspace "4"
-
 window-rule {
     match app-id=r#"(?i)^alacritty$"# title="^startup-alacritty$"
-    open-on-workspace "2"
     open-fullscreen true
     border { off; }
     focus-ring { off; }
@@ -397,6 +391,7 @@ binds {
 
 // Suggested binds for running programs: terminal, app launcher, screen locker.
     Mod+T hotkey-overlay-title="Open a Terminal: alacritty" { spawn "alacritty"; }
+    Ctrl+Grave repeat=false hotkey-overlay-title="Toggle Alacritty" { spawn "~/.config/niri/scripts/toggle-alacritty.sh"; }
 // Mod+D hotkey-overlay-title="Run an Application: rofi" { spawn "rofi -show drun"; }
     Mod+D hotkey-overlay-title="Run an Application: fuzzel" { spawn "fuzzel"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
