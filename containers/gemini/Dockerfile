@@ -13,6 +13,8 @@ RUN apt-get update \
         less \
         libatomic1 \
         tini \
+        # command line tools gemini might use \
+        git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
