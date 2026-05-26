@@ -1,5 +1,9 @@
 # tmux helpers and optional auto-start
 alias tmux-print-screen="tmux capture-pane -pS -1000000"
+
+# Only auto-start tmux for interactive shells.
+[[ -o interactive ]] || return
+
 if [[ -z "$TMUX" ]]; then
   SESSION_NAME="${PWD}"
   if tmux has-session -t "$SESSION_NAME" 2>/dev/null; then
