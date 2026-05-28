@@ -7,7 +7,7 @@ gemini() {
       -t "$IMAGE_NAME" \
       --build-arg USER_ID="$(id -u)" \
       --build-arg GROUP_ID="$(id -g)" \
-      "$DOTFILES_DIR/containers/gemini"
+      "$DOTFILES_DIR/.containers/gemini"
   fi
   mkdir -p "${HOME}/gemini"
   podman run \
