@@ -16,6 +16,8 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     rsync \
     libnotify-bin \
     sudo \
+    fzf \
+    file \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user with zsh shell, make sure it doesn't collide with existing one
