@@ -1,11 +1,12 @@
-{{- $sync_sources := list "/path/to/source1" "/path/to/source2" -}}
-{{/* e.g. /backup/location. When empty, backing up sync_sources will be skipped  */}}
-{{- $sync_target := "" -}}
-{{- $tablet_screen := "" -}}
-{{- $niri_output_settings := dict -}}
+{{- /* 1. Try to load local.toml into a map */ -}}
+{{- $localData := dict -}}
+{{- $localPath := joinPath .chezmoi.homeDir ".config/chezmoi/local.toml" -}}
+{{- if stat $localPath -}}
+     {{- $localData = (include $localPath | fromToml).data -}}
+{{- end -}}
 
 [data]
-    sync_sources = {{ $sync_sources | toJson }}
-    sync_target = {{ $sync_target | quote }}
-    tablet_screen = {{ $tablet_screen | quote }}
-    niri_output_settings = {{ if kindOf $niri_output_settings | eq "string" }}{{ $niri_output_settings | quote }}{{ else }}{{ $niri_output_settings | toJson | quote }}{{ end }}
+    sync_sources = {{ index $localData "sync_sources" | default (list) | toJson }}
+    sync_target = {{ index $localData "sync_target" | default "" | quote }}
+    tablet_screen = {{ index $localData "tablet_screen" | default "" | quote }}
+    niri_output_settings = {{ index $localData "niri_output_settings" | default "{}" | quote }}
