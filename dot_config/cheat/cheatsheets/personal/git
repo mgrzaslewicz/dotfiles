@@ -29,3 +29,9 @@ git log -G"regex to find"
 
 # Repack repository and reduce its size
 git repack -adf --name-hash-version=2
+
+# Specifying ssh key from command line
+GIT_SSH_COMMAND="ssh -i <path> -o IdentitiesOnly=yes" git ...
+
+# Persisting ssh config per repository
+git config core.sshCommand 'ssh -i <path> -o IdentitiesOnly=yes'
