@@ -43,20 +43,32 @@ if [ -d "$HOME/Logseq" ]; then
             git commit -m "Auto save by scheduled job"
             if ! OUTPUT=$(git pull --rebase 2>&1); then
                 if git status | grep -q "unmerged paths"; then
-                    notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required. Output: $OUTPUT" -u critical
+                    if command -v notify-send >/dev/null 2>&1; then
+                        notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required. Output: $OUTPUT" -u critical
+                    elif command -v osascript >/dev/null 2>&1; then
+                        osascript -e "display notification \"Merge conflict detected in Logseq repository. Manual intervention required.\" with title \"Logseq Backup Error\""
+                    fi
                 else
                     echo "Logseq: failed to pull changes. Output: $OUTPUT"
                 fi
                 git rebase --abort
             fi
             if ! OUTPUT=$(git push 2>&1); then
-                notify-send "Logseq Backup Error" "Failed to push Logseq changes to remote. Output: $OUTPUT" -u critical
+                if command -v notify-send >/dev/null 2>&1; then
+                    notify-send "Logseq Backup Error" "Failed to push Logseq changes to remote. Output: $OUTPUT" -u critical
+                elif command -v osascript >/dev/null 2>&1; then
+                    osascript -e "display notification \"Failed to push Logseq changes to remote.\" with title \"Logseq Backup Error\""
+                fi
             fi
         else
             # pull changes regardless if there are no changes to push
             if ! OUTPUT=$(git pull --rebase 2>&1); then
                 if git status | grep -q "unmerged paths"; then
-                    notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required. Output: $OUTPUT" -u critical
+                    if command -v notify-send >/dev/null 2>&1; then
+                        notify-send "Logseq Backup Error" "Merge conflict detected in Logseq repository. Manual intervention required. Output: $OUTPUT" -u critical
+                    elif command -v osascript >/dev/null 2>&1; then
+                        osascript -e "display notification \"Merge conflict detected in Logseq repository. Manual intervention required.\" with title \"Logseq Backup Error\""
+                    fi
                 else
                     echo "Logseq: failed to pull changes. Output: $OUTPUT"
                 fi
