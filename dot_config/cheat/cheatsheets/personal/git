@@ -35,3 +35,8 @@ GIT_SSH_COMMAND="ssh -i <path> -o IdentitiesOnly=yes" git ...
 
 # Persisting ssh config per repository
 git config core.sshCommand 'ssh -i <path> -o IdentitiesOnly=yes'
+
+# Turn on signing commits and tags
+git config --global commit.gpgSign true
+git config --global tag.gpgSign true
+git config --global user.signingkey <public signing key id>

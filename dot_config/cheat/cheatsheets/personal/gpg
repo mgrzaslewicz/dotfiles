@@ -1,0 +1,8 @@
+# List keys
+gpg --list-secret-keys --keyid-format SHORT
+
+# Test signing
+echo "hello world" | gpg --clearsign
+
+# Issues with GPG agent? Not able to sign? Remote repo not assuming signature? Run the command below and try again
+gpgconf --kill gpg-agent && gpgconf --launch gpg-agent
