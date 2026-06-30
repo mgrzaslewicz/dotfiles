@@ -29,6 +29,7 @@
 
     ## rebasing
     remaster = pull --rebase origin master
+    remain = pull --rebase origin main
     rbi = rebase --interactive
     rc = rebase --continue
     ra = rebase --abort
