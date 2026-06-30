@@ -53,3 +53,6 @@
 
     ## list files for given commit, pass commit at the end, e.g. HEAD
     ls-commit = ls-tree --full-tree -r --name-only
+
+    ## config check
+    config-debug = config --list --show-origin --show-scope
