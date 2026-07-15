@@ -9,7 +9,7 @@ gemini() {
       --build-arg GROUP_ID="$(id -g)" \
       "$DOTFILES_DIR/.containers/gemini"
   fi
-  mkdir -p "${HOME}/gemini"
+  mkdir -p "${HOME}/.gemini"
   podman run \
     -it \
     --rm \
