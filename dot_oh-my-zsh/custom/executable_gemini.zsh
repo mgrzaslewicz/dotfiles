@@ -19,3 +19,8 @@ gemini() {
     --env TERM="${TERM:-xterm-256color}" \
     gemini-toolbox:latest
 }
+
+gemini-rebuilt () {
+  podman image rm gemini-toolbox:latest
+  gemini
+}
