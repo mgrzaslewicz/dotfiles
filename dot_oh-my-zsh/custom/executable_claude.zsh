@@ -15,7 +15,8 @@ claude() {
     -it \
     --rm \
     --userns=keep-id \
-    -v "$PWD:/workspace:rw" \
+    -v "$PWD:/workspace/$(basename "$PWD"):rw" \
+    --workdir "/workspace/$(basename "$PWD")" \
     -v "${HOME}/.claude:/home/claude-user/.claude" \
     -v "${HOME}/.claude.json:/home/claude-user/.claude.json" \
     --env TERM="${TERM:-xterm-256color}" \
