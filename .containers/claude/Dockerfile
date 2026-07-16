@@ -24,13 +24,15 @@ ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
 RUN mise use --global node@26.1.0
 RUN mise use --global npm@11.12.1
+RUN mise use --global aqua:colbymchenry/codegraph
 RUN mise install
 RUN node --version
 RUN npm --version
 RUN npm install -g @anthropic-ai/claude-code \
     && mise reshim \
     && command -v claude \
-    && claude --version
+    && claude --version \
+    && command -v codegraph
 RUN rm -rf /tmp/* /var/tmp/* "${MISE_CACHE_DIR}"
 
 # Create a non-root claude-user user
@@ -49,10 +51,15 @@ RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache \
 USER claude-user
 WORKDIR /workspace
 
+
 # Keep credentials/config outside the image; mount them at runtime if needed.
 ENV HOME=/home/claude-user
 ENV XDG_CONFIG_HOME=/home/claude-user/.config
 ENV XDG_CACHE_HOME=/home/claude-user/.cache
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
+RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
+ENV PATH="$HOME/.local/bin:$PATH"
+RUN command -v rtk
+
+ENTRYPOINT ["/usr/bin/tini", "--", "bash", "-c", "rtk init -g --auto-patch && mise exec -- codegraph install --yes --target all --location global && exec \"$@\"", "--"]
 CMD ["claude"]
