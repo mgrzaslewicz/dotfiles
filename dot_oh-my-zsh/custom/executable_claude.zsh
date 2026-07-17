@@ -1,5 +1,5 @@
 
-claude() {
+claude-toolbox() {
   DOTFILES_DIR="${HOME}/.local/share/chezmoi"
   IMAGE_NAME="claude-toolbox:latest"
   if ! podman image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
@@ -26,7 +26,7 @@ claude() {
     claude-toolbox:latest
 }
 
-claude-rebuilt () {
+claude-toolbox-new () {
   podman image rm claude-toolbox:latest
-  claude
+  claude-toolbox
 }
