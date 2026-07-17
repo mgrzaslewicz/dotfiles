@@ -61,5 +61,5 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | 
 ENV PATH="$HOME/.local/bin:$PATH"
 RUN command -v rtk
 
-ENTRYPOINT ["/usr/bin/tini", "--", "bash", "-c", "rtk init -g --auto-patch && mise exec -- codegraph install --yes --target all --location global && exec \"$@\"", "--"]
+ENTRYPOINT ["/usr/bin/tini", "--", "bash", "-c", "yes n | rtk init -g --auto-patch && mise exec -- codegraph install --yes --target all --location global && exec \"$@\"", "--"]
 CMD ["claude"]
