@@ -10,18 +10,15 @@ claude-toolbox() {
       "$DOTFILES_DIR/.containers/claude"
   fi
   mkdir -p "${HOME}/.claude"
-  if [[ -f "${HOME}/.claude.json" && ! -L "${HOME}/.claude.json" ]]; then
-    mv "${HOME}/.claude.json" "${HOME}/.claude/.claude.json"
-    ln -s ".claude/.claude.json" "${HOME}/.claude.json"
-  fi
+  touch "${HOME}/.claude.json"
   podman run \
     -it \
     --rm \
     --userns=keep-id \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
+    -v "${HOME}/.claude:/home/claude-user/.claude:rw" \
+    -v "${HOME}/.claude.json:/home/claude-user/.claude.json:rw" \
     --workdir "/workspace/$(basename "$PWD")" \
-    -v "${HOME}/.claude:/home/claude-user/.claude" \
-    --env HOME=/home/claude-user/.claude \
     --env TERM="${TERM:-xterm-256color}" \
     claude-toolbox:latest
 }

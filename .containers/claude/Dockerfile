@@ -25,11 +25,11 @@ RUN curl https://mise.run | sh
 RUN mise use --global node@26.1.0
 RUN mise use --global npm@11.12.1
 RUN mise use --global aqua:colbymchenry/codegraph
+RUN mise use --global claude@latest
 RUN mise install
 RUN node --version
 RUN npm --version
-RUN npm install -g @anthropic-ai/claude-code \
-    && mise reshim \
+RUN mise reshim \
     && command -v claude \
     && claude --version \
     && command -v codegraph
@@ -61,5 +61,7 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | 
 ENV PATH="$HOME/.local/bin:$PATH"
 RUN command -v rtk
 
-ENTRYPOINT ["/usr/bin/tini", "--", "bash", "-c", "yes n | rtk init -g --auto-patch \"$@\"", "--"]
-CMD ["claude"]
+ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD /home/claude-user/setup-and-run-claude.sh
