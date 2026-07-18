@@ -24,11 +24,13 @@ ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
 RUN mise use --global node@26.1.0
 RUN mise use --global npm@11.12.1
+RUN mise use --global python@latest
 RUN mise use --global aqua:colbymchenry/codegraph
 RUN mise use --global claude@latest
 RUN mise install
 RUN node --version
 RUN npm --version
+RUN python3 --version
 RUN mise reshim \
     && command -v claude \
     && claude --version \
