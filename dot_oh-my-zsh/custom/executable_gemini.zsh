@@ -1,5 +1,5 @@
 
-gemini() {
+gemini-toolbox() {
   DOTFILES_DIR="${HOME}/.local/share/chezmoi"
   IMAGE_NAME="gemini-toolbox:latest"
   if ! podman image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
@@ -20,7 +20,7 @@ gemini() {
     gemini-toolbox:latest
 }
 
-gemini-rebuilt () {
+gemini-toolbox-new () {
   podman image rm gemini-toolbox:latest
-  gemini
+  gemini-toolbox
 }

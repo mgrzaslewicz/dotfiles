@@ -24,11 +24,11 @@ ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
 RUN mise use --global node@26.1.0
 RUN mise use --global npm@11.12.1
+RUN mise use --global gemini@latest
 RUN mise install
 RUN node --version
 RUN npm --version
-RUN npm install -g @google/gemini-cli \
-    && mise reshim \
+RUN mise reshim \
     && command -v gemini \
     && gemini --version
 RUN rm -rf /tmp/* /var/tmp/* "${MISE_CACHE_DIR}"
