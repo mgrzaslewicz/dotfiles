@@ -64,6 +64,9 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | 
 ENV PATH="$HOME/.local/bin:$PATH"
 RUN command -v rtk
 
+RUN claude plugin marketplace add mattpocock/skills
+RUN claude plugin install mattpocock-skills@mattpocock
+
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
