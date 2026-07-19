@@ -15,6 +15,7 @@ RUN apt-get update \
         tini \
         # command line tools claude might use \
         git \
+        jq \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
