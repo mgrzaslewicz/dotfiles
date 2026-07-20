@@ -48,8 +48,8 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
 
 # Create controlled workspace and config/cache dirs
-RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache \
-    && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise
+RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /opt/claude-config-baked \
+    && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise /opt/claude-config-baked
 
 USER claude-user
 WORKDIR /workspace
@@ -64,8 +64,11 @@ RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | 
 ENV PATH="$HOME/.local/bin:$PATH"
 RUN command -v rtk
 
-RUN claude plugin marketplace add mattpocock/skills
-RUN claude plugin install mattpocock-skills@mattpocock
+# Bake plugins/skills into a build-only path outside $HOME, so a runtime
+# volume mounted over ~/.claude never shadows them.
+ENV CLAUDE_CONFIG_DIR_BAKE=/opt/claude-config-baked
+RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add mattpocock/skills \
+    && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install mattpocock-skills@mattpocock
 
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 
