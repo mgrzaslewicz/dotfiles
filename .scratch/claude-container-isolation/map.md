@@ -15,6 +15,8 @@ A spec for fully disconnecting the Claude container's settings (`~/.claude`, `~/
 
 ## Decisions so far
 
+- [Auth/login inside the container without host credentials](issues/02-auth-in-container-research.md) — no browser needed inside the container (paste-code fallback); `CLAUDE_CODE_OAUTH_TOKEN` env var or `~/.claude/.credentials.json` alone is enough to avoid re-auth, `~/.claude.json` holds no secrets.
+
 ## Not yet specified
 
 ## Out of scope
