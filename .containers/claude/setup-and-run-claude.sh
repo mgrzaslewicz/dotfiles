@@ -30,7 +30,25 @@ else
 fi
 mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
 
-yes n | rtk init -g --auto-patch
-codegraph install --yes --target claude --location local
-codegraph init && codegraph sync
+# rtk's hook lands in the volume-backed settings.json and survives restarts;
+# skip the subprocess once it's already there instead of relying on rtk's own no-op check.
+if ! jq -e '(.hooks.PreToolUse // []) | any(.hooks[]?.command == "rtk hook claude")' \
+    "${LIVE_CONFIG_DIR}/settings.json" >/dev/null 2>&1; then
+    yes n | rtk init -g --auto-patch
+fi
+
+# codegraph install --location local writes .mcp.json into the mounted project
+# directory (persists on the host), so skip it once that registration exists.
+if ! jq -e '.mcpServers.codegraph' "${PWD}/.mcp.json" >/dev/null 2>&1; then
+    codegraph install --yes --target claude --location local
+fi
+
+# .codegraph/ also persists on the host per project; sync it incrementally
+# instead of paying for a fresh init every start once it already exists.
+if [ -d "${PWD}/.codegraph" ]; then
+    codegraph sync
+else
+    codegraph init
+fi
+
 claude
