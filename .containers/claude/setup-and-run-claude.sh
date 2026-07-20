@@ -13,20 +13,20 @@ if [ ! -L "${HOME}/.claude.json" ]; then
     ln -s "${CLAUDE_JSON_DIR}/.claude.json" "${HOME}/.claude.json"
 fi
 
-# Plugins always reflect the current image build, regardless of volume staleness
-rm -rf "${LIVE_CONFIG_DIR}/plugins"
-ln -s "${BAKED_CONFIG_DIR}/plugins" "${LIVE_CONFIG_DIR}/plugins"
-
-# Merge just the plugin-registration keys into the live (volume-backed) settings.json,
-# leaving everything else (permissions/theme/hooks) untouched. Use '+' (shallow
-# union, right side wins per top-level key) not '*' (deep merge) — '*' would
-# leave stale/removed plugin entries behind inside enabledPlugins.
+# Marketplace/plugin-cache registration is handled by Claude Code itself via
+# CLAUDE_CODE_PLUGIN_SEED_DIR (set in the Dockerfile) — no script needed here.
+#
+# enabledPlugins isn't covered by the seed dir, so add any baked-in plugin
+# that's missing from the live settings.json. '+' on enabledPlugins is a
+# per-key union where the live side wins on conflicts, so a plugin the user
+# has since disabled/reconfigured stays untouched — this only fills gaps.
 if [ -f "${LIVE_CONFIG_DIR}/settings.json" ]; then
-    jq -s '.[0] + {enabledPlugins: .[1].enabledPlugins, extraKnownMarketplaces: .[1].extraKnownMarketplaces}' \
+    jq -s '.[0] + {enabledPlugins: ((.[1].enabledPlugins // {}) + (.[0].enabledPlugins // {}))}' \
         "${LIVE_CONFIG_DIR}/settings.json" "${BAKED_CONFIG_DIR}/settings.json" \
         > "${LIVE_CONFIG_DIR}/settings.json.tmp"
 else
-    cp "${BAKED_CONFIG_DIR}/settings.json" "${LIVE_CONFIG_DIR}/settings.json.tmp"
+    jq '{enabledPlugins: (.enabledPlugins // {})}' "${BAKED_CONFIG_DIR}/settings.json" \
+        > "${LIVE_CONFIG_DIR}/settings.json.tmp"
 fi
 mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
 

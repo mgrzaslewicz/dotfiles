@@ -24,9 +24,11 @@ This produces `/opt/claude-config-baked/plugins/{cache,marketplaces,known_market
 
 Do **not** set `CLAUDE_CONFIG_DIR` as a persistent runtime `ENV` — the running container uses the default `~/.claude` / `~/.claude.json`, which the volume covers.
 
-### 2. Entrypoint (`setup-and-run-claude.sh`) — reconcile on every start
+Do set `CLAUDE_CODE_PLUGIN_SEED_DIR=${CLAUDE_CONFIG_DIR_BAKE}/plugins` as a persistent runtime `ENV`, unlike `CLAUDE_CONFIG_DIR`. It's a read-only, additive seed path by design — Claude Code registers its marketplaces/plugin cache into the live config on every startup itself, so this replaces the plugins-symlink and the `extraKnownMarketplaces` half of the old merge script entirely. No jq/git logic needed for that part; see below.
 
-Before invoking `claude`:
+### 2. Entrypoint (`setup-and-run-claude.sh`) — reconcile `enabledPlugins` on every start
+
+`CLAUDE_CODE_PLUGIN_SEED_DIR` (above) handles marketplace/plugin-cache registration on its own. `enabledPlugins` isn't covered by the seed dir, so it's the one thing the entrypoint still reconciles, before invoking `claude`:
 
 ```bash
 # ~/.claude.json lives directly under $HOME, not under ~/.claude, so it needs
@@ -36,21 +38,17 @@ if [ ! -L "${HOME}/.claude.json" ]; then
   ln -s "${HOME}/.claude-json-dir/.claude.json" "${HOME}/.claude.json"
 fi
 
-# Always point plugins at the current image's baked copy, regardless of volume staleness
-rm -rf /home/claude-user/.claude/plugins
-ln -s /opt/claude-config-baked/plugins /home/claude-user/.claude/plugins
-
-# Merge just the plugin-registration keys into the live (volume-backed) settings.json,
-# leaving everything else (permissions/theme/hooks) untouched — '+' is a shallow
-# union (right side wins wholesale per top-level key); jq's '*' would deep-merge
-# and leave stale plugin entries behind.
-jq -s '.[0] + {enabledPlugins: .[1].enabledPlugins, extraKnownMarketplaces: .[1].extraKnownMarketplaces}' \
+# Add any baked-in plugin missing from the live settings.json. '+' on
+# enabledPlugins is a per-key union where the live side wins on conflicts, so
+# a plugin the user has since disabled/reconfigured stays untouched — this
+# only fills gaps, it never does a wholesale merge of the two settings files.
+jq -s '.[0] + {enabledPlugins: ((.[1].enabledPlugins // {}) + (.[0].enabledPlugins // {}))}' \
   /home/claude-user/.claude/settings.json /opt/claude-config-baked/settings.json \
   > /home/claude-user/.claude/settings.json.tmp \
   && mv /home/claude-user/.claude/settings.json.tmp /home/claude-user/.claude/settings.json
 ```
 
-(Handle the first-ever run, where `settings.json` doesn't exist yet, by seeding it from the baked copy directly.) This runs every start, so a rebuilt image's new plugin version reaches a pre-existing volume automatically — no reset needed for plugin updates. Full rationale: [ticket 04](issues/04-reconciliation-strategy.md).
+(Handle the first-ever run, where `settings.json` doesn't exist yet, by seeding it with just `{enabledPlugins: ...}` from the baked copy, not the whole baked file — the rest of the baked settings.json is build-time noise now that the seed dir owns marketplace registration.) This runs every start, so a rebuilt image's new plugin reaches a pre-existing volume automatically — no reset needed for plugin updates. Considered and rejected: reimplementing this as a `git merge` over a versioned `~/.claude` — no repo/history exists today, and it would trade one tool-specific hack (jq keys) for a heavier one (a real git repo, conflict resolution at non-interactive startup) to solve a problem the seed dir already solves natively. Original rationale for the two-key jq approach: [ticket 04](issues/04-reconciliation-strategy.md) (superseded by this section for the marketplace half).
 
 Everything else under `~/.claude` (`projects/*.jsonl` session transcripts, `history.jsonl`, `.credentials.json`, `CLAUDE.md`) stays live and volume-backed with no special handling. `~/.claude.json` (MCP config, per-project trust state) needs a **second** named volume, since it's a file directly under `$HOME` rather than inside `~/.claude/` — see §3.
 

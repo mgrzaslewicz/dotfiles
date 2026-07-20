@@ -70,6 +70,10 @@ ENV CLAUDE_CONFIG_DIR_BAKE=/opt/claude-config-baked
 RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add mattpocock/skills \
     && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install mattpocock-skills@mattpocock
 
+# Claude Code reads marketplace/plugin-cache state straight from this seed dir
+# on every startup (read-only, additive) — no runtime merge script needed for it.
+ENV CLAUDE_CODE_PLUGIN_SEED_DIR=${CLAUDE_CONFIG_DIR_BAKE}/plugins
+
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
