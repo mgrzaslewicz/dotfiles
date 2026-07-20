@@ -1,0 +1,13 @@
+#!/bin/bash
+# Manual escape hatch for logseq-pause: clears the pause lock immediately,
+# without waiting for the idle timeout or an orderly subshell exit.
+set -euo pipefail
+
+LOCK="$HOME/.logseq-sync.pause"
+
+if [ -e "$LOCK" ]; then
+    rm -f "$LOCK"
+    echo "Logseq sync resumed."
+else
+    echo "Logseq sync was not paused."
+fi

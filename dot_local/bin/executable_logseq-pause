@@ -1,0 +1,48 @@
+#!/bin/bash
+# Pause the Logseq auto-sync (see executable_backup.sh.tmpl) for manual
+# cleanup work (rebases, history rewrites, etc.) inside ~/Logseq.
+#
+# Drops into a zsh subshell with the lock held. The lock is released
+# automatically when that shell exits (Ctrl-D / `exit`) or after
+# TTL_SECONDS of inactivity, whichever comes first — see logseq-resume
+# for the manual override, and backup.sh.tmpl for the crash backstop.
+set -euo pipefail
+
+LOCK="$HOME/.logseq-sync.pause"
+LOGSEQ_DIR="$HOME/Logseq"
+TTL_SECONDS=900 # keep in sync with backup.sh.tmpl / logseq-resume
+
+if [ -e "$LOCK" ]; then
+    AGE=$(( $(date +%s) - $(stat -c %Y "$LOCK") ))
+    echo "Logseq sync is already paused (lock last active $((AGE / 60))m ago, possibly in another shell)."
+    echo "If that session crashed or is stale, run 'logseq-resume' first."
+    exit 1
+fi
+
+touch "$LOCK"
+TMPRC="$(mktemp -d)"
+cleanup() {
+    rm -f "$LOCK"
+    rm -rf "$TMPRC"
+}
+trap cleanup EXIT
+
+echo "Logseq sync paused. Auto-resumes after $((TTL_SECONDS / 60))m of inactivity, or when you exit this shell (Ctrl-D / 'exit')."
+
+cd "$LOGSEQ_DIR" 2>/dev/null || echo "Warning: $LOGSEQ_DIR not found."
+
+# Build a throwaway zsh startup dir: source the real .zshrc first (so
+# prompt/aliases/plugins behave normally), then layer on an idle timeout
+# that both auto-exits this shell and keeps the lock's timestamp fresh
+# while it's actually in use.
+ORIG_ZDOTDIR="${ZDOTDIR:-$HOME}"
+cat > "$TMPRC/.zshrc" <<RCEOF
+[ -f "$ORIG_ZDOTDIR/.zshrc" ] && source "$ORIG_ZDOTDIR/.zshrc"
+ZDOTDIR="$ORIG_ZDOTDIR"
+TMOUT=$TTL_SECONDS
+logseq_pause_touch() { touch "$LOCK" 2>/dev/null; }
+typeset -ga precmd_functions
+precmd_functions+=(logseq_pause_touch)
+RCEOF
+
+ZDOTDIR="$TMPRC" zsh -i

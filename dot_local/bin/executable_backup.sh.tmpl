@@ -33,7 +33,24 @@ fi
 
 
 # Special handling for Logseq: commit and push changes
-if [ -d "$HOME/Logseq" ]; then
+LOGSEQ_LOCK="$HOME/.logseq-sync.pause"
+LOGSEQ_LOCK_TTL_SECONDS=900 # keep in sync with logseq-pause / logseq-resume
+
+if [ -e "$LOGSEQ_LOCK" ]; then
+    LOGSEQ_LOCK_AGE=$(( $(date +%s) - $(stat -c %Y "$LOGSEQ_LOCK") ))
+    if [ "$LOGSEQ_LOCK_AGE" -ge "$LOGSEQ_LOCK_TTL_SECONDS" ]; then
+        # Backstop for a pause that never got cleaned up (crashed shell,
+        # kill -9, machine sleep) - logseq-pause's own idle timeout normally
+        # handles this, this is the belt-and-suspenders path.
+        echo "Logseq: pause lock is $((LOGSEQ_LOCK_AGE / 60))m old, treating as stale and resuming sync."
+        rm -f "$LOGSEQ_LOCK"
+        notify-send "Logseq Sync Resumed" "Pause lock was stale ($((LOGSEQ_LOCK_AGE / 60))m old) and has been auto-cleared."
+    else
+        echo "Logseq sync is paused (${LOGSEQ_LOCK_AGE}s since last activity). Skipping."
+    fi
+fi
+
+if [ ! -e "$LOGSEQ_LOCK" ] && [ -d "$HOME/Logseq" ]; then
     echo "Processing Logseq repository..."
     pushd "$HOME/Logseq" > /dev/null
     if [ -d ".git" ]; then
