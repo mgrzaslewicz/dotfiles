@@ -20,6 +20,9 @@ A spec for fully disconnecting the Claude container's settings (`~/.claude`, `~/
 - [Reconciliation strategy for build-time bake vs runtime volume](issues/04-reconciliation-strategy.md) — bake plugins at build time via `CLAUDE_CONFIG_DIR=/opt/claude-config-baked`; entrypoint symlinks `~/.claude/plugins` to it and `jq`-merges just the plugin-registration keys into the volume-backed `~/.claude/settings.json` on every start. Runtime state (session history, project memory, MCP trust state) stays live/volume-backed.
 - [Volume granularity: global vs per-project](issues/03-volume-granularity.md) — one global named volume (e.g. `claude-toolbox-config`) shared across all projects, matching today's behavior; avoids duplicating credentials/plugin cache per project.
 - [Reset/rebuild UX for the volume](issues/05-reset-rebuild-ux.md) — separate `claude-toolbox-reset` (wipes the volume) from `claude-toolbox-new` (rebuilds the image); the two concerns are independent since plugin freshness no longer needs a wipe.
+- [Verify named volume works with rootless podman + --userns=keep-id](issues/06-podman-volume-permissions.md) — confirmed empirically, no permission fixup needed; a fresh named volume auto-chowns to the container's baked-UID `claude-user` under `--userns=keep-id`.
+
+All tickets resolved — the destination is reached. See `spec.md` for the assembled hand-off spec.
 
 ## Not yet specified
 
