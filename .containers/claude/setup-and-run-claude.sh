@@ -6,6 +6,17 @@ CLAUDE_JSON_DIR="${HOME}/.claude-json-dir"
 
 mkdir -p "${LIVE_CONFIG_DIR}" "${CLAUDE_JSON_DIR}"
 
+# Seed the runtime (volume-backed) mise data dir from the build-time bake, on
+# every start. `cp -rn` only fills in what's missing: a fresh volume gets the
+# full baked toolchain; an existing volume with project-installed extras
+# (e.g. `mise use java@21`) is left untouched; and a rebuilt image's bumped
+# node/python/claude version reaches an existing volume too, since mise
+# namespaces installs by version (a new version is a new path to copy, never
+# an overwrite of one already there).
+mkdir -p "${MISE_DATA_DIR}"
+cp -rn "${MISE_DATA_DIR_BAKE}/." "${MISE_DATA_DIR}/"
+mise reshim
+
 # ~/.claude.json lives directly under $HOME, not under ~/.claude, so it needs
 # its own volume-backed directory; symlink the expected path into it.
 if [ ! -L "${HOME}/.claude.json" ]; then

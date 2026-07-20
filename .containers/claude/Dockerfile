@@ -1,10 +1,15 @@
 FROM debian:13.4
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV MISE_DATA_DIR=/opt/mise
-ENV MISE_CONFIG_DIR=/opt/mise
-ENV MISE_CACHE_DIR=/opt/mise/cache
-ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
+
+# Bake-time mise data dir: node/python/claude/codegraph install here, not at
+# the runtime path (/opt/mise) that the "extra tools" volume mounts over
+# later — same bake-vs-volume split as Claude's own config (see below).
+ENV MISE_DATA_DIR_BAKE=/opt/mise-baked
+ENV MISE_CONFIG_DIR=/opt/mise-config
+ENV MISE_DATA_DIR=${MISE_DATA_DIR_BAKE}
+ENV MISE_CACHE_DIR=${MISE_DATA_DIR_BAKE}/cache
+ENV PATH="${MISE_DATA_DIR_BAKE}/shims:${MISE_DATA_DIR_BAKE}/bin:${PATH}"
 
 # Install base dependencies
 RUN apt-get update \
@@ -47,9 +52,12 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && groupadd -g ${GROUP_ID} claude-user || true \
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
 
-# Create controlled workspace and config/cache dirs
-RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /opt/claude-config-baked \
-    && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise /opt/claude-config-baked
+# Create controlled workspace and config/cache dirs. /opt/mise is the
+# runtime-only mount point for the "extra tools" volume — created empty here
+# so a fresh volume starts clean; the entrypoint seeds it from
+# /opt/mise-baked on first run.
+RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /opt/claude-config-baked /opt/mise \
+    && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise-baked /opt/mise-config /opt/mise /opt/claude-config-baked
 
 USER claude-user
 WORKDIR /workspace
@@ -73,6 +81,15 @@ RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add ma
 # Claude Code reads marketplace/plugin-cache state straight from this seed dir
 # on every startup (read-only, additive) — no runtime merge script needed for it.
 ENV CLAUDE_CODE_PLUGIN_SEED_DIR=${CLAUDE_CONFIG_DIR_BAKE}/plugins
+
+# Switch to the runtime mise data dir: volume-backed (see claude-toolbox() in
+# executable_claude.zsh), so tools installed here (e.g. `mise use java@21`
+# for one project) persist across containers and across image rebuilds.
+# MISE_CONFIG_DIR keeps pointing at the baked, never-mounted /opt/mise-config,
+# so the pinned node/npm/python/claude/codegraph versions are never shadowed.
+ENV MISE_DATA_DIR=/opt/mise
+ENV MISE_CACHE_DIR=/opt/mise/cache
+ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 
