@@ -41,6 +41,17 @@ else
 fi
 mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
 
+# Badge the status line so it's obvious this session is in the container,
+# not on the host (which gets its own badge via run_onchange_claude_statusline.sh).
+# Idempotent: re-running the jq patch is harmless, but skip it once set so we
+# don't rewrite settings.json on every start.
+if ! jq -e '.statusLine.command // "" | contains("claude-statusline")' "${LIVE_CONFIG_DIR}/settings.json" >/dev/null 2>&1; then
+    jq --arg cmd "${HOME}/.local/bin/claude-statusline.sh '🐳 CONTAINER'" \
+        '.statusLine = {type: "command", command: $cmd}' \
+        "${LIVE_CONFIG_DIR}/settings.json" > "${LIVE_CONFIG_DIR}/settings.json.tmp"
+    mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
+fi
+
 # rtk's hook lands in the volume-backed settings.json and survives restarts;
 # skip the subprocess once it's already there instead of relying on rtk's own no-op check.
 if ! jq -e '(.hooks.PreToolUse // []) | any(.hooks[]?.command == "rtk hook claude")' \

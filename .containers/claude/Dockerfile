@@ -92,6 +92,7 @@ ENV MISE_CACHE_DIR=/opt/mise/cache
 ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
+ADD --chown=claude-user:claude-user --chmod=500 claude-statusline.sh /home/claude-user/.local/bin/claude-statusline.sh
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD /home/claude-user/setup-and-run-claude.sh
