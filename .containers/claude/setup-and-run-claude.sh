@@ -85,4 +85,8 @@ else
     codegraph init
 fi
 
-claude
+# "$@" is empty for the interactive claude-toolbox() flow (no command
+# override there, so this is a no-op); the host-side ~/.local/bin/claude
+# wrapper passes this script's own path as the podman command specifically so
+# this init still runs, then forwards its args here for the final claude call.
+exec claude "$@"

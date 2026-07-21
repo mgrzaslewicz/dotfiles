@@ -1,0 +1,53 @@
+#!/bin/bash
+# Makes claude-toolbox (see dot_oh-my-zsh/custom/executable_claude.zsh)
+# detectable as a normal `claude` install for host tools that spawn it as a
+# subprocess (e.g. OpenClaw's `claude -p ...`). Those tools look for a real
+# `claude` binary on PATH; a zsh function is invisible to anything that
+# doesn't go through an interactive zsh shell, so this is a real file instead.
+#
+# Deliberately does not guard against a real claude install appearing later:
+# relies on this script's directory being ordered after wherever a native
+# install would land in PATH, so a real binary just wins by normal PATH
+# resolution (decision trace: .scratch/claude-host-detection/).
+set -euo pipefail
+
+IMAGE_NAME="claude-toolbox:latest"
+VOLUME_NAME="claude-toolbox-config"
+VOLUME_JSON_NAME="claude-toolbox-config-json"
+VOLUME_MISE_NAME="claude-toolbox-mise"
+DOTFILES_DIR="${HOME}/.local/share/chezmoi"
+
+if ! podman image inspect "$IMAGE_NAME" >/dev/null 2>&1; then
+    podman build \
+        -t "$IMAGE_NAME" \
+        --build-arg USER_ID="$(id -u)" \
+        --build-arg GROUP_ID="$(id -g)" \
+        "$DOTFILES_DIR/.containers/claude" >&2
+fi
+
+podman volume create "$VOLUME_NAME" >/dev/null 2>&1 || true
+podman volume create "$VOLUME_JSON_NAME" >/dev/null 2>&1 || true
+podman volume create "$VOLUME_MISE_NAME" >/dev/null 2>&1 || true
+
+# Only request a pseudo-TTY when actually attached to one; a piped caller
+# (OpenClaw's `claude -p` with redirected stdin/stdout) would otherwise fail.
+TTY_FLAG="-i"
+if [ -t 0 ] && [ -t 1 ]; then
+    TTY_FLAG="-it"
+fi
+
+# Mount at the identical absolute path (not /workspace/$(basename "$PWD") as
+# claude-toolbox() does) so file paths claude reports back match real host
+# paths for callers that parse them.
+exec podman run \
+    --rm \
+    "$TTY_FLAG" \
+    --userns=keep-id \
+    -v "$PWD:$PWD:rw" \
+    -v "${VOLUME_NAME}:/home/claude-user/.claude:rw" \
+    -v "${VOLUME_JSON_NAME}:/home/claude-user/.claude-json-dir:rw" \
+    -v "${VOLUME_MISE_NAME}:/opt/mise:rw" \
+    --workdir "$PWD" \
+    --env TERM="${TERM:-xterm-256color}" \
+    "$IMAGE_NAME" \
+    /home/claude-user/setup-and-run-claude.sh "$@"
