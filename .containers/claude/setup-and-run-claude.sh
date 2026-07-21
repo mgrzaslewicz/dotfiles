@@ -52,6 +52,18 @@ if ! jq -e '.statusLine.command // "" | contains("claude-statusline")' "${LIVE_C
     mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
 fi
 
+# Default to auto permission mode: classifier-approved tool calls skip the
+# prompt and Claude stops pausing for clarifying questions. Chosen over
+# bypassPermissions because $PWD below is a read-write bind-mount to the real
+# host project, not an isolated volume, so the classifier's safety net still
+# matters here. Re-checked (not just filled once) every start so the default
+# can't silently drift if something else touches the live settings.json.
+if ! jq -e '.permissions.defaultMode == "auto"' "${LIVE_CONFIG_DIR}/settings.json" >/dev/null 2>&1; then
+    jq '.permissions.defaultMode = "auto"' \
+        "${LIVE_CONFIG_DIR}/settings.json" > "${LIVE_CONFIG_DIR}/settings.json.tmp"
+    mv "${LIVE_CONFIG_DIR}/settings.json.tmp" "${LIVE_CONFIG_DIR}/settings.json"
+fi
+
 # rtk's hook lands in the volume-backed settings.json and survives restarts;
 # skip the subprocess once it's already there instead of relying on rtk's own no-op check.
 if ! jq -e '(.hooks.PreToolUse // []) | any(.hooks[]?.command == "rtk hook claude")' \
