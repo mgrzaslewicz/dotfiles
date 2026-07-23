@@ -150,3 +150,46 @@ mkdir -p ... /home/claude-user/.ssh \
 `setup-and-run-claude.sh` needs no changes — env vars and mounted
 sockets/files just flow through `tini` → `exec claude "$@"` → any Bash-tool
 subprocess Claude spawns.
+
+## 5. Amendment: broken on macOS + podman machine
+
+Discovered after the above shipped: on macOS, `podman machine` runs containers
+inside a Linux VM, with the VM's filesystem shared from the host over
+virtiofs. Bind-mounting `$SSH_AUTH_SOCK` there fails outright --
+
+```
+Error: statfs /var/run/com.apple.launchd.PxraXfU4IZ/Listeners: no such file or directory
+```
+
+-- because macOS's `ssh-agent` socket is launchd-activated: it lives under a
+dynamic `/var/run/com.apple.launchd.*/Listeners/...` path that virtiofs can't
+pass an `statfs` through, unlike a normal file. This is a real, currently-open
+Podman limitation (containers/podman#23245, #23785), not something fixable by
+changing the mount path or flags. Unlike a merely-absent socket (which the
+existing `[ -S "$SSH_AUTH_SOCK" ]` check already tolerates), attempting this
+mount doesn't just skip SSH forwarding -- it fails the whole `podman run`, so
+the container never starts at all on macOS.
+
+**Immediate fix (this amendment):** skip the SSH_AUTH_SOCK mount entirely when
+the host is Darwin (`uname -s`), in both `claude-toolbox()` and the standalone
+`executable_claude` wrapper. Same "degrade silently" precedent as an absent
+socket: git identity + `~/.ssh/config`/`known_hosts` mounts still work, the
+container starts, only SSH-based git auth is unavailable. Rejected leaving it
+as-is: a container that refuses to start is strictly worse than one that
+starts without git push access, since every other feature (editing, local
+commits, non-git tool use) is blocked along with it.
+
+**Not done here, left for a follow-up:** a working forwarding path exists --
+relay over TCP instead of a bind-mounted socket, the same trick used for
+Docker Desktop's `host.docker.internal` ssh-agent forwarding: a `socat`
+listener on the macOS host bridges `$SSH_AUTH_SOCK` to a loopback TCP port,
+and a second `socat` inside the container bridges `host.containers.internal:
+<port>` back to a local unix socket that becomes `SSH_AUTH_SOCK`. Deferred
+because it needs `socat` baked into the Dockerfile, host-side process
+lifecycle management (start/reuse/clean up the relay across invocations), and
+changes to `setup-and-run-claude.sh` to start the container-side half before
+`exec claude` -- real scope, and it also modestly widens exposure (the
+relayed port becomes reachable by anything that can reach that podman
+machine's VM gateway, not just this one container). Revisit if losing SSH git
+auth on macOS becomes an active pain point rather than a degrade-gracefully
+case.

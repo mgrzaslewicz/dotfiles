@@ -52,7 +52,14 @@ claude-toolbox() {
   # repo/global override that references a host-only key path -- git falls
   # back to whatever the forwarded agent offers instead.
   SSH_MOUNT_ARGS=()
-  if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ]; then
+  # Skipped on macOS: podman machine runs containers in a Linux VM behind
+  # virtiofs, which can't bind-mount macOS's launchd-activated ssh-agent
+  # socket (statfs fails on the dynamic /var/run/com.apple.launchd.*/Listeners
+  # path) -- attempting it fails the whole container start, not just SSH
+  # access. Same "degrade silently" precedent as an absent socket: container
+  # still starts, just without git SSH auth (decision trace:
+  # .scratch/claude-container-git-ssh-access/).
+  if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ] && [ "$(uname -s)" != "Darwin" ]; then
     SSH_MOUNT_ARGS+=(-v "${SSH_AUTH_SOCK}:/tmp/ssh-agent.sock:rw" --env SSH_AUTH_SOCK=/tmp/ssh-agent.sock)
   fi
   if [ -f "${HOME}/.ssh/config" ]; then
