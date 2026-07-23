@@ -55,8 +55,12 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
 # Create controlled workspace and config/cache dirs. /opt/mise is the
 # runtime-only mount point for the "extra tools" volume — created empty here
 # so a fresh volume starts clean; the entrypoint seeds it from
-# /opt/mise-baked on first run.
-RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /opt/claude-config-baked /opt/mise \
+# /opt/mise-baked on first run. ~/.ssh is a mount anchor for the read-only
+# config/known_hosts bind mounts added at container launch (see
+# dot_local/bin/executable_claude / claude-toolbox()) — created here with the
+# permissions ssh expects so those mounts don't land root-owned.
+RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /home/claude-user/.ssh /opt/claude-config-baked /opt/mise \
+    && chmod 700 /home/claude-user/.ssh \
     && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise-baked /opt/mise-config /opt/mise /opt/claude-config-baked
 
 USER claude-user
