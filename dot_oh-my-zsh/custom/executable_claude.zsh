@@ -60,6 +60,23 @@ claude-toolbox() {
   # still starts, just without git SSH auth (decision trace:
   # .scratch/claude-container-git-ssh-access/).
   if [ -n "${SSH_AUTH_SOCK:-}" ] && [ -S "$SSH_AUTH_SOCK" ] && [ "$(uname -s)" != "Darwin" ]; then
+    # Agent identities don't survive a host reboot/agent restart, so reload
+    # every OpenSSH private key in ~/.ssh on each launch rather than relying
+    # on a prior manual `ssh-add` -- otherwise the forwarded socket has no
+    # identities and git push/pull fails inside the container. `</dev/null`
+    # makes a passphrase prompt fail fast instead of hanging when there's no
+    # controlling tty; already-loaded keys are a harmless no-op re-add. This
+    # widens the forwarded socket's reach to every key ssh-add can load, not
+    # just the one this repo uses.
+    for key_file in "${HOME}/.ssh"/*; do
+      [ -f "$key_file" ] || continue
+      case "$key_file" in
+        *.pub|*known_hosts*|*/config|*/authorized_keys) continue ;;
+      esac
+      if head -c 100 "$key_file" 2>/dev/null | grep -q "PRIVATE KEY"; then
+        ssh-add "$key_file" </dev/null >/dev/null 2>&1 || true
+      fi
+    done
     SSH_MOUNT_ARGS+=(-v "${SSH_AUTH_SOCK}:/tmp/ssh-agent.sock:rw" --env SSH_AUTH_SOCK=/tmp/ssh-agent.sock)
   fi
   if [ -f "${HOME}/.ssh/config" ]; then

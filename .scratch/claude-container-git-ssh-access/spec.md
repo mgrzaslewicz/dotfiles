@@ -193,3 +193,71 @@ relayed port becomes reachable by anything that can reach that podman
 machine's VM gateway, not just this one container). Revisit if losing SSH git
 auth on macOS becomes an active pain point rather than a degrade-gracefully
 case.
+
+
+## 6. Amendment: forwarded agent with zero loaded identities
+
+Discovered live, from inside a running container: `git push` failed with
+`Permission denied (publickey)` even though the socket forwarding from §2
+worked correctly (the container could reach the agent, and github.com's host
+key was already trusted via the mounted `known_hosts` — confirmed by `ssh -v`
+going straight to the publickey stage with no host-key prompt). Root cause,
+confirmed with `ssh-add -l` on both sides of the socket:
+`get_agent_identities: ssh_fetch_identitylist: agent contains no identities`
+— the host's ssh-agent process was live but had no keys loaded into it at
+the time the container was launched.
+
+This is a distinct failure mode from everything §2 already handles: a *live
+but empty* agent is not the same as *no socket* (`[ -S "$SSH_AUTH_SOCK" ]`
+passes either way) — forwarding succeeds, authentication still fails, and
+nothing in the existing degrade-silently logic surfaces or fixes it.
+
+**Fix:** since the mount is a direct pass-through of the host's actual agent
+process (not a copy), loading a key into the host agent takes effect for an
+already-running container immediately, no restart needed. Applied that as an
+auto-load step, in the same `if` guard as the socket mount (so it only runs
+when forwarding is actually going to happen — i.e. not on Darwin): scan
+`~/.ssh/*` for files whose content starts with `PRIVATE KEY` (skipping
+`*.pub`, `known_hosts*`, `config`, `authorized_keys`), and `ssh-add` each one
+before mounting the socket.
+
+```bash
+for key_file in "${HOME}/.ssh"/*; do
+    [ -f "$key_file" ] || continue
+    case "$key_file" in
+        *.pub|*known_hosts*|*/config|*/authorized_keys) continue ;;
+    esac
+    if head -c 100 "$key_file" 2>/dev/null | grep -q "PRIVATE KEY"; then
+        ssh-add "$key_file" </dev/null >/dev/null 2>&1 || true
+    fi
+done
+```
+
+`</dev/null` on the `ssh-add` call makes a passphrase prompt fail fast
+instead of hanging when there's no controlling tty — matters for
+`dot_local/bin/executable_claude`, which is explicitly also invoked
+non-interactively (see its own comments on `TTY_FLAG`). `|| true` on both the
+`grep -q` branch and the `ssh-add` call is required, not cosmetic: the
+standalone script runs under `set -euo pipefail`, and a bare
+`grep -q ... && ssh-add ...` as a statement would abort the whole script the
+first time a key doesn't match or fails to add. Re-adding an already-loaded
+key is a harmless no-op.
+
+**Accepted tradeoff, not fully resolved:** this widens what's reachable
+through the forwarded socket from *whatever keys the user happened to have
+manually `ssh-add`ed* to *every private key `ssh-add` can load from
+`~/.ssh`* — work keys, server-admin keys, anything, not just the one this
+repo's `core.sshCommand` names. That's a meaningfully larger blast radius
+under the same "LLM agent with file read/write access" threat model that
+justified agent-forwarding-over-key-mounting in §2 in the first place (the
+container still never sees raw key bytes, but it gains a live signing
+channel for keys that have nothing to do with this repo). Chosen anyway,
+explicitly, since the auto-load is scoped to "every key already sitting
+unencrypted-at-rest as a file the host user controls" — no new secret
+exposure, just broader agent reach. Revisit if a narrower/allowlisted scope
+becomes necessary (e.g. loading only the key implied by the current repo's
+`core.sshCommand`/remote host, if one is set).
+
+Applied identically to both `claude-toolbox()` in
+`dot_oh-my-zsh/custom/executable_claude.zsh` and the standalone
+`dot_local/bin/executable_claude` wrapper, same as §3.
