@@ -5,3 +5,6 @@
 .vscode
 composer.lock
 packages.lock
+.mcp.json
+.codegraph
+.claude
