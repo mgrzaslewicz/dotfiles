@@ -12,7 +12,12 @@ win_id="$(
 )"
 
 if [[ -z "$win_id" ]]; then
-  exec brave-browser
+  notify-send "Brave" "Starting…" || true
+  if command -v brave-browser >/dev/null 2>&1; then
+    exec brave-browser
+  else
+    exec flatpak run com.brave.Browser
+  fi
 fi
 
 is_focused="$(
