@@ -82,6 +82,13 @@ ENV CLAUDE_CONFIG_DIR_BAKE=/opt/claude-config-baked
 RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add mattpocock/skills \
     && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install mattpocock-skills@mattpocock
 
+RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add JuliusBrussee/caveman \
+    && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install caveman@caveman
+
+# Container-only default: lite. Env var, not a repo-committed .caveman.json —
+# a repo file would apply on the host too wherever this repo is checked out.
+ENV CAVEMAN_DEFAULT_MODE=lite
+
 # Claude Code reads marketplace/plugin-cache state straight from this seed dir
 # on every startup (read-only, additive) — no runtime merge script needed for it.
 ENV CLAUDE_CODE_PLUGIN_SEED_DIR=${CLAUDE_CONFIG_DIR_BAKE}/plugins
