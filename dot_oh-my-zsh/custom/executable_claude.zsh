@@ -116,3 +116,22 @@ claude-toolbox-reset () {
 claude-toolbox-reset-tools () {
   podman volume rm -f "$CLAUDE_TOOLBOX_VOLUME_MISE"
 }
+
+# Attaches a shell to an already-running claude-toolbox container. With fzf
+# installed and multiple containers running, prompts for pick; else grabs the
+# first match from `podman ps`.
+claude-toolbox-enter () {
+  local containers container
+  containers="$(podman ps --filter "ancestor=claude-toolbox:latest" --format '{{.ID}} {{.Names}} {{.Status}}')"
+  if [ -z "$containers" ]; then
+    echo "No running claude-toolbox container found." >&2
+    return 1
+  fi
+  if [ "$(echo "$containers" | wc -l)" -gt 1 ] && command -v fzf >/dev/null 2>&1; then
+    container="$(echo "$containers" | fzf --prompt="claude-toolbox container> " | awk '{print $1}')"
+    [ -n "$container" ] || return 1
+  else
+    container="$(echo "$containers" | head -n1 | awk '{print $1}')"
+  fi
+  podman exec -it "$container" bash
+}
