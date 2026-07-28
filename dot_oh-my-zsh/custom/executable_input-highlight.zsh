@@ -1,1 +1,1 @@
-zle_highlight=(default:bg=yellow,fg=black)
+zle_highlight=(default:bg=#eaff7f,fg=black)
