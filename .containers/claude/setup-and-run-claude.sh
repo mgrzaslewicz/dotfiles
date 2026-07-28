@@ -15,6 +15,30 @@ mkdir -p "${LIVE_CONFIG_DIR}" "${CLAUDE_JSON_DIR}"
 # an overwrite of one already there).
 mkdir -p "${MISE_DATA_DIR}"
 cp -rn "${MISE_DATA_DIR_BAKE}/." "${MISE_DATA_DIR}/"
+
+# cp -rn above is no-clobber, so on an existing volume a rebuilt image's
+# newer `latest`-pinned tool version (claude, codegraph, python, ...) gets
+# its version directory copied in, but the `latest` alias symlink — already
+# present from a prior run — is skipped and stays pointing at the old
+# version. Advance it to the baked target, but never regress a version a
+# live `mise use -g <tool>@latest` already installed at runtime (that alone
+# rewrites the volume's symlink immediately, and should survive restarts).
+# Best-effort: `set -e` is active, one odd tool must not block startup.
+for baked_latest in "${MISE_DATA_DIR_BAKE}"/installs/*/latest; do
+    [ -L "${baked_latest}" ] || continue
+    tool="$(basename "$(dirname "${baked_latest}")")"
+    baked_version="$(basename "$(readlink "${baked_latest}")")"
+    live_latest="${MISE_DATA_DIR}/installs/${tool}/latest"
+
+    if [ -L "${live_latest}" ]; then
+        live_version="$(basename "$(readlink "${live_latest}")")"
+        newest="$(printf '%s\n%s\n' "${live_version}" "${baked_version}" | sort -V | tail -1)"
+        [ "${newest}" = "${baked_version}" ] && [ "${live_version}" != "${baked_version}" ] || continue
+    fi
+
+    ln -sfn "./${baked_version}" "${live_latest}" 2>/dev/null || true
+done
+
 mise reshim
 
 # ~/.claude.json lives directly under $HOME, not under ~/.claude, so it needs
