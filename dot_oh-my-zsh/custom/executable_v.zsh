@@ -1,8 +1,12 @@
 # Non recursive current dir list
 v() {
   local selected
-  # -mindepth 1 eliminates '.'
-  selected=$(find . -maxdepth 1 -mindepth 1 | fzf)
+  if command -v fd >/dev/null 2>&1; then
+    selected=$(fd --max-depth 1 --hidden . | fzf)
+  else
+    # -mindepth 1 eliminates '.'
+    selected=$(find . -maxdepth 1 -mindepth 1 | fzf)
+  fi
 
   if [[ -n "$selected" ]]; then
     if [[ -d "$selected" ]]; then
@@ -18,7 +22,11 @@ v() {
 # Recursive current dir list
 vv() {
   local selected
-  selected=$(find . -maxdepth 8 -mindepth 1 | fzf)
+  if command -v fd >/dev/null 2>&1; then
+    selected=$(fd --max-depth 8 --hidden . | fzf)
+  else
+    selected=$(find . -maxdepth 8 -mindepth 1 | fzf)
+  fi
 
   if [[ -n "$selected" ]]; then
     if [[ -d "$selected" ]]; then
