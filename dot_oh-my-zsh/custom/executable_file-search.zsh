@@ -15,7 +15,7 @@ if command -v rg >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
     [[ -z "$picked" ]] && return
     file=$(cut -d: -f1 <<<"$picked")
     line=$(cut -d: -f2 <<<"$picked")
-    vi "$file" "+$line"
+    "${EDITOR:-vi}" "$file" "+$line"
   }
 fi
 
