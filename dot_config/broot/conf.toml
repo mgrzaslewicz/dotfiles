@@ -1,1 +1,9 @@
 default_flags = "h"
+
+[[verbs]]
+invocation = "edit"
+key = "ctrl-e"
+shortcut = "e"
+apply_to = "text_file"
+external = "${EDITOR:-vim} +{line} {file:space-separated}"
+leave_broot = false
