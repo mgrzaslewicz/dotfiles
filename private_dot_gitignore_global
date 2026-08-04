@@ -8,3 +8,4 @@ packages.lock
 .mcp.json
 .codegraph
 .claude
+.env
