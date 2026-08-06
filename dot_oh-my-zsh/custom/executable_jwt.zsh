@@ -15,3 +15,21 @@ jwtDecode() {
   printf '%s' "$payload" | base64 -d | jq
   echo
 }
+
+jwtDecodeClipboard() {
+  local clip
+  if command -v pbpaste >/dev/null 2>&1; then
+    clip=$(pbpaste)
+  elif [ -n "${WAYLAND_DISPLAY:-}" ] && command -v wl-paste >/dev/null 2>&1; then
+    clip=$(wl-paste)
+  elif command -v xclip >/dev/null 2>&1; then
+    clip=$(xclip -selection clipboard -o)
+  elif command -v xsel >/dev/null 2>&1; then
+    clip=$(xsel --clipboard --output)
+  else
+    echo "No clipboard tool found (need pbpaste, wl-paste, xclip, or xsel)" >&2
+    return 1
+  fi
+
+  jwtDecode "$clip"
+}
