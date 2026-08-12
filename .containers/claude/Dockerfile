@@ -28,8 +28,8 @@ RUN apt-get update \
 # Install mise, then install and activate latest Node.js
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
-RUN mise use --global node@26.1.0
-RUN mise use --global npm@11.12.1
+RUN mise use --global node@latest
+RUN mise use --global npm@latest
 RUN mise use --global python@latest
 RUN mise use --global aqua:colbymchenry/codegraph
 RUN mise use --global claude@latest
