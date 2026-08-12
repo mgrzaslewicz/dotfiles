@@ -79,8 +79,7 @@ RUN command -v rtk
 # Bake plugins/skills into a build-only path outside $HOME, so a runtime
 # volume mounted over ~/.claude never shadows them.
 ENV CLAUDE_CONFIG_DIR_BAKE=/opt/claude-config-baked
-RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add mattpocock/skills \
-    && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install mattpocock-skills@mattpocock
+RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install mattpocock-skills@mattpocock
 
 RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add JuliusBrussee/caveman \
     && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install caveman@caveman
