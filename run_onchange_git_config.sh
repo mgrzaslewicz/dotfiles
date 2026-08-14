@@ -9,7 +9,7 @@ git config --global push.autoSetupRemote true
 git config --global core.excludesfile ~/.gitignore_global
 git config --global core.commentChar ';'
 git config --global pager.branch false
-git config --global core.editor vim
+git config --global core.editor nvim
 
 git config --global user.email "mikolaj.grzaslewicz@gmail.com"
 git config --global user.name "Mikolaj Grzaslewicz"

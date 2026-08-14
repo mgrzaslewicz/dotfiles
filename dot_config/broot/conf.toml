@@ -5,5 +5,5 @@ invocation = "edit"
 key = "ctrl-e"
 shortcut = "e"
 apply_to = "text_file"
-external = "vim +{line} {file:space-separated}"
+external = "nvim +{line} {file:space-separated}"
 leave_broot = false

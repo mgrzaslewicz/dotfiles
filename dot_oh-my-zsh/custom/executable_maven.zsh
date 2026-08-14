@@ -1,7 +1,7 @@
 # maven
 alias mtc="mvn test-compile"
 alias mdep="mvn dependency:tree | tee /tmp/deptree"
-alias vmdep="vim /tmp/deptree"
+alias vmdep="$EDITOR /tmp/deptree"
 
 ## keep any file created for analyzing logs out of project folder
 ## aliases suffixed with *l mean show the log file
