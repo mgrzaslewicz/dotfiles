@@ -17,6 +17,7 @@ RUN apt-get update \
         curl \
         less \
         libatomic1 \
+        sudo \
         tini \
         # command line tools claude might use \
         git \
@@ -51,6 +52,15 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && if getent passwd ${USER_ID} ; then userdel -f $(getent passwd ${USER_ID} | cut -d: -f1) || true; fi \
     && groupadd -g ${GROUP_ID} claude-user || true \
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
+
+# Passwordless sudo, scoped to apt-get install/update only — lets an agent
+# install project-specific system deps (e.g. `playwright install --with-deps`,
+# which shells out to `sudo apt-get` itself) without granting broader root.
+# Package maintainer/post-install scripts still run as root regardless of
+# this scoping; that risk is inherent to apt and not closed by it.
+RUN echo 'claude-user ALL=(root) NOPASSWD: /usr/bin/apt-get install *, /usr/bin/apt-get update' > /etc/sudoers.d/claude-user \
+    && chmod 0440 /etc/sudoers.d/claude-user \
+    && visudo -c -f /etc/sudoers.d/claude-user
 
 # Create controlled workspace and config/cache dirs. /opt/mise is the
 # runtime-only mount point for the "extra tools" volume — created empty here
