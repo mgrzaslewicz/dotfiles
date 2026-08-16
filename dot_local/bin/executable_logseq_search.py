@@ -108,6 +108,10 @@ from pathlib import Path
 JOURNAL_DATE_FORMAT = "%Y_%m_%d"
 SKIPPED_DIR_NAMES = {"logseq", ".git"}
 
+# Matches the date at the start of a journal filename, tolerating trailing
+# junk like sync-conflict suffixes: "2026_01_07 (conflict 2026-...).md".
+JOURNAL_DATE_PREFIX_PATTERN = re.compile(r"^(\d{4}_\d{2}_\d{2})")
+
 # Matches `#tag` (no whitespace/brackets) or `[[tag]]` (anything but brackets,
 # so multi-word page references like [[some tag]] are captured whole).
 TAG_REFERENCE_PATTERN = re.compile(r"#([^\s\[\]]+)|\[\[([^\[\]]+)\]\]")
@@ -242,11 +246,17 @@ def find_context_blocks(
 
 
 def parse_journal_date(path: Path) -> date | None:
-    """The date encoded in path's filename, or None if it isn't a journal file."""
-    basename = path.name
-    date_part = basename[:-3] if basename.endswith(".md") else basename
+    """The date encoded in path's filename, or None if it isn't a journal file.
+
+    Matches a leading YYYY_MM_DD even when trailing junk follows it, so
+    sync-conflict copies (e.g. "2026_01_07 (conflict ...).md") are still
+    recognized as the journal entry they are.
+    """
+    match = JOURNAL_DATE_PREFIX_PATTERN.match(path.stem)
+    if match is None:
+        return None
     try:
-        return datetime.strptime(date_part, JOURNAL_DATE_FORMAT).date()
+        return datetime.strptime(match.group(1), JOURNAL_DATE_FORMAT).date()
     except ValueError:
         return None
 
@@ -510,6 +520,12 @@ class RecencyFilterTests(unittest.TestCase):
     def test_zero_days_keeps_only_newest_journal(self):
         result = filter_by_recency(self.JOURNALS, last_days=0)
         self.assertEqual(result, [Path("2025_01_10.md")])
+
+    def test_sync_conflict_copy_is_still_recognized_and_filtered(self):
+        conflict = Path("journals/2025_01_01 (conflict 2025-01-12-10-17-14).md")
+        files = [conflict] + self.JOURNALS
+        result = filter_by_recency(files, last_days=5)
+        self.assertNotIn(conflict, result)
 
     def test_no_op_when_no_journal_files_present(self):
         files = [Path("pages/example__page.md"), Path("pages/other.md")]
