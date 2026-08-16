@@ -49,6 +49,19 @@ By default, searching for "project" also matches "project/website"
 (hierarchical prefix match) since a sub-tag is conceptually part of its
 parent tag; pass --exact to require an exact match only.
 
+PAGE INCLUSION
+--------------
+Pass -ip/--include-page to also print the full content of the tag's own
+page file, if one exists. The tag is resolved to a filename by replacing
+"/" with "__" (Logseq's on-disk namespace encoding) and appending ".md";
+e.g. tag "example/page" resolves to "example__page.md". The lookup is
+case-insensitive and searches the same file set as the normal tag search
+(anywhere under the graph root, minus the skipped directories below). If
+no matching page file exists, the flag is a silent no-op. The page's
+content is appended after the normal per-file match output, in the same
+"<path>:<line>:<text>" format, printed line-by-line without filtering —
+so lines that also matched the tag directly may appear twice.
+
 GRAPH LOCATION
 --------------
 The graph root is taken from the LOGSEQ_GRAPH_DIR environment variable if
@@ -246,6 +259,24 @@ def resolve_graph_dir() -> Path:
     return Path.cwd()
 
 
+def page_filename_for_tag(tag: str) -> str:
+    """Logseq's on-disk filename for the page a tag refers to.
+
+    Namespace separators ("/") become "__"; everything else (including
+    spaces) is kept literal, matching how Logseq names page files itself.
+    """
+    return tag.replace("/", "__") + ".md"
+
+
+def find_page_file(files: list[Path], tag: str) -> Path | None:
+    """Find the file among `files` that is the page for `tag`, if any."""
+    target = page_filename_for_tag(tag).lower()
+    for path in files:
+        if path.name.lower() == target:
+            return path
+    return None
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         description="Search a Logseq graph for a tag, printing each matching "
@@ -258,12 +289,21 @@ def main(argv: list[str] | None = None) -> None:
         help="require an exact tag match; by default 'project' also matches "
         "hierarchical sub-tags like 'project/website'",
     )
+    parser.add_argument(
+        "-ip",
+        "--include-page",
+        action="store_true",
+        help="also print the full content of the tag's own page file, if one "
+        "exists (e.g. tag 'example/page' resolves to page file "
+        "'example__page.md')",
+    )
     args = parser.parse_args(argv)
 
     graph_dir = resolve_graph_dir()
     prefix_match = not args.exact
+    files = discover_markdown_files(graph_dir)
 
-    for path in discover_markdown_files(graph_dir):
+    for path in files:
         content = path.read_text(encoding="utf-8")
         matches = find_context_blocks(content, args.tag, prefix_match=prefix_match)
         if not matches:
@@ -271,6 +311,14 @@ def main(argv: list[str] | None = None) -> None:
         rel_path = path.relative_to(graph_dir)
         for line_no, text in matches:
             print(f"{rel_path}:{line_no}:{text}")
+
+    if args.include_page:
+        page_path = find_page_file(files, args.tag)
+        if page_path is not None:
+            content = page_path.read_text(encoding="utf-8")
+            rel_path = page_path.relative_to(graph_dir)
+            for line_no, text in enumerate(content.splitlines(), start=1):
+                print(f"{rel_path}:{line_no}:{text}")
 
 
 # ---------------------------------------------------------------------------
@@ -373,6 +421,27 @@ class FileDiscoveryTests(unittest.TestCase):
 
             found = [p.name for p in discover_markdown_files(root)]
             self.assertEqual(found, ["2025_01_15.md", "2025_02_10.md", "2025_03_01.md"])
+
+
+class PageResolutionTests(unittest.TestCase):
+    def test_slash_becomes_double_underscore(self):
+        self.assertEqual(page_filename_for_tag("example/page"), "example__page.md")
+
+    def test_multiple_slashes_and_spaces_kept_literal(self):
+        self.assertEqual(
+            page_filename_for_tag("my project/sub page"), "my project__sub page.md"
+        )
+
+    def test_no_slash_is_unchanged_besides_extension(self):
+        self.assertEqual(page_filename_for_tag("project"), "project.md")
+
+    def test_find_page_file_matches_case_insensitively(self):
+        files = [Path("pages/example__page.md"), Path("journals/2025_01_01.md")]
+        self.assertEqual(find_page_file(files, "Example/Page"), files[0])
+
+    def test_find_page_file_returns_none_when_absent(self):
+        files = [Path("journals/2025_01_01.md")]
+        self.assertIsNone(find_page_file(files, "example/page"))
 
 
 if __name__ == "__main__":
