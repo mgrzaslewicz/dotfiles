@@ -62,6 +62,16 @@ content is appended after the normal per-file match output, in the same
 "<path>:<line>:<text>" format, printed line-by-line without filtering —
 so lines that also matched the tag directly may appear twice.
 
+RECENCY FILTERING
+-----------------
+Pass -ld/--last-days N to only search journal entries from the last N days.
+The cutoff is anchored to the newest journal file actually found in the
+graph (not today's real date, since a vault may not be updated daily):
+cutoff = newest_journal_date - N days, and journal files older than that
+are dropped before searching. Page files have no date and are always
+searched regardless of this flag. If the graph has no journal files at
+all, the flag is a no-op.
+
 GRAPH LOCATION
 --------------
 The graph root is taken from the LOGSEQ_GRAPH_DIR environment variable if
@@ -92,7 +102,7 @@ import sys
 import textwrap
 import unittest
 from dataclasses import dataclass, field
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 JOURNAL_DATE_FORMAT = "%Y_%m_%d"
@@ -231,13 +241,40 @@ def find_context_blocks(
     return results
 
 
-def file_sort_key(path: Path) -> date:
+def parse_journal_date(path: Path) -> date | None:
+    """The date encoded in path's filename, or None if it isn't a journal file."""
     basename = path.name
     date_part = basename[:-3] if basename.endswith(".md") else basename
     try:
         return datetime.strptime(date_part, JOURNAL_DATE_FORMAT).date()
     except ValueError:
-        return datetime.fromtimestamp(path.stat().st_mtime).date()
+        return None
+
+
+def file_sort_key(path: Path) -> date:
+    journal_date = parse_journal_date(path)
+    if journal_date is not None:
+        return journal_date
+    return datetime.fromtimestamp(path.stat().st_mtime).date()
+
+
+def filter_by_recency(files: list[Path], last_days: int) -> list[Path]:
+    """Drop journal files older than `last_days` before the newest journal found.
+
+    Page files (no parseable journal date) are always kept. If no journal
+    files are present at all, there's nothing to anchor "newest" to, so the
+    filter is a no-op.
+    """
+    journal_dates = [d for d in (parse_journal_date(p) for p in files) if d is not None]
+    if not journal_dates:
+        return files
+    cutoff = max(journal_dates) - timedelta(days=last_days)
+    kept = []
+    for path in files:
+        journal_date = parse_journal_date(path)
+        if journal_date is None or journal_date >= cutoff:
+            kept.append(path)
+    return kept
 
 
 def discover_markdown_files(graph_dir: Path) -> list[Path]:
@@ -297,11 +334,22 @@ def main(argv: list[str] | None = None) -> None:
         "exists (e.g. tag 'example/page' resolves to page file "
         "'example__page.md')",
     )
+    parser.add_argument(
+        "-ld",
+        "--last-days",
+        type=int,
+        metavar="N",
+        help="only search journal entries from the last N days (relative to "
+        "the newest journal file found, not today's real date); page files "
+        "are always searched regardless of this flag",
+    )
     args = parser.parse_args(argv)
 
     graph_dir = resolve_graph_dir()
     prefix_match = not args.exact
     files = discover_markdown_files(graph_dir)
+    if args.last_days is not None:
+        files = filter_by_recency(files, args.last_days)
 
     for path in files:
         content = path.read_text(encoding="utf-8")
@@ -442,6 +490,30 @@ class PageResolutionTests(unittest.TestCase):
     def test_find_page_file_returns_none_when_absent(self):
         files = [Path("journals/2025_01_01.md")]
         self.assertIsNone(find_page_file(files, "example/page"))
+
+
+class RecencyFilterTests(unittest.TestCase):
+    JOURNALS = [
+        Path("2025_01_01.md"),
+        Path("2025_01_05.md"),
+        Path("2025_01_10.md"),
+    ]
+
+    def test_drops_journals_older_than_cutoff_relative_to_newest(self):
+        files = self.JOURNALS + [Path("pages/example__page.md")]
+        result = filter_by_recency(files, last_days=5)
+        self.assertEqual(
+            result,
+            [Path("2025_01_05.md"), Path("2025_01_10.md"), Path("pages/example__page.md")],
+        )
+
+    def test_zero_days_keeps_only_newest_journal(self):
+        result = filter_by_recency(self.JOURNALS, last_days=0)
+        self.assertEqual(result, [Path("2025_01_10.md")])
+
+    def test_no_op_when_no_journal_files_present(self):
+        files = [Path("pages/example__page.md"), Path("pages/other.md")]
+        self.assertEqual(filter_by_recency(files, last_days=3), files)
 
 
 if __name__ == "__main__":
