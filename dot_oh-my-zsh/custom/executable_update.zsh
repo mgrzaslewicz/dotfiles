@@ -17,7 +17,7 @@ upall() {
 
   if command -v brew &> /dev/null; then
     brew update
-    brew upgrade -greedy --no-ask
+    brew upgrade --greedy --no-ask
   fi
 }
 
