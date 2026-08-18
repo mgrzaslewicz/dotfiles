@@ -82,6 +82,9 @@ ENV HOME=/home/claude-user
 ENV XDG_CONFIG_HOME=/home/claude-user/.config
 ENV XDG_CACHE_HOME=/home/claude-user/.cache
 
+ADD --chown=claude-user:claude-user --chmod=644 CONTAINER.md /home/claude-user/.claude/CONTAINER.md
+ADD --chown=claude-user:claude-user --chmod=644 CLAUDE.md /home/claude-user/.claude/CLAUDE.md
+
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
 ENV PATH="$HOME/.local/bin:$PATH"
 RUN command -v rtk
