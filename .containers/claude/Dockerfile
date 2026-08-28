@@ -40,6 +40,25 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Debian's newuidmap/newgidmap (uidmap package) rely only on the classic
+# setuid-root bit for privilege, no file capabilities. That bit doesn't grant
+# CAP_SETUID/CAP_SETGID inside this already-namespaced container (verified:
+# a plain `unshare --user` + `newuidmap <pid> 0 100000 65536` fails
+# "Operation not permitted" here even though the calling shell's own
+# capability bounding set includes cap_setuid/cap_setgid) — Debian's shadow
+# build expects real file capabilities, not the setuid fallback. Granting
+# them explicitly via setcap fixes nested rootless podman's own
+# newuidmap/newgidmap calls. libcap2-bin is build-only (needed for setcap
+# itself, not at runtime).
+RUN apt-get update \
+    && apt install -y libcap2-bin \
+    && setcap cap_setuid=ep /usr/bin/newuidmap \
+    && setcap cap_setgid=ep /usr/bin/newgidmap \
+    && apt-get purge -y libcap2-bin \
+    && apt-get autoremove -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
 # Install mise, then install and activate latest Node.js
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
