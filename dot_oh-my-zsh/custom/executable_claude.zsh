@@ -96,10 +96,14 @@ claude-toolbox() {
     FUSE_DEVICE_ARGS+=(--device /dev/fuse)
   fi
 
+  # --userns=keep-id alone only maps the host uid; nested rootless podman
+  # needs the claude-user subuid/subgid range (100000-165535, see Dockerfile)
+  # also present in this namespace, or its newuidmap fails "Operation not
+  # permitted". size= extends the namespace to cover it.
   podman run \
     -it \
     --rm \
-    --userns=keep-id \
+    --userns=keep-id:size=200000 \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
