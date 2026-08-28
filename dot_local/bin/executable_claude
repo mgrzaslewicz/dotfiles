@@ -107,6 +107,15 @@ if [ -f "${HOME}/.ssh/known_hosts" ]; then
 fi
 SSH_MOUNT_ARGS+=(--env "GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/home/claude-user/.ssh/known_hosts:/home/claude-user/.ssh/known_hosts.local -o StrictHostKeyChecking=accept-new")
 
+# Nested rootless podman inside the toolbox (build/run/test containers)
+# needs /dev/fuse for fuse-overlayfs-backed storage. Guarded like the SSH
+# mounts above: skip rather than fail container start on a host that
+# doesn't expose it (e.g. some podman-machine setups).
+FUSE_DEVICE_ARGS=()
+if [ -e /dev/fuse ]; then
+    FUSE_DEVICE_ARGS+=(--device /dev/fuse)
+fi
+
 # Mount at the identical absolute path (not /workspace/$(basename "$PWD") as
 # claude-toolbox() does) so file paths claude reports back match real host
 # paths for callers that parse them.
@@ -120,6 +129,7 @@ exec podman run \
     -v "${VOLUME_MISE_NAME}:/opt/mise:rw" \
     "${GIT_ENV_ARGS[@]}" \
     "${SSH_MOUNT_ARGS[@]}" \
+    "${FUSE_DEVICE_ARGS[@]}" \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
     "$IMAGE_NAME" \

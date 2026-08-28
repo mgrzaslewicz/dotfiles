@@ -25,6 +25,20 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+# Nested rootless podman, for building/running/testing containers from
+# within the toolbox. fuse-overlayfs backs storage (no native
+# overlay-on-overlay support for a rootless container inside a rootless
+# container); slirp4netns gives the nested containers networking; uidmap
+# supplies newuidmap/newgidmap for the nested user namespace.
+RUN apt-get update \
+    && apt install -y \
+        podman \
+        podman-compose \
+        fuse-overlayfs \
+        slirp4netns \
+        uidmap \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # Install mise, then install and activate latest Node.js
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
@@ -53,6 +67,10 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && groupadd -g ${GROUP_ID} claude-user || true \
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
 
+# Subordinate UID/GID range for claude-user, required for nested rootless
+# podman to build its own user namespace inside the container.
+RUN usermod --add-subuids 100000-165535 --add-subgids 100000-165535 claude-user
+
 # Passwordless sudo, scoped to apt-get install/update only — lets an agent
 # install project-specific system deps (e.g. `playwright install --with-deps`,
 # which shells out to `sudo apt-get` itself) without granting broader root.
@@ -72,6 +90,14 @@ RUN echo 'claude-user ALL=(root) NOPASSWD: /usr/bin/apt-get install *, /usr/bin/
 RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /home/claude-user/.ssh /opt/claude-config-baked /opt/mise \
     && chmod 700 /home/claude-user/.ssh \
     && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise-baked /opt/mise-config /opt/mise /opt/claude-config-baked
+
+# Rootless-in-rootless podman config: fuse-overlayfs backs storage, and
+# cgroupfs is the only manager available since there's no systemd/session
+# manager inside this image. Applies to claude-user's rootless podman too —
+# rootless falls back to this system file when no user-level override exists.
+RUN mkdir -p /etc/containers \
+    && printf '[storage]\ndriver = "overlay"\n\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' > /etc/containers/storage.conf \
+    && printf '[engine]\ncgroup_manager = "cgroupfs"\n' > /etc/containers/containers.conf
 
 USER claude-user
 WORKDIR /workspace

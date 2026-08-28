@@ -87,6 +87,15 @@ claude-toolbox() {
   fi
   SSH_MOUNT_ARGS+=(--env "GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/home/claude-user/.ssh/known_hosts:/home/claude-user/.ssh/known_hosts.local -o StrictHostKeyChecking=accept-new")
 
+  # Nested rootless podman inside the toolbox (build/run/test containers)
+  # needs /dev/fuse for fuse-overlayfs-backed storage. Guarded like the SSH
+  # mounts above: skip rather than fail container start on a host that
+  # doesn't expose it (e.g. some podman-machine setups).
+  FUSE_DEVICE_ARGS=()
+  if [ -e /dev/fuse ]; then
+    FUSE_DEVICE_ARGS+=(--device /dev/fuse)
+  fi
+
   podman run \
     -it \
     --rm \
@@ -97,6 +106,7 @@ claude-toolbox() {
     -v "${CLAUDE_TOOLBOX_VOLUME_MISE}:/opt/mise:rw" \
     "${GIT_ENV_ARGS[@]}" \
     "${SSH_MOUNT_ARGS[@]}" \
+    "${FUSE_DEVICE_ARGS[@]}" \
     --workdir "/workspace/$(basename "$PWD")" \
     --env TERM="${TERM:-xterm-256color}" \
     claude-toolbox:latest
