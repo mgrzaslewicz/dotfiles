@@ -29,7 +29,10 @@ RUN apt-get update \
 # within the toolbox. fuse-overlayfs backs storage (no native
 # overlay-on-overlay support for a rootless container inside a rootless
 # container); slirp4netns gives the nested containers networking; uidmap
-# supplies newuidmap/newgidmap for the nested user namespace.
+# supplies newuidmap/newgidmap for the nested user namespace; libcap2-bin
+# (setcap) stays installed permanently, not build-only — the entrypoint
+# needs it every container start, not just at image build (see
+# fix-nested-podman-and-run.sh).
 RUN apt-get update \
     && apt install -y \
         podman \
@@ -37,6 +40,7 @@ RUN apt-get update \
         fuse-overlayfs \
         slirp4netns \
         uidmap \
+        libcap2-bin \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -144,13 +148,14 @@ ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 ADD --chown=claude-user:claude-user --chmod=500 claude-statusline.sh /home/claude-user/.local/bin/claude-statusline.sh
 
-# newuidmap/newgidmap privilege (setuid or file-capability) is meaningless if
-# granted at build time: it's checked against the uid that owns the running
-# container's OWN user namespace (its ns-uid 0), and --userns=keep-id (see
-# executable_claude) deliberately makes that NOT match the identity the image
-# was built under — the kernel's rootid/kuid check on both mechanisms then
-# fails "Operation not permitted", no matter which mechanism is used. Fixing
-# it at build time was the bug in the last two commits; the actual fix is to
+# newuidmap/newgidmap's file-capability privilege is meaningless if granted
+# at build time: the kernel checks it via a rootid match against the uid
+# that owns the running container's OWN user namespace (its ns-uid 0), and
+# --userns=keep-id (see executable_claude) deliberately makes that NOT match
+# the identity the image was built under, so the check fails "Operation not
+# permitted" regardless of mechanism (setuid can't work at any point either,
+# for a different reason — see fix-nested-podman-and-run.sh). Fixing it at
+# build time was the bug in the last two commits; the actual fix is to
 # re-grant it fresh at container *start*, as that specific container's own
 # real root, which is self-consistent by construction. Requires the container
 # to still start as root — see fix-nested-podman-and-run.sh.
