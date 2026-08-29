@@ -77,6 +77,14 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && groupadd -g ${GROUP_ID} claude-user || true \
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
 
+# useradd auto-assigns claude-user a default subuid/subgid range on its own
+# (Debian's login.defs SUB*_MIN/COUNT), with no explicit --add-subuids
+# needed to get one. That silently undid the single-identity-mapping intent
+# above: podman's userns=keep-id default still greedily consumes any subuid
+# entry it finds, pulling newuidmap back in and hitting the exact same wall.
+# Strip it so single-identity mapping is what actually happens.
+RUN sed -i '/^claude-user:/d' /etc/subuid /etc/subgid
+
 # Passwordless sudo, scoped to apt-get install/update only — lets an agent
 # install project-specific system deps (e.g. `playwright install --with-deps`,
 # which shells out to `sudo apt-get` itself) without granting broader root.
