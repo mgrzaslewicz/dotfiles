@@ -12,6 +12,7 @@ Running in containerized environment.
 - **podman** / **podman-compose**: build, run, and test containers (rootless-in-rootless)
   - Storage is ephemeral: wiped every container restart, nothing persists across sessions
   - Public registries only (docker.io, ghcr.io, quay.io, etc.) — no private registry credentials are configured
+  - Single-identity mapping only (no subuid range, no newuidmap): a container you run here doesn't get its own separate root user — its "root" is just this same claude-user identity. Fine for a normal build/run/test cycle; a Dockerfile that relies on `USER` switching to a genuinely different uid, or that needs many distinct uids, won't work as expected.
 
 ## Constraints
 

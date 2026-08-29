@@ -119,15 +119,10 @@ fi
 # Mount at the identical absolute path (not /workspace/$(basename "$PWD") as
 # claude-toolbox() does) so file paths claude reports back match real host
 # paths for callers that parse them.
-#
-# --userns=keep-id alone only maps the host uid; nested rootless podman needs
-# the claude-user subuid/subgid range (100000-165535, see Dockerfile) also
-# present in this namespace, or its newuidmap fails "Operation not
-# permitted". size= extends the namespace to cover it.
 exec podman run \
     --rm \
     "$TTY_FLAG" \
-    --userns=keep-id:size=200000 \
+    --userns=keep-id \
     -v "$PWD:$PWD:rw" \
     -v "${VOLUME_NAME}:/home/claude-user/.claude:rw" \
     -v "${VOLUME_JSON_NAME}:/home/claude-user/.claude-json-dir:rw" \
@@ -138,4 +133,4 @@ exec podman run \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
     "$IMAGE_NAME" \
-    /usr/local/bin/fix-nested-podman-and-run.sh "$@"
+    /home/claude-user/setup-and-run-claude.sh "$@"

@@ -28,19 +28,25 @@ RUN apt-get update \
 # Nested rootless podman, for building/running/testing containers from
 # within the toolbox. fuse-overlayfs backs storage (no native
 # overlay-on-overlay support for a rootless container inside a rootless
-# container); slirp4netns gives the nested containers networking; uidmap
-# supplies newuidmap/newgidmap for the nested user namespace; libcap2-bin
-# (setcap) stays installed permanently, not build-only — the entrypoint
-# needs it every container start, not just at image build (see
-# fix-nested-podman-and-run.sh).
+# container); slirp4netns gives the nested containers networking.
+#
+# Deliberately single-identity mapping only (containers.conf below sets
+# userns=keep-id as the default) — no uidmap/newuidmap/newgidmap, no subuid
+# range. A privileged multi-entry mapping (newuidmap writing a subuid range)
+# was tried extensively and never worked under this outer container's own
+# --userns=keep-id, for kernel reasons that hold regardless of *when*
+# newuidmap's privilege is granted (build time or container-start time, both
+# tried, both failed identically — see git history). Single-identity mapping
+# needs no helper/privilege at all (unshare --user alone is unprivileged and
+# always works), at the cost of nested containers having no separate root
+# identity of their own — fine for the build/run/test use case this exists
+# for, not a general-purpose nested podman.
 RUN apt-get update \
     && apt install -y \
         podman \
         podman-compose \
         fuse-overlayfs \
         slirp4netns \
-        uidmap \
-        libcap2-bin \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -71,10 +77,6 @@ RUN if getent group ${GROUP_ID} ; then groupdel $(getent group ${GROUP_ID} | cut
     && groupadd -g ${GROUP_ID} claude-user || true \
     && useradd -l -u ${USER_ID} -g ${GROUP_ID} -m -s /bin/bash claude-user
 
-# Subordinate UID/GID range for claude-user, required for nested rootless
-# podman to build its own user namespace inside the container.
-RUN usermod --add-subuids 100000-165535 --add-subgids 100000-165535 claude-user
-
 # Passwordless sudo, scoped to apt-get install/update only — lets an agent
 # install project-specific system deps (e.g. `playwright install --with-deps`,
 # which shells out to `sudo apt-get` itself) without granting broader root.
@@ -95,13 +97,16 @@ RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /home
     && chmod 700 /home/claude-user/.ssh \
     && chown -R claude-user:claude-user /workspace /home/claude-user /opt/mise-baked /opt/mise-config /opt/mise /opt/claude-config-baked
 
-# Rootless-in-rootless podman config: fuse-overlayfs backs storage, and
-# cgroupfs is the only manager available since there's no systemd/session
-# manager inside this image. Applies to claude-user's rootless podman too —
-# rootless falls back to this system file when no user-level override exists.
+# Rootless-in-rootless podman config: fuse-overlayfs backs storage, cgroupfs
+# is the only manager available since there's no systemd/session manager
+# inside this image, and userns=keep-id makes single-identity mapping (no
+# newuidmap/subuid range — see the apt install above) the default for every
+# nested `podman run`/`build`, not just ones that remember to pass the flag.
+# Applies to claude-user's rootless podman too — rootless falls back to this
+# system file when no user-level override exists.
 RUN mkdir -p /etc/containers \
     && printf '[storage]\ndriver = "overlay"\n\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' > /etc/containers/storage.conf \
-    && printf '[engine]\ncgroup_manager = "cgroupfs"\n' > /etc/containers/containers.conf
+    && printf '[engine]\ncgroup_manager = "cgroupfs"\n\n[containers]\nuserns = "keep-id"\n' > /etc/containers/containers.conf
 
 USER claude-user
 WORKDIR /workspace
@@ -148,19 +153,5 @@ ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 ADD --chown=claude-user:claude-user --chmod=500 claude-statusline.sh /home/claude-user/.local/bin/claude-statusline.sh
 
-# newuidmap/newgidmap's file-capability privilege is meaningless if granted
-# at build time: the kernel checks it via a rootid match against the uid
-# that owns the running container's OWN user namespace (its ns-uid 0), and
-# --userns=keep-id (see executable_claude) deliberately makes that NOT match
-# the identity the image was built under, so the check fails "Operation not
-# permitted" regardless of mechanism (setuid can't work at any point either,
-# for a different reason — see fix-nested-podman-and-run.sh). Fixing it at
-# build time was the bug in the last two commits; the actual fix is to
-# re-grant it fresh at container *start*, as that specific container's own
-# real root, which is self-consistent by construction. Requires the container
-# to still start as root — see fix-nested-podman-and-run.sh.
-ADD --chown=root:root --chmod=500 fix-nested-podman-and-run.sh /usr/local/bin/fix-nested-podman-and-run.sh
-USER root
-
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD /usr/local/bin/fix-nested-podman-and-run.sh
+CMD /home/claude-user/setup-and-run-claude.sh

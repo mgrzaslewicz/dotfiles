@@ -96,14 +96,10 @@ claude-toolbox() {
     FUSE_DEVICE_ARGS+=(--device /dev/fuse)
   fi
 
-  # --userns=keep-id alone only maps the host uid; nested rootless podman
-  # needs the claude-user subuid/subgid range (100000-165535, see Dockerfile)
-  # also present in this namespace, or its newuidmap fails "Operation not
-  # permitted". size= extends the namespace to cover it.
   podman run \
     -it \
     --rm \
-    --userns=keep-id:size=200000 \
+    --userns=keep-id \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
@@ -147,9 +143,5 @@ claude-toolbox-enter () {
   else
     container="$(echo "$containers" | head -n1 | awk '{print $1}')"
   fi
-  # --user: the container's own default user is root now (see Dockerfile —
-  # needed so the entrypoint can re-grant newuidmap/newgidmap privilege fresh
-  # on each start before dropping to claude-user); without this the debug
-  # shell would land as root instead of the usual claude-user.
-  podman exec -it --user claude-user "$container" bash
+  podman exec -it "$container" bash
 }
