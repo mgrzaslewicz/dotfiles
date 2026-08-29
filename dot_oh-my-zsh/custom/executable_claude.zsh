@@ -96,10 +96,20 @@ claude-toolbox() {
     FUSE_DEVICE_ARGS+=(--device /dev/fuse)
   fi
 
+  # --cap-add=SYS_ADMIN: podman's own default capability set excludes it, and
+  # a capability absent here can never be granted to anything nested inside,
+  # no matter how that nested container maps identities — a namespace's
+  # capability bounding set is a hard ceiling, not something unshare can
+  # lift. Without it, crun can't even mount a fresh /proc for a nested
+  # container ("mount proc to proc: Operation not permitted"). Standard,
+  # expected requirement for podman/docker-in-docker, not container
+  # escalation: it widens what THIS outer container can do, not what it's
+  # isolated from.
   podman run \
     -it \
     --rm \
     --userns=keep-id \
+    --cap-add=SYS_ADMIN \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
