@@ -50,10 +50,21 @@ RUN apt-get update \
 # them explicitly via setcap fixes nested rootless podman's own
 # newuidmap/newgidmap calls. libcap2-bin is build-only (needed for setcap
 # itself, not at runtime).
+#
+# Setcap alone still left the pre-existing setuid-root bit (4755) on both
+# binaries. Setuid-root *and* file capabilities together on the same file
+# is a known landmine for nested user namespaces: newuidmap kept failing
+# with "open of uid_map failed: Permission denied" (not the "Operation not
+# permitted" above — a different failure, hit only once both setuid and
+# fcap were present) until the setuid bit was stripped, leaving fcap as the
+# sole privilege source. Matches the widely-confirmed fix in
+# https://github.com/containers/podman/discussions/20386 (same exact error
+# string, multiple independent reporters, top community answer).
 RUN apt-get update \
     && apt install -y libcap2-bin \
     && setcap cap_setuid=ep /usr/bin/newuidmap \
     && setcap cap_setgid=ep /usr/bin/newgidmap \
+    && chmod -s /usr/bin/newuidmap /usr/bin/newgidmap \
     && apt-get purge -y libcap2-bin \
     && apt-get autoremove -y \
     && apt-get clean \
