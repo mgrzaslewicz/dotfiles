@@ -40,36 +40,6 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Debian's newuidmap/newgidmap (uidmap package) rely only on the classic
-# setuid-root bit for privilege, no file capabilities. That bit doesn't grant
-# CAP_SETUID/CAP_SETGID inside this already-namespaced container (verified:
-# a plain `unshare --user` + `newuidmap <pid> 0 100000 65536` fails
-# "Operation not permitted" here even though the calling shell's own
-# capability bounding set includes cap_setuid/cap_setgid) — Debian's shadow
-# build expects real file capabilities, not the setuid fallback. Granting
-# them explicitly via setcap fixes nested rootless podman's own
-# newuidmap/newgidmap calls. libcap2-bin is build-only (needed for setcap
-# itself, not at runtime).
-#
-# Setcap alone still left the pre-existing setuid-root bit (4755) on both
-# binaries. Setuid-root *and* file capabilities together on the same file
-# is a known landmine for nested user namespaces: newuidmap kept failing
-# with "open of uid_map failed: Permission denied" (not the "Operation not
-# permitted" above — a different failure, hit only once both setuid and
-# fcap were present) until the setuid bit was stripped, leaving fcap as the
-# sole privilege source. Matches the widely-confirmed fix in
-# https://github.com/containers/podman/discussions/20386 (same exact error
-# string, multiple independent reporters, top community answer).
-RUN apt-get update \
-    && apt install -y libcap2-bin \
-    && setcap cap_setuid=ep /usr/bin/newuidmap \
-    && setcap cap_setgid=ep /usr/bin/newgidmap \
-    && chmod -s /usr/bin/newuidmap /usr/bin/newgidmap \
-    && apt-get purge -y libcap2-bin \
-    && apt-get autoremove -y \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
 # Install mise, then install and activate latest Node.js
 ENV MISE_INSTALL_PATH="/usr/local/bin/mise"
 RUN curl https://mise.run | sh
@@ -174,5 +144,18 @@ ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 ADD --chown=claude-user:claude-user --chmod=500 claude-statusline.sh /home/claude-user/.local/bin/claude-statusline.sh
 
+# newuidmap/newgidmap privilege (setuid or file-capability) is meaningless if
+# granted at build time: it's checked against the uid that owns the running
+# container's OWN user namespace (its ns-uid 0), and --userns=keep-id (see
+# executable_claude) deliberately makes that NOT match the identity the image
+# was built under — the kernel's rootid/kuid check on both mechanisms then
+# fails "Operation not permitted", no matter which mechanism is used. Fixing
+# it at build time was the bug in the last two commits; the actual fix is to
+# re-grant it fresh at container *start*, as that specific container's own
+# real root, which is self-consistent by construction. Requires the container
+# to still start as root — see fix-nested-podman-and-run.sh.
+ADD --chown=root:root --chmod=500 fix-nested-podman-and-run.sh /usr/local/bin/fix-nested-podman-and-run.sh
+USER root
+
 ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD /home/claude-user/setup-and-run-claude.sh
+CMD /usr/local/bin/fix-nested-podman-and-run.sh

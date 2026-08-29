@@ -138,4 +138,4 @@ exec podman run \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
     "$IMAGE_NAME" \
-    /home/claude-user/setup-and-run-claude.sh "$@"
+    /usr/local/bin/fix-nested-podman-and-run.sh "$@"

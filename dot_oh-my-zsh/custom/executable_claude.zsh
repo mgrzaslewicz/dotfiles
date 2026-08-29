@@ -147,5 +147,9 @@ claude-toolbox-enter () {
   else
     container="$(echo "$containers" | head -n1 | awk '{print $1}')"
   fi
-  podman exec -it "$container" bash
+  # --user: the container's own default user is root now (see Dockerfile —
+  # needed so the entrypoint can re-grant newuidmap/newgidmap privilege fresh
+  # on each start before dropping to claude-user); without this the debug
+  # shell would land as root instead of the usual claude-user.
+  podman exec -it --user claude-user "$container" bash
 }
