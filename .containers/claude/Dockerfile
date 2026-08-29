@@ -110,10 +110,17 @@ RUN mkdir -p /workspace /home/claude-user/.config /home/claude-user/.cache /home
 # inside this image, and userns=keep-id makes single-identity mapping (no
 # newuidmap/subuid range — see the apt install above) the default for every
 # nested `podman run`/`build`, not just ones that remember to pass the flag.
+# ignore_chown_errors: single-identity mapping means only claude-user's own
+# uid exists in the namespace, so extracting a pulled image layer that
+# chowns a file to any other uid (e.g. busybox's /home, owned by nobody
+# 65534) fails outright otherwise — this is the standard, documented
+# workaround for that exact combination (rootless + single mapping +
+# images with multiple uids): skip the chown instead of erroring, so the
+# file just ends up owned by whichever uid unpacked it.
 # Applies to claude-user's rootless podman too — rootless falls back to this
 # system file when no user-level override exists.
 RUN mkdir -p /etc/containers \
-    && printf '[storage]\ndriver = "overlay"\n\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' > /etc/containers/storage.conf \
+    && printf '[storage]\ndriver = "overlay"\n\n[storage.options]\nignore_chown_errors = "true"\n\n[storage.options.overlay]\nmount_program = "/usr/bin/fuse-overlayfs"\n' > /etc/containers/storage.conf \
     && printf '[engine]\ncgroup_manager = "cgroupfs"\n\n[containers]\nuserns = "keep-id"\n' > /etc/containers/containers.conf
 
 USER claude-user
