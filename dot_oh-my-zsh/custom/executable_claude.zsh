@@ -105,24 +105,11 @@ claude-toolbox() {
   # expected requirement for podman/docker-in-docker, not container
   # escalation: it widens what THIS outer container can do, not what it's
   # isolated from.
-  #
-  # --sysctl net.ipv4.ping_group_range: podman/runc always mount /proc/sys
-  # read-only by default, separately from capabilities — SYS_ADMIN alone
-  # doesn't undo it, only requesting a specific sysctl does, and only at
-  # THIS (outer) container's own launch: that read-only decision is made
-  # once here and nothing inside can undo it afterward, including a nested
-  # `podman run --sysctl ...` (tried, still fails). crun unconditionally
-  # tries to write this path for every container it creates, networked or
-  # not, so a nested container can't start at all without it unlocked here
-  # first. "0 2147483647" (unprivileged ping for every gid) is the standard
-  # fix quoted for this exact "crun: open
-  # `/proc/sys/net/ipv4/ping_group_range`: Read-only file system" error.
   podman run \
     -it \
     --rm \
     --userns=keep-id \
     --cap-add=SYS_ADMIN \
-    --sysctl net.ipv4.ping_group_range="0 2147483647" \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
