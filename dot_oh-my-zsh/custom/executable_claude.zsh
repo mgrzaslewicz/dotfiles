@@ -105,23 +105,11 @@ claude-toolbox() {
   # expected requirement for podman/docker-in-docker, not container
   # escalation: it widens what THIS outer container can do, not what it's
   # isolated from.
-  #
-  # --security-opt unmask=/proc/sys/net: /proc/sys/net is masked read-only
-  # in THIS container by default (confirmed: every net.* sysctl write fails
-  # with "Read-only file system", never a permission error, regardless of
-  # capabilities or nested seccomp/apparmor settings — a mount-level lock,
-  # not a privilege one). A nested container's own crun unconditionally
-  # tries to write net.ipv4.ping_group_range during setup and can't start
-  # at all if that fails. --sysctl (tried previously) hit a separate runc
-  # bug writing the value via fsconfig(); unmask sidesteps that entirely —
-  # it's a plain mount-flag change made once here, not a value write, so
-  # nested crun's own write then just succeeds normally.
   podman run \
     -it \
     --rm \
     --userns=keep-id \
     --cap-add=SYS_ADMIN \
-    --security-opt unmask=/proc/sys/net \
     -v "$PWD:/workspace/$(basename "$PWD"):rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
