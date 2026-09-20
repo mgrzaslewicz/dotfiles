@@ -8,5 +8,6 @@ map <leader>a :action $SelectAll<CR>
 :set smartcase
 :set relativenumber
 :set number
+:set quickscope
 Plug 'machakann/vim-highlightedyank'
 Plug 'tpope/vim-commentary'
