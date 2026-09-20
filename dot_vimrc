@@ -10,6 +10,8 @@ set virtualedit=all
 if !has('nvim')
   call plug#begin()
     Plug 'mtdl9/vim-log-highlighting'
+    Plug 'jinh0/eyeliner.nvim'
+    Plug 'rlane/pounce.nvim'
   call plug#end()
 endif
 
