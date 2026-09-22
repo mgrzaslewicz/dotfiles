@@ -56,3 +56,5 @@
 
     ## config check
     config-debug = config --list --show-origin --show-scope
+
+    stat = status
