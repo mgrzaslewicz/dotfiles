@@ -13,7 +13,7 @@ if command -v rg >/dev/null 2>&1 && command -v fzf >/dev/null 2>&1; then
     [[ -n "$bat_bin" ]] && preview_cmd="$bat_bin --style=numbers --color=always --highlight-line {2} {1}"
 
     local picked file line
-    picked=$(rg --line-number --no-heading . |
+    picked=$(rg --follow --line-number --no-heading . |
       fzf --delimiter : --preview "$preview_cmd" --preview-window '+{2}-/2')
 
     [[ -z "$picked" ]] && return
