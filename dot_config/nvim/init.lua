@@ -489,6 +489,8 @@ do
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
   require('mini.jump2d').setup();
+  require('mini.files').setup();
+  vim.keymap.set('n', 'gF', MiniFiles.open, { desc = '[F]iles tree' });
 end
 
 -- ============================================================
