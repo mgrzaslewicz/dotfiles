@@ -489,23 +489,7 @@ do
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
   require('mini.jump2d').setup();
-  require('mini.files').setup();
-  vim.keymap.set('n', 'gF', MiniFiles.open, { desc = '[F]iles tree' });
 
-  -- Arrow keys to navigate directories in mini.files (default h/l still work)
-  vim.api.nvim_create_autocmd('User', {
-    pattern = 'MiniFilesBufferCreate',
-    callback = function(args)
-      local buf = args.data.buf_id
-      vim.keymap.set('n', '<Right>', function() MiniFiles.go_in() end, { buffer = buf, desc = 'Go in entry' })
-      vim.keymap.set('n', '<Left>', MiniFiles.go_out, { buffer = buf, desc = 'Go out of directory' })
-      vim.keymap.set('n', '<S-Right>', function() MiniFiles.go_in { close_on_file = true } end, { buffer = buf, desc = 'Go in entry plus' })
-      vim.keymap.set('n', '<S-Left>', function()
-        MiniFiles.go_out()
-        MiniFiles.trim_right()
-      end, { buffer = buf, desc = 'Go out of directory plus' })
-    end,
-  })
 end
 
 -- ============================================================
@@ -1036,7 +1020,7 @@ do
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
   -- require 'kickstart.plugins.autopairs'
-  -- require 'kickstart.plugins.neo-tree'
+     require 'kickstart.plugins.neo-tree'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
