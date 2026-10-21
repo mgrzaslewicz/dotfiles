@@ -749,6 +749,7 @@ do
     -- Java (Eclipse JDT LS). Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
     jdtls = {},
     -- Kotlin, JetBrains' official server (alpha). Supports Gradle/Maven JVM projects, not KMP yet.
+    -- Mason installs it from our override in lua/custom/mason-registry (upstream download URL is broken).
     kotlin_lsp = {},
 
     stylua = {}, -- Used to format Lua code
@@ -794,7 +795,13 @@ do
   }
 
   -- Automatically install LSPs and related tools to stdpath for Neovim
-  require('mason').setup {}
+  require('mason').setup {
+    -- Registries listed first win. Our local one only overrides packages whose upstream definition is broken.
+    registries = {
+      'lua:custom.mason-registry',
+      'github:mason-org/mason-registry',
+    },
+  }
 
   -- Translates between nvim-lspconfig server names and mason.nvim package names (e.g. lua_ls <-> lua-language-server)
   require('mason-lspconfig').setup {
