@@ -414,6 +414,7 @@ do
       { '<leader>s', group = '[S]earch', mode = { 'n', 'v' } },
       { '<leader>t', group = '[T]oggle' },
       { '<leader>u', group = '[U]nit tests' },
+      { '<leader>r', group = '[R]efactor', mode = { 'n', 'x' } },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
@@ -759,8 +760,7 @@ do
     -- But for many setups, the LSP (`rust_analyzer`) will work just fine
     -- rust_analyzer = {},
 
-    -- Java (Eclipse JDT LS). Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
-    jdtls = {},
+    -- Java (Eclipse JDT LS) is started by nvim-jdtls (lua/custom/plugins/jdtls.lua), not here.
     -- Kotlin, JetBrains' official server (alpha). Supports Gradle/Maven JVM projects, not KMP yet.
     -- Mason installs it from our override in lua/custom/mason-registry (upstream download URL is broken).
     kotlin_lsp = {},
@@ -831,6 +831,8 @@ do
   local ensure_installed = vim.tbl_keys(servers or {})
   vim.list_extend(ensure_installed, {
     -- You can add other tools here that you want Mason to install
+    -- Java (Eclipse JDT LS), started by nvim-jdtls. Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
+    'jdtls',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -1044,9 +1046,11 @@ do
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
-  -- require 'kickstart.plugins.autopairs'
+     require 'kickstart.plugins.autopairs'
      require 'kickstart.plugins.neo-tree'
      require 'custom.plugins.neotest'
+     require 'custom.refactor'
+     require 'custom.plugins.jdtls'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --

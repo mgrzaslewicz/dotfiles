@@ -15,6 +15,8 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - Custom highlights (IntelliJ-like colors) live in `lua/custom/highlights.lua`; colorscheme is `tokyonight-night`.
 - Leader is `<Space>`. Test maps use `<leader>u`, git hunk maps `<leader>h`, search maps `<leader>s`, toggles `<leader>t`.
   Check `<leader>sk` / which-key for conflicts before adding maps.
+- Keymaps are language-agnostic: one key per action for all languages. Add language-specific behaviour behind the
+  shared keys (e.g. `require('custom.refactor').register` for `<leader>r`), never per-language prefixes.
 
 ## Already in place
 
@@ -31,9 +33,16 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - [x] [setup] Call hierarchy (IntelliJ Ctrl+Alt+H): `grc` incoming, `grC` outgoing (Telescope pickers)
 - [x] [setup] Type hierarchy (IntelliJ Ctrl+H): `grh` subtypes, `grH` supertypes (`vim.lsp.buf.typehierarchy`, results in quickfix)
 - [ ] [skill] Use `grc`/`grC`/`grh`/`grH` instead of grepping for callers and implementors
-- [ ] [setup] Replace plain lspconfig `jdtls` with `mfussenegger/nvim-jdtls` — extract method/variable/constant,
-      organize imports, Lombok, proper workspace dirs; also required for Java debugging (section 3).
-      Note: neotest-java grabs the running `jdtls` client by name, verify it still works after the switch.
+- [x] [setup] nvim-jdtls replaces plain lspconfig `jdtls` (`lua/custom/plugins/jdtls.lua`): Lombok agent from Mason,
+      per-project workspace dir in `stdpath('cache')/jdtls/`. Backs the shared `<leader>r` refactor maps (below).
+      Debug bundles go in `init_options.bundles` (section 3). Client is still named `jdtls`, which neotest-java needs.
+- [ ] [verify] Open a Java project: jdtls attaches (`:checkhealth vim.lsp`), Lombok getters resolve, `<leader>ua` still runs tests
+- [x] [setup] Language-agnostic refactor maps (`lua/custom/refactor.lua`), any LSP buffer: `<leader>ro` organize imports,
+      `rv`/`rV` extract variable (all occurrences), `rc` extract constant, `rm` extract method (visual).
+      Default = matching LSP code action; Java uses nvim-jdtls via `require('custom.refactor').register(bufnr, handlers)`.
+- [ ] [verify] `<leader>r` maps in Kotlin and Rust; if a server titles its extract actions differently, adjust the
+      title words in `refactor.lua` or register a handler for that language
+- [ ] [skill] `<leader>r` refactors (IntelliJ Ctrl+Alt+O / V / C / M)
 - [ ] [skill] `<C-o>` / `<C-i>` jump back/forward (IntelliJ Ctrl+Alt+←/→)
 - [ ] [skill] `gra` as Alt+Enter: imports, quick fixes, generate…
 - [ ] [skill] Completion keys: `<C-space>`, `<C-y>` accept, `<C-k>` signature
@@ -57,8 +66,11 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 ## 4. Editing
 
-- [ ] [setup] Enable autopairs (`require 'kickstart.plugins.autopairs'` is commented out in `init.lua`)
-- [ ] [setup] Verify conform has a Java/Kotlin formatter (google-java-format, ktfmt or ktlint) or falls back to LSP formatting
+- [x] [setup] Autopairs enabled (`kickstart.plugins.autopairs`)
+- [x] [setup] Formatter check: conform has no Java/Kotlin formatter and falls back to LSP (`<leader>f`): jdtls for Java,
+      kotlin_lsp (IntelliJ's formatter) for Kotlin. Deliberately no google-java-format/ktfmt, to stay close to IntelliJ output.
+      If Java output differs from the team's IntelliJ style, export the code style as Eclipse XML and point jdtls
+      `settings.java.format.settings.url` at it.
 - [ ] [setup] Snippets (live templates): enable friendly-snippets and/or write LuaSnip snippets for `psvm`, `sout`, test methods
 - [ ] [skill] mini.ai objects: function `f`, argument `a`, quote `q` (`daf`, `cia`, `vi(`)
 - [ ] [skill] mini.surround: `sa`, `sd`, `sr`
@@ -94,7 +106,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 ## Suggested order
 
 1. ~~Call/type hierarchy maps, diagnostics navigation, quickfix workflow~~ (setup done, skills to practice)
-2. nvim-jdtls, autopairs, formatter check
+2. ~~nvim-jdtls, autopairs, formatter check~~ (setup done, verify nvim-jdtls in a real project)
 3. Debugger (nvim-dap + nvim-jdtls)
 4. Git client + diffview
 5. Gradle/Maven task runner, sessions
@@ -103,3 +115,5 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 - 2026-10-22: Plan created. Fixed neotest-java failing on Kotlin-only projects; made mini.jump2d labels readable.
 - 2026-10-22: Step 1 setup — call/type hierarchy maps, `<leader>Q` project errors to quickfix.
+- 2026-10-22: Step 2 setup — nvim-jdtls with Lombok and `<leader>j` refactor maps, autopairs, formatter check (LSP fallback kept).
+- 2026-10-22: Replaced Java-only `<leader>j` maps with language-agnostic `<leader>r` refactor maps.
