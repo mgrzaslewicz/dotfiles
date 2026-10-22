@@ -832,6 +832,8 @@ do
     'jdtls',
     -- Java debugger, loaded into jdtls as a bundle by lua/custom/plugins/jdtls.lua.
     'java-debug-adapter',
+    -- Kotlin debugger, configured in lua/custom/plugins/debug.lua.
+    'kotlin-debug-adapter',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }

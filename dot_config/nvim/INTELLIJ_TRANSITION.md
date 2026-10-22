@@ -68,8 +68,13 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
       `kickstart.plugins.debug` (Go-focused) stays unused.
 - [ ] [verify] Java: breakpoint + `<leader>dc` on a main class, `<leader>ud` on a test, attach to `bootRun --debug-jvm`.
       Shift+F8 may not reach nvim in some terminals; `<leader>dO` always works.
-- [ ] [setup] Kotlin debugging: kotlin_lsp has no debugger and the `java` adapter only exists once jdtls runs (Java buffer).
-      Options: open any Java file first, Mason `kotlin-debug-adapter` (fwcd, unmaintained), or keep IntelliJ for Kotlin debugging.
+- [x] [setup] Kotlin debugging via Mason `kotlin-debug-adapter` (fwcd; only Kotlin DAP, unmaintained since 2023 —
+      kotlin_lsp has no debugger). Same `<leader>d` maps. Configs: "Launch main class" (default `<package>.<File>Kt`,
+      runs compiled classes only — `./gradlew classes` first) and "Attach to JVM (localhost:5005)".
+      Kotlin tests: `./gradlew test --tests '<name>' --debug-jvm`, then attach (`<leader>ud` is Java-only: neotest-gradle has no dap strategy).
+- [ ] [verify] Kotlin: launch a `fun main`, attach to `bootRun --debug-jvm` / `test --debug-jvm`, breakpoints hit in `.kt` files.
+      If the adapter fails on current Kotlin/JDK versions, fall back to IntelliJ for Kotlin debugging.
+- [ ] [setup, optional] Make `<leader>ud` debug Kotlin tests too (run the gradle test with `--debug-jvm` in a terminal and auto-attach)
 - [ ] [skill] Breakpoints, conditional breakpoints, step over/into/out, evaluate expression
 - [ ] [skill] Built-in terminal: `:term`, `<Esc><Esc>` to leave terminal mode, terminal in splits
 
@@ -116,7 +121,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 1. ~~Call/type hierarchy maps, diagnostics navigation, quickfix workflow~~ (setup done, skills to practice)
 2. ~~nvim-jdtls, autopairs, formatter check~~ (setup done, verify nvim-jdtls in a real project)
-3. ~~Debugger (nvim-dap + nvim-jdtls)~~ (Java done, verify; Kotlin open)
+3. ~~Debugger (nvim-dap + nvim-jdtls)~~ (Java + Kotlin set up, verify)
 4. Git client + diffview
 5. Gradle/Maven task runner, sessions
 
@@ -128,3 +133,4 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - 2026-10-22: Replaced Java-only `<leader>j` maps with language-agnostic `<leader>r` refactor maps.
 - 2026-10-22: Moved LSP rename from `grn` to `<leader>rn` (built-in `grn` default removed).
 - 2026-10-22: Step 3 setup — nvim-dap + dap-ui + virtual text, Java debugging via nvim-jdtls, `<leader>d` maps, `<leader>ud` debug test.
+- 2026-10-22: Kotlin debugging via kotlin-debug-adapter (launch main class, attach on 5005).
