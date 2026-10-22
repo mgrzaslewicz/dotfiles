@@ -415,6 +415,7 @@ do
       { '<leader>t', group = '[T]oggle' },
       { '<leader>u', group = '[U]nit tests' },
       { '<leader>r', group = '[R]efactor', mode = { 'n', 'x' } },
+      { '<leader>d', group = '[D]ebug', mode = { 'n', 'x' } },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
@@ -829,6 +830,8 @@ do
     -- You can add other tools here that you want Mason to install
     -- Java (Eclipse JDT LS), started by nvim-jdtls. Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
     'jdtls',
+    -- Java debugger, loaded into jdtls as a bundle by lua/custom/plugins/jdtls.lua.
+    'java-debug-adapter',
   })
 
   require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -1046,6 +1049,7 @@ do
      require 'kickstart.plugins.neo-tree'
      require 'custom.plugins.neotest'
      require 'custom.refactor'
+     require 'custom.plugins.debug'
      require 'custom.plugins.jdtls'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
