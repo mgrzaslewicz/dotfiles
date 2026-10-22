@@ -21,10 +21,16 @@ local gradle_kotlin = setmetatable({
   is_test_file = function(file_path) return file_path:match 'Test%.kt$' ~= nil end,
 }, { __index = require 'neotest-gradle' })
 
+-- neotest-java matches test files by name only (e.g. `FooTest`), so it also claims `FooTest.kt`
+-- and then fails looking for Java sources. Limit it to `.java`.
+local java_adapter = require 'neotest-java' {}
+local java_is_test_file = java_adapter.is_test_file
+java_adapter.is_test_file = function(file_path) return file_path:match '%.java$' ~= nil and java_is_test_file(file_path) end
+
 local neotest = require 'neotest'
 neotest.setup {
   adapters = {
-    require 'neotest-java' {},
+    java_adapter,
     gradle_kotlin,
   },
 }
