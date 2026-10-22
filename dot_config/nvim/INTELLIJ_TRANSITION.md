@@ -21,7 +21,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 ## Already in place
 
 - [x] File navigation, vim motions, mini.jump2d, Telescope file/grep search, LSP symbol search (`gO`, `gW`)
-- [x] LSP: `grd` definition, `grr` references, `gri` implementation, `grt` type definition, `grn` rename, `gra` code action, `K` hover
+- [x] LSP: `grd` definition, `grr` references, `gri` implementation, `grt` type definition, `gra` code action, `K` hover
 - [x] Completion (blink.cmp), inlay hints toggle (`<leader>th`)
 - [x] Tests: neotest with neotest-java (Java) and neotest-gradle (Kotlin) — `<leader>ur/uf/ua/ul/ux/us/uo/uO`, `]u`/`[u`
 - [x] Git hunks: gitsigns — `]c`/`[c`, `<leader>hs/hr/hp/hb/hd`
@@ -37,12 +37,12 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
       per-project workspace dir in `stdpath('cache')/jdtls/`. Backs the shared `<leader>r` refactor maps (below).
       Debug bundles go in `init_options.bundles` (section 3). Client is still named `jdtls`, which neotest-java needs.
 - [ ] [verify] Open a Java project: jdtls attaches (`:checkhealth vim.lsp`), Lombok getters resolve, `<leader>ua` still runs tests
-- [x] [setup] Language-agnostic refactor maps (`lua/custom/refactor.lua`), any LSP buffer: `<leader>ro` organize imports,
+- [x] [setup] Language-agnostic refactor maps (`lua/custom/refactor.lua`), any LSP buffer: `<leader>rn` rename (replaces `grn`), `<leader>ro` organize imports,
       `rv`/`rV` extract variable (all occurrences), `rc` extract constant, `rm` extract method (visual).
       Default = matching LSP code action; Java uses nvim-jdtls via `require('custom.refactor').register(bufnr, handlers)`.
 - [ ] [verify] `<leader>r` maps in Kotlin and Rust; if a server titles its extract actions differently, adjust the
       title words in `refactor.lua` or register a handler for that language
-- [ ] [skill] `<leader>r` refactors (IntelliJ Ctrl+Alt+O / V / C / M)
+- [ ] [skill] `<leader>r` refactors (IntelliJ Shift+F6, Ctrl+Alt+O / V / C / M)
 - [ ] [skill] `<C-o>` / `<C-i>` jump back/forward (IntelliJ Ctrl+Alt+←/→)
 - [ ] [skill] `gra` as Alt+Enter: imports, quick fixes, generate…
 - [ ] [skill] Completion keys: `<C-space>`, `<C-y>` accept, `<C-k>` signature
@@ -117,3 +117,4 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - 2026-10-22: Step 1 setup — call/type hierarchy maps, `<leader>Q` project errors to quickfix.
 - 2026-10-22: Step 2 setup — nvim-jdtls with Lombok and `<leader>j` refactor maps, autopairs, formatter check (LSP fallback kept).
 - 2026-10-22: Replaced Java-only `<leader>j` maps with language-agnostic `<leader>r` refactor maps.
+- 2026-10-22: Moved LSP rename from `grn` to `<leader>rn` (built-in `grn` default removed).

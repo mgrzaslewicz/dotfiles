@@ -25,6 +25,7 @@ local function code_action(kind, title_words)
 end
 
 local actions = {
+  { name = 'rename', key = 'n', desc = 'Re[n]ame', mode = 'n', default = function() vim.lsp.buf.rename() end },
   { name = 'organize_imports', key = 'o', desc = '[O]rganize imports', mode = 'n', default = code_action 'source.organizeImports' },
   { name = 'extract_variable', key = 'v', desc = 'Extract [V]ariable', mode = { 'n', 'x' }, default = code_action('refactor.extract', { 'variable' }) },
   {
@@ -42,7 +43,7 @@ local actions = {
 local overrides = {}
 
 --- Use language-specific implementations in a buffer, keyed by action name
---- (organize_imports, extract_variable, extract_variable_all, extract_constant, extract_method).
+--- (rename, organize_imports, extract_variable, extract_variable_all, extract_constant, extract_method).
 --- Each receives `visual = true` when called from visual mode.
 ---@param bufnr integer
 ---@param handlers table<string, fun(visual: boolean)>
@@ -50,6 +51,9 @@ function M.register(bufnr, handlers)
   if bufnr == 0 then bufnr = vim.api.nvim_get_current_buf() end
   overrides[bufnr] = handlers
 end
+
+-- Rename lives at <leader>rn; drop Neovim's built-in `grn` default so there is one key for it.
+pcall(vim.keymap.del, 'n', 'grn')
 
 local group = vim.api.nvim_create_augroup('custom-refactor', { clear = true })
 
