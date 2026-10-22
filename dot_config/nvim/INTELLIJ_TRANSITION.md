@@ -13,7 +13,8 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - Plugins are installed with the built-in `vim.pack.add` (not lazy.nvim). Build steps go in the `PackChanged` autocmd in `init.lua`.
 - LSP servers are declared in the `servers` table in `init.lua` and installed via mason (`jdtls`, `kotlin_lsp`, `lua_ls`).
 - Custom highlights (IntelliJ-like colors) live in `lua/custom/highlights.lua`; colorscheme is `tokyonight-night`.
-- Leader is `<Space>`. Test maps use `<leader>u`, git hunk maps `<leader>h`, search maps `<leader>s`, toggles `<leader>t`.
+- Leader is `<Space>`. Test maps use `<leader>u`, git hunk maps `<leader>h`, git (repo-wide) `<leader>g`, search maps `<leader>s`,
+  toggles `<leader>t`, refactor `<leader>r`, debug `<leader>d`.
   Check `<leader>sk` / which-key for conflicts before adding maps.
 - Keymaps are language-agnostic: one key per action for all languages. Add language-specific behaviour behind the
   shared keys (e.g. `require('custom.refactor').register` for `<leader>r`), never per-language prefixes.
@@ -98,8 +99,17 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 ## 6. Git
 
-- [ ] [setup] Full git client: `tpope/vim-fugitive` or `NeogitOrg/neogit` (commit, branches, log)
-- [ ] [setup] `sindrets/diffview.nvim` for file history and 3-way merge conflicts (IntelliJ merge tool)
+- [x] [setup] Git client (`lua/custom/plugins/git.lua`): Neogit + codediff.nvim as diff viewer. diffview.nvim was skipped:
+      no commits since 2024-06; codediff is maintained and covers diffs, history and 3-way conflicts.
+      Maps: `<leader>gg` status (stage/commit/push), `gc` commit, `gb` branches, `gl` log, `gd` diff changes
+      (conflicted files open in the 3-way view), `gD` diff against a revision, `gh` file history (visual: selection history),
+      `gH` repo history. `git mergetool` opens codediff's merge view (`run_onchange_git_config.sh`).
+- [x] [fix] Snap nvim (core22 glibc 2.35) can't load codediff's library with the host libgomp (needs glibc 2.38):
+      `git.lua` downloads codediff's bundled old-glibc libgomp next to the library when running from snap.
+      codediff failing no longer aborts startup (Neogit falls back to inline diffs). Cleaner long-term: non-snap nvim.
+- [ ] [verify] codediff downloads its native diff library on first use (`:CodeDiff install` to retry); Neogit `d` popup opens codediff;
+      resolve a real merge conflict with `<leader>gd` and with `git mergetool`
+- [ ] [skill] Neogit status buffer: `s`/`u` stage/unstage, `c` commit, `P` push, `p` pull, `b` branch, `?` help
 - [ ] [skill] gitsigns: stage/reset/preview hunks, blame line, `ih` hunk text object
 
 ## 7. Files, windows, layout
@@ -122,7 +132,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 1. ~~Call/type hierarchy maps, diagnostics navigation, quickfix workflow~~ (setup done, skills to practice)
 2. ~~nvim-jdtls, autopairs, formatter check~~ (setup done, verify nvim-jdtls in a real project)
 3. ~~Debugger (nvim-dap + nvim-jdtls)~~ (Java + Kotlin set up, verify)
-4. Git client + diffview
+4. ~~Git client + diffview~~ (Neogit + codediff set up, verify)
 5. Gradle/Maven task runner, sessions
 
 ## Log
@@ -134,3 +144,5 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - 2026-10-22: Moved LSP rename from `grn` to `<leader>rn` (built-in `grn` default removed).
 - 2026-10-22: Step 3 setup — nvim-dap + dap-ui + virtual text, Java debugging via nvim-jdtls, `<leader>d` maps, `<leader>ud` debug test.
 - 2026-10-22: Kotlin debugging via kotlin-debug-adapter (launch main class, attach on 5005).
+- 2026-10-22: Step 4 setup — Neogit + codediff.nvim (instead of unmaintained diffview), `<leader>g` maps, codediff as git mergetool.
+- 2026-10-22: Fixed codediff failing to load under snap nvim (bundle libgomp).
