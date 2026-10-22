@@ -1055,6 +1055,7 @@ do
      require 'custom.plugins.debug'
      require 'custom.plugins.jdtls'
      require 'custom.plugins.git'
+     require 'custom.plugins.tmux-navigator'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
