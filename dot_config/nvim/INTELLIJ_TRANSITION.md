@@ -28,8 +28,9 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 ## 1. Code intelligence
 
-- [ ] [setup] Map call hierarchy: `vim.lsp.buf.incoming_calls()` / `outgoing_calls()` (IntelliJ Ctrl+Alt+H)
-- [ ] [setup] Map type hierarchy: `vim.lsp.buf.typehierarchy('subtypes' | 'supertypes')`
+- [x] [setup] Call hierarchy (IntelliJ Ctrl+Alt+H): `grc` incoming, `grC` outgoing (Telescope pickers)
+- [x] [setup] Type hierarchy (IntelliJ Ctrl+H): `grh` subtypes, `grH` supertypes (`vim.lsp.buf.typehierarchy`, results in quickfix)
+- [ ] [skill] Use `grc`/`grC`/`grh`/`grH` instead of grepping for callers and implementors
 - [ ] [setup] Replace plain lspconfig `jdtls` with `mfussenegger/nvim-jdtls` — extract method/variable/constant,
       organize imports, Lombok, proper workspace dirs; also required for Java debugging (section 3).
       Note: neotest-java grabs the running `jdtls` client by name, verify it still works after the switch.
@@ -41,7 +42,8 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 ## 2. Diagnostics and quickfix
 
 - [ ] [skill] `]d` / `[d` next/prev diagnostic, `<C-w>d` diagnostic float (IntelliJ F2 / Shift+F2)
-- [ ] [skill] `<leader>sd` workspace diagnostics, `<leader>q` location list
+- [x] [setup] `<leader>Q` project-wide errors to quickfix (`]d`/`[d` already open the diagnostic float on jump)
+- [ ] [skill] `<leader>sd` workspace diagnostics, `<leader>q` buffer location list, `<leader>Q` project errors in quickfix
 - [ ] [skill] Quickfix workflow: `:copen`, `]q` / `[q`, `:cdo` — grep results, test failures and build errors all land here
 
 ## 3. Build, run, debug
@@ -91,7 +93,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 ## Suggested order
 
-1. Call/type hierarchy maps, diagnostics navigation, quickfix workflow
+1. ~~Call/type hierarchy maps, diagnostics navigation, quickfix workflow~~ (setup done, skills to practice)
 2. nvim-jdtls, autopairs, formatter check
 3. Debugger (nvim-dap + nvim-jdtls)
 4. Git client + diffview
@@ -100,3 +102,4 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 ## Log
 
 - 2026-10-22: Plan created. Fixed neotest-java failing on Kotlin-only projects; made mini.jump2d labels readable.
+- 2026-10-22: Step 1 setup — call/type hierarchy maps, `<leader>Q` project errors to quickfix.

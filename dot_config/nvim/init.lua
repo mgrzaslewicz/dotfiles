@@ -210,6 +210,7 @@ do
   }
 
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
+  vim.keymap.set('n', '<leader>Q', function() vim.diagnostic.setqflist { severity = vim.diagnostic.severity.ERROR } end, { desc = 'Open project errors in [Q]uickfix list' })
 
   -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
   -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -601,6 +602,10 @@ do
       -- Useful when you're not sure what type a variable is and you want to see
       -- the definition of its *type*, not where it was *defined*.
       vim.keymap.set('n', 'grt', builtin.lsp_type_definitions, { buffer = buf, desc = '[G]oto [T]ype Definition' })
+
+      -- Call hierarchy (IntelliJ Ctrl+Alt+H): who calls the function under your cursor, and what it calls.
+      vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { buffer = buf, desc = '[G]oto Incoming [C]alls' })
+      vim.keymap.set('n', 'grC', builtin.lsp_outgoing_calls, { buffer = buf, desc = '[G]oto Outgoing [C]alls' })
     end,
   })
 
@@ -694,6 +699,10 @@ do
       -- WARN: This is not Goto Definition, this is Goto Declaration.
       --  For example, in C this would take you to the header.
       map('grD', vim.lsp.buf.declaration, '[G]oto [D]eclaration')
+
+      -- Type hierarchy (IntelliJ Ctrl+H): subclasses/implementors and superclasses/interfaces of the type under your cursor.
+      map('grh', function() vim.lsp.buf.typehierarchy 'subtypes' end, '[G]oto Type [H]ierarchy: subtypes')
+      map('grH', function() vim.lsp.buf.typehierarchy 'supertypes' end, '[G]oto Type [H]ierarchy: supertypes')
 
       -- The following two autocommands are used to highlight references of the
       -- word under your cursor when your cursor rests there for a little while.
