@@ -53,6 +53,11 @@ local groups = {
   IntellijConstant = { fg = colors.constant },
   IntellijAbstractMethod = { fg = colors.abstract_method },
   IntellijAbstractClass = { fg = colors.abstract_class },
+
+  -- mini.jump2d labels: tokyonight's red-on-dark is hard to read, use dark-on-bright instead
+  MiniJump2dSpot = { fg = '#000000', bg = '#FFC66D', bold = true, nocombine = true },
+  MiniJump2dSpotUnique = { fg = '#000000', bg = '#FF9E3B', bold = true, nocombine = true },
+  MiniJump2dSpotAhead = { fg = '#000000', bg = '#A9B1D6', nocombine = true },
 }
 
 local function apply()
