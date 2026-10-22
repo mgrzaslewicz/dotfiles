@@ -27,6 +27,15 @@ local java_adapter = require 'neotest-java' {}
 local java_is_test_file = java_adapter.is_test_file
 java_adapter.is_test_file = function(file_path) return file_path:match '%.java$' ~= nil and java_is_test_file(file_path) end
 
+-- In a Kotlin-only project neotest still hands the root dir to neotest-java, which then
+-- asserts there is a `.java` file to attach jdtls to. Skip trees without Java tests.
+local java_build_spec = java_adapter.build_spec
+java_adapter.build_spec = function(args)
+  for _, node in args.tree:iter_nodes() do
+    if node:data().type == 'test' then return java_build_spec(args) end
+  end
+end
+
 local neotest = require 'neotest'
 neotest.setup {
   adapters = {
