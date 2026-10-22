@@ -3,7 +3,7 @@
 --
 -- Adapters:
 --  - Java: neotest-java (JUnit 5, Maven/Gradle). Uses the running jdtls client for the classpath.
---    Run `:NeotestJava setup` once to download the JUnit console launcher jar.
+--    The JUnit console launcher jar it needs is downloaded by chezmoi (run_onchange_after_nvim_neotest_java_setup.sh.tmpl).
 --  - Kotlin: neotest-gradle (runs `gradlew test`, reads JUnit XML reports). Kotest specs are not detected.
 
 vim.pack.add {
