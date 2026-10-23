@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# nvim for mini.test child processes. Drops the `--clean` that mini.test always passes, so the child
+# starts like a normal session: init.lua and plugins from XDG dirs set up by tests/run.sh.
+args=()
+for arg in "$@"; do
+  [ "$arg" = --clean ] || args+=("$arg")
+done
+exec nvim "${args[@]}"

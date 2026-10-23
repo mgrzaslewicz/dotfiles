@@ -14,3 +14,9 @@ Spec slice 1 item 8. With daily nvim on mise, the old-glibc libgomp download in 
 ## Acceptance
 
 No `snap` references remain in `dot_config/nvim/`; test green.
+
+## Notes
+
+- codediff itself downloads a bundled libgomp when the system has none (seen in the test container:
+  "System libgomp.so.1 not found, downloading..."). Check whether that fallback also covers the snap case
+  before deleting, and whether `git.lua`'s own download is redundant regardless of snap.

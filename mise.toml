@@ -1,3 +1,11 @@
 [tools]
 chezmoi = "latest"
 tmux = "latest"
+# Neovim config: pinned so tests (dot_config/nvim/tests) and daily use run the same versions
+neovim = "0.12.6"
+stylua = "2.6.0"
+lua-language-server = "3.19.2"
+
+[tasks.test]
+description = "Neovim config tests (dot_config/nvim/tests); pass a test file to run only that one"
+run = "dot_config/nvim/tests/run.sh"

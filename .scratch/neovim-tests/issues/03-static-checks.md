@@ -16,3 +16,8 @@ Spec decision 9; slice 1 item 9.
 
 - `mise run check` passes on the current tree.
 - Introducing an undefined global or a misformatted line makes it fail with a clear message.
+
+## Notes
+
+- `tests/.tests/config/nvim` is a symlink back to the config root: exclude `tests/.tests/` from stylua
+  (`.styluaignore`) and lua-language-server (`workspace.ignoreDir`) to avoid recursion.

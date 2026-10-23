@@ -1,7 +1,7 @@
 # Pinned, isolated tool and plugin versions
 
 Type: task
-Status: open
+Status: resolved
 
 ## What
 
@@ -11,7 +11,8 @@ Spec decisions 3, 4, 5.
 - `dot_config/nvim/.gitignore`: stop ignoring `nvim-pack-lock.json` and `.luarc.json`;
   ignore `tests/.tests/`.
 - Generate and commit `nvim-pack-lock.json` from the current plugin set.
-- `.chezmoiignore`: exclude `.config/nvim/tests` (and its `.tests/` state).
+- `.chezmoiignore`: exclude `.config/nvim/tests` (and its `.tests/` state) and `mise.toml`
+  (repo pin is for tests only; host versions are managed on the host, see issue 14).
 
 ## Acceptance
 
@@ -21,4 +22,5 @@ Spec decisions 3, 4, 5.
 
 ## Host follow-up (user)
 
-Switch daily nvim from snap to mise (`mise use -g neovim@<pinned>`, remove snap); `which nvim` is the mise shim.
+Switch daily nvim from snap to mise (`mise use -g neovim@<version>`, remove snap); `which nvim` is the mise shim.
+Lockfile taken from the host's daily install. After `vim.pack.update()`: `chezmoi re-add ~/.config/nvim/nvim-pack-lock.json`.

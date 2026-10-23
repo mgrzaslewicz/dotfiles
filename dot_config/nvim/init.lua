@@ -98,6 +98,10 @@ do
   vim.g.mapleader = ' '
   vim.g.maplocalleader = ' '
 
+  -- Test profile (NVIM_TEST=1, set by tests/run.sh): skip network installs (Mason tools, treesitter parsers).
+  -- Plugins still load; anything else that only makes sense in daily use checks this too.
+  vim.g.test_mode = vim.env.NVIM_TEST == '1'
+
   -- Set to true if you have a Nerd Font installed and selected in the terminal
   vim.g.have_nerd_font = false
 
@@ -311,7 +315,7 @@ do
         return
       end
 
-      if name == 'nvim-treesitter' then
+      if name == 'nvim-treesitter' and not vim.g.test_mode then
         if not ev.data.active then vim.cmd.packadd 'nvim-treesitter' end
         vim.cmd 'TSUpdate'
         return
@@ -845,7 +849,7 @@ do
     'kotlin-debug-adapter',
   })
 
-  require('mason-tool-installer').setup { ensure_installed = ensure_installed }
+  if not vim.g.test_mode then require('mason-tool-installer').setup { ensure_installed = ensure_installed } end
 
   for name, server in pairs(servers) do
     vim.lsp.config(name, server)
@@ -988,7 +992,7 @@ do
 
   -- Ensure basic parsers are installed
   local parsers = { 'bash', 'c', 'diff', 'html', 'java', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-  require('nvim-treesitter').install(parsers)
+  if not vim.g.test_mode then require('nvim-treesitter').install(parsers) end
 
   ---@param buf integer
   ---@param language string
@@ -1028,7 +1032,7 @@ do
       if vim.tbl_contains(installed_parsers, language) then
         -- Enable the parser if it is already installed
         treesitter_try_attach(buf, language)
-      elseif vim.tbl_contains(available_parsers, language) then
+      elseif vim.tbl_contains(available_parsers, language) and not vim.g.test_mode then
         -- If a parser is available in `nvim-treesitter`, auto-install it and enable it after the installation is done
         require('nvim-treesitter').install(language):await(function() treesitter_try_attach(buf, language) end)
       else

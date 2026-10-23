@@ -34,8 +34,10 @@ that touches the config.
    - `nvim-pack-lock.json` is committed (remove from `dot_config/nvim/.gitignore`).
      Plugin update flow: `vim.pack.update()` → `mise run check` → commit lockfile.
    - nvim pinned in repo `mise.toml` (`neovim@0.12.6`, latest offered at time of writing).
-4. Daily nvim switches from snap to the mise-pinned nvim — tests vouch for the
-   binary actually used. nvim bumps go through the same update → check → commit loop.
+     `mise.toml` is chezmoi-ignored: the repo does not control host tool versions.
+4. Daily nvim switches from snap to mise nvim, installed on the host independently.
+   Drift is made visible: the config records the tested version, a test keeps it equal
+   to the `mise.toml` pin, `:checkhealth custom` warns on mismatch (issue 14).
 5. Tests live in `dot_config/nvim/tests/` (`test_*.lua`), excluded from
    deployment via `.chezmoiignore`. They load the **source tree**
    (`-u dot_config/nvim/init.lua`, rtp at source) — no `chezmoi apply` needed
