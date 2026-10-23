@@ -18,11 +18,19 @@ run = "stylua --check ."
 [tasks."check:types"]
 description = "lua-language-server diagnostics for dot_config/nvim (plugin types from tests/.tests, run tests once first)"
 dir = "dot_config/nvim"
+# lua-language-server ignores SIGINT until the check is done; Ctrl-C is forwarded as SIGTERM.
 run = '''
 VIMRUNTIME=$(nvim --clean --headless +'lua io.write(vim.env.VIMRUNTIME)' +qa) \
-  lua-language-server --check=. --checklevel=Warning --logpath=tests/.tests/lua-language-server
+  lua-language-server --check=. --checklevel=Warning --logpath=tests/.tests/lua-language-server &
+pid=$!
+trap 'kill -TERM "$pid" 2>/dev/null; exit 130' INT TERM
+wait "$pid"
 '''
 
 [tasks.check]
 description = "Everything a commit to dot_config/nvim must pass: format, tests, types"
 run = ["mise run check:format", "mise run test", "mise run check:types"]
+
+[tasks.setup]
+description = "Use the repo's git hooks (.githooks); repo-local config, shared by all worktrees"
+run = "git config core.hooksPath .githooks"

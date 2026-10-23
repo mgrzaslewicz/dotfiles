@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# Runs `mise run check` when the commit touches dot_config/nvim/, against exactly what is being committed:
+# unstaged and untracked changes are set aside for the duration of the check and restored afterwards.
+# Installed by `mise run setup` (repo-local core.hooksPath). Skip once with `git commit --no-verify`.
+set -euo pipefail
+
+git diff --cached --quiet -- dot_config/nvim/ && exit 0
+
+if ! command -v mise >/dev/null; then
+  echo 'pre-commit: mise not found, cannot run `mise run check`' >&2
+  exit 1
+fi
+
+# Resetting the working tree during a merge would drop the merge state; check the working tree as is instead.
+if [ -e "$(git rev-parse --git-path MERGE_HEAD)" ]; then
+  echo 'pre-commit: merge in progress, checking the working tree (including unstaged changes)' >&2
+  exec mise run check
+fi
+
+# Not `git stash`: refs/stash is shared by all worktrees, so concurrent commits could pop each other's changes.
+# The backup lives in this worktree's git dir, one per hook run.
+backup=$(mktemp -d "$(git rev-parse --absolute-git-dir)/pre-commit.XXXXXX")
+git diff --binary --no-color --no-ext-diff >"$backup/unstaged.patch"
+git ls-files --others --exclude-standard -z >"$backup/untracked"
+
+if [ -s "$backup/unstaged.patch" ] || [ -s "$backup/untracked" ]; then
+  [ -s "$backup/untracked" ] && tar --null -T "$backup/untracked" -cf "$backup/untracked.tar"
+  # The check does not modify tracked files, so only the set-aside changes need to come back. On Ctrl-C `git commit`
+  # returns at once while this still runs, until the check has stopped.
+  restore() {
+    set +e
+    [ -s "$backup/untracked" ] && tar -xf "$backup/untracked.tar"
+    if [ -s "$backup/unstaged.patch" ] && ! git apply --whitespace=nowarn "$backup/unstaged.patch"; then
+      echo "pre-commit: could not restore unstaged changes; patch kept in $backup" >&2
+      return
+    fi
+    rm -rf "$backup"
+  }
+  trap restore EXIT
+  trap 'exit 130' INT TERM
+  git checkout -q -- .
+  [ -s "$backup/untracked" ] && xargs -0 rm -f -- <"$backup/untracked"
+else
+  rm -rf "$backup"
+fi
+
+mise run check
