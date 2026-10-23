@@ -37,6 +37,7 @@ java_adapter.build_spec = function(args)
 end
 
 local neotest = require 'neotest'
+---@diagnostic disable-next-line: missing-fields
 neotest.setup {
   adapters = {
     java_adapter,
@@ -47,6 +48,7 @@ neotest.setup {
 vim.keymap.set('n', '<leader>ur', function() neotest.run.run() end, { desc = 'Test: [R]un nearest' })
 vim.keymap.set('n', '<leader>uf', function() neotest.run.run(vim.fn.expand '%') end, { desc = 'Test: Run [F]ile' })
 vim.keymap.set('n', '<leader>ua', function() neotest.run.run(vim.uv.cwd()) end, { desc = 'Test: Run [A]ll' })
+---@diagnostic disable-next-line: missing-fields
 vim.keymap.set('n', '<leader>ud', function() neotest.run.run { strategy = 'dap' } end, { desc = 'Test: [D]ebug nearest' })
 vim.keymap.set('n', '<leader>ul', function() neotest.run.run_last() end, { desc = 'Test: Run [L]ast' })
 vim.keymap.set('n', '<leader>ux', function() neotest.run.stop() end, { desc = 'Test: Stop' })

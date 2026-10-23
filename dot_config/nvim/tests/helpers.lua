@@ -7,9 +7,7 @@ local nvim_child = vim.fs.joinpath(vim.fn.getcwd(), 'tests', 'nvim-child')
 function M.new_child()
   local child = MiniTest.new_child_neovim()
   local start = child.start
-  child.start = function(args, opts)
-    start(args, vim.tbl_extend('force', { nvim_executable = nvim_child, connection_timeout = 20000 }, opts or {}))
-  end
+  child.start = function(args, opts) start(args, vim.tbl_extend('force', { nvim_executable = nvim_child, connection_timeout = 20000 }, opts or {})) end
   return child
 end
 

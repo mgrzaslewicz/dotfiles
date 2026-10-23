@@ -79,9 +79,7 @@ local priority = vim.hl.priorities.semantic_tokens + 5
 -- Kotlin LSP reports annotation names as method/class tokens, hiding treesitter's @attribute.
 local function is_annotation(buf, token)
   for _, capture in ipairs(vim.treesitter.get_captures_at_pos(buf, token.line, token.start_col)) do
-    if capture.capture == 'attribute' then
-      return true
-    end
+    if capture.capture == 'attribute' then return true end
   end
   return false
 end
@@ -104,8 +102,6 @@ vim.api.nvim_create_autocmd('LspTokenUpdate', {
       hl = 'IntellijAbstractClass'
     end
 
-    if hl then
-      vim.lsp.semantic_tokens.highlight_token(token, args.buf, args.data.client_id, hl, { priority = priority })
-    end
+    if hl then vim.lsp.semantic_tokens.highlight_token(token, args.buf, args.data.client_id, hl, { priority = priority }) end
   end,
 })

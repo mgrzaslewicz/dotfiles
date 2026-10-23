@@ -1,3 +1,4 @@
 LICENSE
 .config/nvim/tests
 mise.toml
+.config/nvim/.luarc.json

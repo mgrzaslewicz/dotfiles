@@ -1,7 +1,7 @@
 # stylua + lua-language-server checks, `mise run check`
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 01, 02
 
 ## What
@@ -19,5 +19,12 @@ Spec decision 9; slice 1 item 9.
 
 ## Notes
 
-- `tests/.tests/config/nvim` is a symlink back to the config root: exclude `tests/.tests/` from stylua
-  (`.styluaignore`) and lua-language-server (`workspace.ignoreDir`) to avoid recursion.
+- stylua respects `.gitignore`, so `tests/.tests/` is skipped without a `.styluaignore`.
+- `.luarc.json` takes plugin types from `tests/.tests/data/.../pack/core/opt` (same revisions as the lockfile)
+  and ignores the other `tests/.tests/` dirs (the config symlink would recurse). `check:types` therefore needs
+  one `mise run test` first; `check` runs format → test → types for that reason.
+- `.luarc.json` is chezmoi-ignored: in `~/.config/nvim` the `lua_ls` `on_init` in `init.lua` sets the library itself.
+- `$VIMRUNTIME` in `.luarc.json` is resolved from the environment; `check:types` sets it from the pinned nvim.
+- Existing problems: stylua reformatted 5 files (mechanical); 3 `missing-fields` warnings on plugin setup
+  tables suppressed with `---@diagnostic disable-next-line: missing-fields` (existing idiom in `debug.lua`).
+- Timing: `check:types` ~16 s (scans ~3500 plugin files); full `check` ~18 s.

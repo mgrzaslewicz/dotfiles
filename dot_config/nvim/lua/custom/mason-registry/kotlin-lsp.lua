@@ -3,7 +3,8 @@
 -- Upstream issue: https://github.com/mason-org/mason-registry/issues/17523
 -- To upgrade, bump the version in `source.id`, or run `:MasonInstall kotlin-lsp@kotlin-lsp/v<version>`.
 
-local url = 'https://download.jetbrains.com/language-server/kotlin-server/{{ version | strip_prefix "kotlin-lsp/v" }}/kotlin-server-{{ version | strip_prefix "kotlin-lsp/v" }}'
+local url =
+  'https://download.jetbrains.com/language-server/kotlin-server/{{ version | strip_prefix "kotlin-lsp/v" }}/kotlin-server-{{ version | strip_prefix "kotlin-lsp/v" }}'
 local unix_bin = 'kotlin-server-{{ version | strip_prefix "kotlin-lsp/v" }}/bin/intellij-server'
 
 return {

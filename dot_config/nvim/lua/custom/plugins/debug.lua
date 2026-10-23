@@ -53,7 +53,15 @@ end
 
 dap.configurations.kotlin = {
   { type = 'kotlin', request = 'launch', name = 'Launch main class', projectRoot = kotlin_project_root, mainClass = kotlin_main_class },
-  { type = 'kotlin', request = 'attach', name = 'Attach to JVM (localhost:5005)', projectRoot = kotlin_project_root, hostName = 'localhost', port = 5005, timeout = 5000 },
+  {
+    type = 'kotlin',
+    request = 'attach',
+    name = 'Attach to JVM (localhost:5005)',
+    projectRoot = kotlin_project_root,
+    hostName = 'localhost',
+    port = 5005,
+    timeout = 5000,
+  },
 }
 
 local breakpoint_icons = { Breakpoint = '●', BreakpointCondition = '◆', LogPoint = '◇', BreakpointRejected = '○', Stopped = '▶' }

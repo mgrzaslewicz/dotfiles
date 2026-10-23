@@ -9,3 +9,20 @@ lua-language-server = "3.19.2"
 [tasks.test]
 description = "Neovim config tests (dot_config/nvim/tests); pass a test file to run only that one"
 run = "dot_config/nvim/tests/run.sh"
+
+[tasks."check:format"]
+description = "stylua formatting check for dot_config/nvim"
+dir = "dot_config/nvim"
+run = "stylua --check ."
+
+[tasks."check:types"]
+description = "lua-language-server diagnostics for dot_config/nvim (plugin types from tests/.tests, run tests once first)"
+dir = "dot_config/nvim"
+run = '''
+VIMRUNTIME=$(nvim --clean --headless +'lua io.write(vim.env.VIMRUNTIME)' +qa) \
+  lua-language-server --check=. --checklevel=Warning --logpath=tests/.tests/lua-language-server
+'''
+
+[tasks.check]
+description = "Everything a commit to dot_config/nvim must pass: format, tests, types"
+run = ["mise run check:format", "mise run test", "mise run check:types"]

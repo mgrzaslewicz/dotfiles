@@ -42,6 +42,7 @@ local function start()
     },
   }, {
     -- Apply code changes to the running debuggee on save (IntelliJ HotSwap).
+    ---@diagnostic disable-next-line: missing-fields
     dap = { hotcodereplace = 'auto' },
   })
 

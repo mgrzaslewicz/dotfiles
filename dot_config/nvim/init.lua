@@ -214,7 +214,12 @@ do
   }
 
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
-  vim.keymap.set('n', '<leader>Q', function() vim.diagnostic.setqflist { severity = vim.diagnostic.severity.ERROR } end, { desc = 'Open project errors in [Q]uickfix list' })
+  vim.keymap.set(
+    'n',
+    '<leader>Q',
+    function() vim.diagnostic.setqflist { severity = vim.diagnostic.severity.ERROR } end,
+    { desc = 'Open project errors in [Q]uickfix list' }
+  )
 
   -- Exit terminal mode in the builtin terminal with a shortcut that is a bit easier
   -- for people to discover. Otherwise, you normally need to press <C-\><C-n>, which
@@ -502,8 +507,7 @@ do
 
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
-  require('mini.jump2d').setup();
-
+  require('mini.jump2d').setup()
 end
 
 -- ============================================================
@@ -609,9 +613,12 @@ do
 
       -- Go to class (IntelliJ Ctrl+N): types across sources and classpath (JDK, dependencies), with a fuzzy
       -- package-aware prompt like `java.io InputStream`. See lua/custom/go_to_class.lua.
-      vim.keymap.set('n', 'gC', function()
-        require 'custom.go_to_class' { symbols = { 'class', 'interface', 'enum', 'struct', 'object' } }
-      end, { buffer = buf, desc = 'Go to Class' })
+      vim.keymap.set(
+        'n',
+        'gC',
+        function() require 'custom.go_to_class' { symbols = { 'class', 'interface', 'enum', 'struct', 'object' } } end,
+        { buffer = buf, desc = 'Go to Class' }
+      )
 
       -- Jump to the type of the word under your cursor.
       -- Useful when you're not sure what type a variable is and you want to see
@@ -1060,16 +1067,16 @@ do
   -- require 'kickstart.plugins.debug'
   -- require 'kickstart.plugins.indent_line'
   -- require 'kickstart.plugins.lint'
-     require 'kickstart.plugins.autopairs'
-     require 'kickstart.plugins.neo-tree'
-     require 'custom.plugins.neotest'
-     require 'custom.refactor'
-     require 'custom.plugins.debug'
-     require 'custom.plugins.jdtls'
-     require 'custom.plugins.git'
-     require 'custom.plugins.tmux-navigator'
-require 'custom.plugins.tasks'
-require 'custom.plugins.sessions'
+  require 'kickstart.plugins.autopairs'
+  require 'kickstart.plugins.neo-tree'
+  require 'custom.plugins.neotest'
+  require 'custom.refactor'
+  require 'custom.plugins.debug'
+  require 'custom.plugins.jdtls'
+  require 'custom.plugins.git'
+  require 'custom.plugins.tmux-navigator'
+  require 'custom.plugins.tasks'
+  require 'custom.plugins.sessions'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
