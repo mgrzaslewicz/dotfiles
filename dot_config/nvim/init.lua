@@ -417,6 +417,8 @@ do
       { '<leader>r', group = '[R]efactor', mode = { 'n', 'x' } },
       { '<leader>d', group = '[D]ebug', mode = { 'n', 'x' } },
       { '<leader>g', group = '[G]it', mode = { 'n', 'x' } },
+      { '<leader>b', group = '[B]uild / run tasks' },
+      { '<leader>w', group = '[W]orkspace session' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
     },
@@ -1056,6 +1058,8 @@ do
      require 'custom.plugins.jdtls'
      require 'custom.plugins.git'
      require 'custom.plugins.tmux-navigator'
+require 'custom.plugins.tasks'
+require 'custom.plugins.sessions'
 
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --

@@ -14,7 +14,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - LSP servers are declared in the `servers` table in `init.lua` and installed via mason (`jdtls`, `kotlin_lsp`, `lua_ls`).
 - Custom highlights (IntelliJ-like colors) live in `lua/custom/highlights.lua`; colorscheme is `tokyonight-night`.
 - Leader is `<Space>`. Test maps use `<leader>u`, git hunk maps `<leader>h`, git (repo-wide) `<leader>g`, search maps `<leader>s`,
-  toggles `<leader>t`, refactor `<leader>r`, debug `<leader>d`.
+  toggles `<leader>t`, refactor `<leader>r`, debug `<leader>d`, build/run tasks `<leader>b`, sessions `<leader>w`.
   Check `<leader>sk` / which-key for conflicts before adding maps.
 - Keymaps are language-agnostic: one key per action for all languages. Add language-specific behaviour behind the
   shared keys (e.g. `require('custom.refactor').register` for `<leader>r`), never per-language prefixes.
@@ -58,8 +58,14 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 
 ## 3. Build, run, debug
 
-- [ ] [setup] Task runner for Gradle/Maven (Run Configurations equivalent). Options: `stevearc/overseer.nvim`,
-      or `makeprg=./gradlew` + `:make` so compile errors go to quickfix.
+- [x] [setup] Task runner (`lua/custom/plugins/tasks.lua`): overseer.nvim with a Gradle/Maven provider. Project root is
+      the nearest `gradlew`/`mvnw`, else settings/build file, so it works from subprojects. Tasks: gradle `classes`/`build`/
+      `test`/`check`/`clean`/`run`, mvn `compile`/`package`/`test`/`verify`/`clean`/`install`, plus `bootRun`
+      (and `bootRun --debug-jvm`) / `spring-boot:run` when a build file mentions Spring Boot, and `gradle …`/`mvn …` for any args.
+      javac/kotlinc/Maven errors stream into quickfix (opens on failure). Maps: `<leader>bb` pick task, `bc` compile
+      (IntelliJ Ctrl+F9), `bl` rerun last (Shift+F10), `bt` task list, `ba` task action (stop/restart/output), `bs` shell command.
+- [ ] [verify] Gradle and Maven projects: task list shows up, a compile error lands in quickfix with the right file/line,
+      `bootRun --debug-jvm` + `<leader>dc` "Attach" works. Kotlin error lines vary by KGP version; adjust `errorformat` in `tasks.lua`.
 - [x] [setup] Debugger (`lua/custom/plugins/debug.lua`): nvim-dap + nvim-dap-ui (opens/closes with the session) +
       nvim-dap-virtual-text (inline values). Java adapter from nvim-jdtls with Mason's `java-debug-adapter` bundle;
       main classes are discovered on `<leader>dc`; hot code replace on save. Extra config: attach to JVM on localhost:5005.
@@ -75,8 +81,10 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
       Kotlin tests: `./gradlew test --tests '<name>' --debug-jvm`, then attach (`<leader>ud` is Java-only: neotest-gradle has no dap strategy).
 - [ ] [verify] Kotlin: launch a `fun main`, attach to `bootRun --debug-jvm` / `test --debug-jvm`, breakpoints hit in `.kt` files.
       If the adapter fails on current Kotlin/JDK versions, fall back to IntelliJ for Kotlin debugging.
-- [ ] [setup, optional] Make `<leader>ud` debug Kotlin tests too (run the gradle test with `--debug-jvm` in a terminal and auto-attach)
+- [ ] [setup, optional] Make `<leader>ud` debug Kotlin tests too (run the gradle test with `--debug-jvm` and auto-attach;
+      for now: `<leader>bb` → `gradle …` → `test --tests '<name>' --debug-jvm`, then attach)
 - [ ] [skill] Breakpoints, conditional breakpoints, step over/into/out, evaluate expression
+- [ ] [skill] `<leader>b` tasks instead of a terminal for builds; `<leader>bt` list: `<CR>` actions, `o` output, `dd` dispose, `?` help
 - [ ] [skill] Built-in terminal: `:term`, `<Esc><Esc>` to leave terminal mode, terminal in splits
 
 ## 4. Editing
@@ -118,7 +126,11 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
       fix it manually or via a jdtls code action.
 - [ ] [skill] Splits (`<C-w>v`, `<C-w>s`, `<C-h/j/k/l>`), alternate file `<C-^>`, buffers vs tabs,
       `<leader><leader>` buffers, `<leader>s.` recent files
-- [ ] [setup] Sessions (reopen project as left): `mini.sessions` (already in mini.nvim, not enabled) or `folke/persistence.nvim`
+- [x] [setup] Sessions (`lua/custom/plugins/sessions.lua`): persistence.nvim, one session per cwd (and git branch other
+      than main/master), saved on exit. Plain `nvim` in a project restores it; `nvim <files>` neither restores nor saves.
+      Panels (neo-tree, dap-ui, neotest, overseer, quickfix, terminals) are closed before saving. Maps: `<leader>wr` restore,
+      `ws` pick project, `wl` last session, `wd` don't save on exit. Chose it over mini.sessions for per-directory sessions without extra code.
+- [ ] [verify] Reopen a Java project: buffers/splits come back, jdtls attaches, no empty panel windows
 - [ ] [setup, optional] Pinned working set of files: `mini.visits` or harpoon
 
 ## 8. Config maintenance
@@ -133,7 +145,7 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 2. ~~nvim-jdtls, autopairs, formatter check~~ (setup done, verify nvim-jdtls in a real project)
 3. ~~Debugger (nvim-dap + nvim-jdtls)~~ (Java + Kotlin set up, verify)
 4. ~~Git client + diffview~~ (Neogit + codediff set up, verify)
-5. Gradle/Maven task runner, sessions
+5. ~~Gradle/Maven task runner, sessions~~ (overseer + persistence set up, verify)
 
 ## Log
 
@@ -146,3 +158,4 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - 2026-10-22: Kotlin debugging via kotlin-debug-adapter (launch main class, attach on 5005).
 - 2026-10-22: Step 4 setup — Neogit + codediff.nvim (instead of unmaintained diffview), `<leader>g` maps, codediff as git mergetool.
 - 2026-10-22: Fixed codediff failing to load under snap nvim (bundle libgomp).
+- 2026-10-23: Step 5 setup — overseer.nvim with Gradle/Maven tasks and compiler errors in quickfix (`<leader>b`), persistence.nvim sessions (`<leader>w`).
