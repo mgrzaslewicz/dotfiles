@@ -1,4 +1,4 @@
-FROM debian:13.4
+ FROM debian:13.4
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -132,8 +132,12 @@ ENV HOME=/home/claude-user
 ENV XDG_CONFIG_HOME=/home/claude-user/.config
 ENV XDG_CACHE_HOME=/home/claude-user/.cache
 
-ADD --chown=claude-user:claude-user --chmod=644 CONTAINER.md /home/claude-user/.claude/CONTAINER.md
-ADD --chown=claude-user:claude-user --chmod=644 CLAUDE.md /home/claude-user/.claude/CLAUDE.md
+# Container context goes in the managed-policy memory path, not ~/.claude:
+# the ~/.claude volume mounted at runtime shadows anything baked there, and
+# a volume only copies image content up on first creation, so edits never
+# reached existing volumes. /etc/claude-code/CLAUDE.md is always loaded,
+# never mounted over, and refreshed on every image rebuild.
+ADD --chmod=644 CLAUDE.md /etc/claude-code/CLAUDE.md
 
 RUN curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh
 ENV PATH="$HOME/.local/bin:$PATH"

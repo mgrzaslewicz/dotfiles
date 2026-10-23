@@ -1,0 +1,3 @@
+[tools]
+chezmoi = "latest"
+tmux = "latest"
