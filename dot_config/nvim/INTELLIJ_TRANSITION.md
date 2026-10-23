@@ -34,6 +34,8 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - [x] [setup] Call hierarchy (IntelliJ Ctrl+Alt+H): `grc` incoming, `grC` outgoing (Telescope pickers)
 - [x] [setup] Type hierarchy (IntelliJ Ctrl+H): `grh` subtypes, `grH` supertypes (`vim.lsp.buf.typehierarchy`, results in quickfix)
 - [ ] [skill] Use `grc`/`grC`/`grh`/`grH` instead of grepping for callers and implementors
+- [x] [setup] Go to class (IntelliJ Ctrl+N): `gC` (`lua/custom/go_to_class.lua`), types from sources + JDK/dependencies,
+      fuzzy prompt with package words (`java.io InputStream`, `util HM`). `gW` stays the plain workspace symbols picker.
 - [x] [setup] nvim-jdtls replaces plain lspconfig `jdtls` (`lua/custom/plugins/jdtls.lua`): Lombok agent from Mason,
       per-project workspace dir in `stdpath('cache')/jdtls/`. Backs the shared `<leader>r` refactor maps (below).
       Debug bundles go in `init_options.bundles` (section 3). Client is still named `jdtls`, which neotest-java needs.

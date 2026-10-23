@@ -603,6 +603,12 @@ do
       -- Similar to document symbols, except searches over your entire project.
       vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' })
 
+      -- Go to class (IntelliJ Ctrl+N): types across sources and classpath (JDK, dependencies), with a fuzzy
+      -- package-aware prompt like `java.io InputStream`. See lua/custom/go_to_class.lua.
+      vim.keymap.set('n', 'gC', function()
+        require 'custom.go_to_class' { symbols = { 'class', 'interface', 'enum', 'struct', 'object' } }
+      end, { buffer = buf, desc = 'Go to Class' })
+
       -- Jump to the type of the word under your cursor.
       -- Useful when you're not sure what type a variable is and you want to see
       -- the definition of its *type*, not where it was *defined*.
