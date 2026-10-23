@@ -1,5 +1,6 @@
 .idea
 .junie
 .codegraph
-.claude
+.claude/*
+!.claude/skills/
 .mcp.json
