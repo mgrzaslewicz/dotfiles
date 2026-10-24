@@ -26,9 +26,20 @@ T['root()']['finds a wrapper-less single-module Gradle build by its build file']
   eq(project.root(dir .. '/src'), { tool = 'gradle', root = dir, cmd = 'gradle' })
 end
 
-T['root()']['finds a wrapper-less Maven build by the nearest pom.xml'] = function()
+T['root()']['finds a wrapper-less single-module Maven build by its pom.xml'] = function()
   local dir = tree { ['pom.xml'] = '', ['src/main/java/'] = '' }
   eq(project.root(dir .. '/src/main/java'), { tool = 'maven', root = dir, cmd = 'mvn' })
+end
+
+-- Without a wrapper, a module's pom.xml is not the build: its siblings are only reachable from the top.
+T['root()']['finds the top of a wrapper-less Maven multi-module build from a module'] = function()
+  local dir = tree { ['pom.xml'] = '', ['core/pom.xml'] = '', ['core/sub/pom.xml'] = '', ['core/sub/src/'] = '' }
+  eq(project.root(dir .. '/core/sub/src'), { tool = 'maven', root = dir, cmd = 'mvn' })
+end
+
+T['root()']['stops climbing poms at a directory without one'] = function()
+  local dir = tree { ['pom.xml'] = '', ['tools/'] = '', ['tools/app/pom.xml'] = '', ['tools/app/src/'] = '' }
+  eq(project.root(dir .. '/tools/app/src'), { tool = 'maven', root = dir .. '/tools/app', cmd = 'mvn' })
 end
 
 T['root()']['returns nil outside a project'] = function()

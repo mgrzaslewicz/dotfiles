@@ -13,7 +13,8 @@ local root_markers = {
   { 'build.gradle.kts', 'build.gradle', 'pom.xml' },
 }
 
---- The build the tasks run in: nearest wrapper, else settings file, else build file, searching up from `dir`.
+--- The build (IntelliJ project) containing `dir`: nearest wrapper, else settings file, else build file, searching up;
+--- a Maven module's build is its topmost parent pom.xml. Tasks run there and the JVM language servers use it as root.
 ---@param dir string
 ---@return { tool: 'gradle'|'maven', root: string, cmd: string }|nil
 function M.root(dir)
@@ -23,7 +24,14 @@ function M.root(dir)
       local name = vim.fs.basename(marker)
       local tool = (name == 'mvnw' or name == 'pom.xml') and 'maven' or 'gradle'
       local cmd = ({ gradlew = './gradlew', mvnw = './mvnw' })[name] or (tool == 'maven' and 'mvn' or 'gradle')
-      return { tool = tool, root = vim.fs.dirname(marker), cmd = cmd }
+      local root = vim.fs.dirname(marker)
+      -- A module's pom.xml is not the build: climb to the topmost pom.xml of an unbroken chain of parents.
+      if name == 'pom.xml' then
+        while vim.uv.fs_stat(vim.fs.joinpath(vim.fs.dirname(root), 'pom.xml')) do
+          root = vim.fs.dirname(root)
+        end
+      end
+      return { tool = tool, root = root, cmd = cmd }
     end
   end
 end

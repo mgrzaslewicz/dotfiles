@@ -9,15 +9,11 @@
 
 vim.pack.add { 'https://github.com/mfussenegger/nvim-jdtls' }
 
--- The topmost markers come first so a module of a multi-module build attaches to the whole build.
-local root_markers = {
-  { 'mvnw', 'gradlew', 'settings.gradle', 'settings.gradle.kts', '.git' },
-  { 'pom.xml', 'build.gradle', 'build.gradle.kts' },
-}
-
 local function start()
   local jdtls = require 'jdtls'
-  local root_dir = vim.fs.root(0, root_markers)
+  -- The whole build, so a module sees its siblings (custom/jvm/project.lua); outside a build, the git repository.
+  local build = require('custom.jvm.project').root(vim.fs.dirname(vim.api.nvim_buf_get_name(0)))
+  local root_dir = build and build.root or vim.fs.root(0, '.git')
   if not root_dir then return end
 
   -- Keep each project's index separate, keyed by its full path to avoid name clashes.

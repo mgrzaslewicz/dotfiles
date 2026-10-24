@@ -786,7 +786,14 @@ do
     -- Java (Eclipse JDT LS) is started by nvim-jdtls (lua/custom/plugins/jdtls.lua), not here.
     -- Kotlin, JetBrains' official server (alpha). Supports Gradle/Maven JVM projects, not KMP yet.
     -- Mason installs it from our override in lua/custom/mason-registry (upstream download URL is broken).
-    kotlin_lsp = {},
+    -- Rooted at the whole build (custom/jvm/project.lua): lspconfig's markers pick a Maven module's own pom.xml,
+    -- which hides its sibling modules. Outside a Gradle/Maven build it does not start.
+    kotlin_lsp = {
+      root_dir = function(bufnr, on_dir)
+        local build = require('custom.jvm.project').root(vim.fs.dirname(vim.api.nvim_buf_get_name(bufnr)))
+        if build then on_dir(build.root) end
+      end,
+    },
 
     stylua = {}, -- Used to format Lua code
 
