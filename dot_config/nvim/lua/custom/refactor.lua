@@ -3,6 +3,8 @@
 -- By default each action runs the matching LSP code action, so it works with any server that
 -- offers it (kotlin_lsp, rust-analyzer, ...). A language whose plugin has a better implementation
 -- registers it per buffer with `register` instead of adding its own keymaps (see custom/plugins/jdtls.lua).
+-- If a server titles its extract actions differently, adjust the title words below or register a handler.
+-- kotlin_lsp offers fewer refactorings than IntelliJ; large Kotlin refactors are still IntelliJ's job.
 
 local M = {}
 

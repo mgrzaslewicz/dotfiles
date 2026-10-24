@@ -1,6 +1,7 @@
 -- Sessions (IntelliJ reopens a project as you left it): persistence.nvim
 -- https://github.com/folke/persistence.nvim
 --
+-- Chosen over mini.sessions: per-directory sessions without extra code.
 -- One session per working directory (and git branch other than main/master), saved on exit to
 -- stdpath('state')/sessions/. Starting `nvim` without arguments restores the session for the cwd;
 -- starting it with files (or stdin) leaves the session alone and doesn't save one.

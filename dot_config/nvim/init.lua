@@ -891,6 +891,9 @@ do
         return nil
       end
     end,
+    -- No Java/Kotlin formatter on purpose (no google-java-format/ktfmt): LSP formatting is jdtls for Java and
+    -- kotlin_lsp (IntelliJ's formatter) for Kotlin, closest to IntelliJ output. If Java differs from the team's
+    -- IntelliJ style, export it as Eclipse XML and point jdtls `settings.java.format.settings.url` at it.
     default_format_opts = {
       lsp_format = 'fallback', -- Use external formatters if configured below, otherwise use LSP formatting. Set to `false` to disable LSP formatting entirely.
     },

@@ -6,7 +6,10 @@
 --    (needs the java-debug-adapter bundle, see custom/plugins/jdtls.lua). Tests: <leader>ud (neotest).
 --  - Kotlin: kotlin_lsp has no debugger, so Mason's kotlin-debug-adapter (fwcd, unmaintained since 2023)
 --    is used. Launch runs already compiled classes (`./gradlew classes` first); it does not build.
---    Tests: `./gradlew test --tests '<name>' --debug-jvm`, then attach.
+--    Tests: `./gradlew test --tests '<name>' --debug-jvm`, then attach (<leader>ud is Java-only: neotest-gradle has
+--    no dap strategy). If the adapter fails on current Kotlin/JDK versions, debug Kotlin in IntelliJ.
+-- IntelliJ F-keys work too, but Shift+F8 does not reach nvim in some terminals; <leader>dO always does.
+-- `kickstart.plugins.debug` (Go-focused) stays unused.
 
 vim.pack.add {
   'https://github.com/mfussenegger/nvim-dap',

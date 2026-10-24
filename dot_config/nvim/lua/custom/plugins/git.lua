@@ -2,6 +2,8 @@
 -- https://github.com/NeogitOrg/neogit
 -- https://github.com/esmuellert/codediff.nvim
 --
+-- diffview.nvim was skipped: no commits since 2024-06; codediff is maintained and covers diffs, history and
+-- 3-way conflicts. If codediff's native library fails to load, Neogit keeps working with inline diffs.
 -- gitsigns (hunks, blame) stays under <leader>h; everything repository-wide is under <leader>g.
 -- codediff downloads its prebuilt diff library on first use (`:CodeDiff install` to retry).
 -- It is also git's merge tool (run_onchange_git_config.sh), so `git mergetool` opens the 3-way conflict view.
