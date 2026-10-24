@@ -36,6 +36,24 @@ claude-toolbox() {
     GIT_ENV_ARGS+=(--env "GIT_AUTHOR_EMAIL=$GIT_AUTHOR_EMAIL" --env "GIT_COMMITTER_EMAIL=$GIT_AUTHOR_EMAIL")
   fi
 
+  # Linked worktree (e.g. workmux's <repo>__worktrees/<name>): its .git is a
+  # file pointing at an absolute gitdir inside the main repo's .git, so that
+  # common dir must be mounted at its real path too, or git inside the
+  # container finds no repo. Only the common dir, not the main checkout --
+  # keeps the agent's reach to the worktree it was launched in.
+  WORKTREE_MOUNT_ARGS=()
+  GIT_DIR_ABS="$(git -C "$PWD" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
+  GIT_COMMON_DIR_ABS="$(git -C "$PWD" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+  if [ -n "$GIT_COMMON_DIR_ABS" ] && [ "$GIT_COMMON_DIR_ABS" != "$GIT_DIR_ABS" ]; then
+    WORKTREE_MOUNT_ARGS+=(-v "$GIT_COMMON_DIR_ABS:$GIT_COMMON_DIR_ABS:rw")
+  fi
+
+  # Other worktrees of the repo aren't mounted, so from inside the container
+  # they look deleted; stop auto-gc from pruning their metadata out of the
+  # shared .git, which would orphan them on the host. Env-scoped, so host git
+  # config is untouched. An explicit `git worktree prune` is not covered.
+  GIT_ENV_ARGS+=(--env GIT_CONFIG_COUNT=1 --env GIT_CONFIG_KEY_0=gc.worktreePruneExpire --env GIT_CONFIG_VALUE_0=never)
+
   # SSH access: forward the host's running ssh-agent socket rather than mounting
   # ~/.ssh private keys. This is an LLM agent with file read/write access --
   # raw key bytes in the container filesystem would be a one-command
@@ -110,14 +128,15 @@ claude-toolbox() {
     --rm \
     --userns=keep-id \
     --cap-add=SYS_ADMIN \
-    -v "$PWD:/workspace/$(basename "$PWD"):rw" \
+    -v "$PWD:$PWD:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_MISE}:/opt/mise:rw" \
+    "${WORKTREE_MOUNT_ARGS[@]}" \
     "${GIT_ENV_ARGS[@]}" \
     "${SSH_MOUNT_ARGS[@]}" \
     "${FUSE_DEVICE_ARGS[@]}" \
-    --workdir "/workspace/$(basename "$PWD")" \
+    --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
     claude-toolbox:latest
 }
