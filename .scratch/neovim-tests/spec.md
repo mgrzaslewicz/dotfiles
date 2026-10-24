@@ -128,11 +128,47 @@ jdtls wiring, `<leader>Q`, debug maps, git, sessions, highlights, neotest-java
 Kotlin fix, mini.jump2d labels) — backfilled when next touched, listed as
 "no tests yet" in the plan.
 
-## Deferred
+## Layer B — end-to-end (issue 13 grilling, issues 15–23)
 
-- Layer B design: fixture projects, JDK in the test env, Mason installs, which
-  `[verify]` items become automated vs stay manual.
-- kotlin-debug-adapter `projectRoot`: module vs root.
+Real jdtls, kotlin_lsp, Gradle, Maven, neotest and DAP against fixture projects.
+
+16. **On demand only**: `mise run test:e2e`, not part of `check` or the hook. Run after
+    `vim.pack.update()`, Mason version bumps, JDK changes, or when touching LSP/DAP/task wiring.
+17. **Pinned**: Mason package versions in the config's `ensure_installed` (daily use too; update =
+    bump version → `test:e2e` → commit). JDK, Gradle, Maven, tree-sitter CLI in the repo `mise.toml`.
+18. **Fixtures** committed in `tests/e2e/fixtures/`, no wrappers, Gradle/Maven from mise, caches
+    in the e2e root: `gradle-java` (multi-module, Lombok, JUnit 5), `gradle-kotlin` (Kotlin only),
+    `gradle-mixed` and `maven-mixed` (Java + Kotlin calling each other), `maven-java` (multi-module).
+    No Spring Boot: `gradle run --debug-jvm` covers the JDWP attach. Tests copy a fixture to a temp
+    dir; compile errors are made by editing the copy.
+19. **Automated checks**:
+    1. jdtls attaches, Lombok getter resolves — gradle-java, maven-java, both mixed.
+    2. kotlin_lsp attaches, right server per file — gradle-kotlin, both mixed.
+    3. `<leader>rv`/`rm` real extract — gradle-java, gradle-kotlin.
+    4. Real compile errors in quickfix with file/line — all five.
+    5. neotest run file, pass/fail, no duplicates; Kotlin in Maven found or a known limit — gradle-java,
+       gradle-kotlin, both mixed.
+    6. Java DAP: launch main class + breakpoint, `<leader>ud` in a test — gradle-java.
+    7. Kotlin DAP launch + attach (`gradle run --debug-jvm`) from a subproject/module; settles
+       `debug_root` — gradle-kotlin, maven-mixed.
+    8. Sessions: restore, server reattaches, no empty panels — gradle-java.
+    9. codediff downloads its library and opens a diff — temp git repo.
+
+    Manual (listed in the skill): Shift+F8 key delivery, dap-ui look, `git mergetool` conflict flow,
+    Rust refactor titles.
+20. **Structure**: one test file per fixture (`tests/e2e/test_<fixture>.lua`), one child per file
+    (`pre_once`), cases in order, each cleans up (buffers, quickfix, DAP sessions). Features shared
+    across fixtures via helpers. Case names `<fixture> | <feature> | <behaviour>`.
+21. **Waiting**: condition waits only (`vim.wait` on attach/progress end, task status, DAP events),
+    named timeouts (index ~180 s, build ~120 s, DAP ~60 s) scaled by `E2E_TIMEOUT_FACTOR`. No
+    retries. On failure, dump `:messages`, LSP log tail, task output, recent DAP events.
+22. **Isolation**: own root `tests/.tests-e2e/` (XDG dirs, plugins, Mason, parsers, Gradle/Maven
+    caches); `run.sh` takes the root as a parameter. Layer A stays hermetic.
+23. **Gaps**: a test that exposes a gap asserts current behaviour as a named known limit (also in the
+    feature's Lua header); the fix is its own issue, test-first. An upstream fix turns it red.
+24. **Prerequisites**: one list in `custom/health.lua` (JDK version for jdtls, `cc`, `unzip`,
+    `tree-sitter`), used by the `test:e2e` preflight (fails fast with install hints) and by
+    `:checkhealth custom` on the host.
 
 ## Acceptance
 
