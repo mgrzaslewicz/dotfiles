@@ -63,11 +63,13 @@ function M.tree(files)
   return root
 end
 
---- Entry point for tests/run.sh: all test files, or only `file` when given.
+--- Entry point for tests/run.sh: all test files of a layer (`tests` or `tests/e2e`), or only `file` when given.
+---@param dir string
 ---@param file string
-function M.run(file)
-  if file == '' then return MiniTest.run() end
-  MiniTest.run_file(file)
+function M.run(dir, file)
+  if file ~= '' then return MiniTest.run_file(file) end
+  -- Not mini.test's default: it collects `tests/**/test_*.lua`, which would mix the layers.
+  MiniTest.run { collect = { find_files = function() return vim.fn.globpath(dir, 'test_*.lua', true, true) end } }
 end
 
 return M

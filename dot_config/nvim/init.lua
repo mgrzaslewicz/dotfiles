@@ -997,8 +997,7 @@ do
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
   -- Ensure basic parsers are installed
-  local parsers = { 'bash', 'c', 'diff', 'html', 'java', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
-  if not vim.g.test_mode then require('nvim-treesitter').install(parsers) end
+  if not vim.g.test_mode then require('nvim-treesitter').install(require('custom.tools').parsers) end
 
   ---@param buf integer
   ---@param language string

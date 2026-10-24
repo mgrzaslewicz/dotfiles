@@ -5,10 +5,20 @@ tmux = "latest"
 neovim = "0.12.6"
 stylua = "2.6.0"
 lua-language-server = "3.19.2"
+# End-to-end tests only (mise run test:e2e): JDK for jdtls/kotlin-lsp/debug adapters, builds of the fixture projects,
+# parser builds. The host has its own; `:checkhealth custom` lists what the config needs there.
+java = "temurin-25.0.5+8.0.LTS"
+gradle = "9.8.2"
+maven = "3.9.16"
+tree-sitter = "0.27.1"
 
 [tasks.test]
 description = "Neovim config tests (dot_config/nvim/tests); pass a test file to run only that one"
 run = "dot_config/nvim/tests/run.sh"
+
+[tasks."test:e2e"]
+description = "End-to-end tests with real servers, builds and DAP (dot_config/nvim/tests/e2e); on demand, see the nvim-config skill"
+run = "dot_config/nvim/tests/run.sh --e2e"
 
 [tasks."check:format"]
 description = "stylua formatting check for dot_config/nvim"

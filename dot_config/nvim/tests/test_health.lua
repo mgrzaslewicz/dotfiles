@@ -21,11 +21,11 @@ T['missing()'] = MiniTest.new_set()
 
 local health = require 'custom.health'
 
--- Everything present, java 21 unless given.
+-- Everything present, java 25 unless given.
 local function env(overrides)
   return vim.tbl_extend('force', {
     executable = function() return true end,
-    java_version_output = function() return 'openjdk version "21.0.13" 2026-10-21 LTS' end,
+    java_version_output = function() return 'openjdk version "25.0.5" 2026-10-21 LTS' end,
   }, overrides or {})
 end
 
@@ -41,10 +41,11 @@ T['missing()']['names a missing executable with an install hint'] = function()
   eq(problems[1].hint ~= nil, true)
 end
 
+-- jdtls v1.63 bundles Eclipse 4.38 plugins that require JavaSE 25 (found by tests/e2e).
 T['missing()']['reports a java older than jdtls needs'] = function()
-  local problems = health.missing(env { java_version_output = function() return 'openjdk version "17.0.12" 2024-07-16' end })
+  local problems = health.missing(env { java_version_output = function() return 'openjdk version "21.0.13" 2026-10-20 LTS' end })
   eq(names(problems), { 'java' })
-  eq(problems[1].message:find('17', 1, true) ~= nil, true)
+  eq(problems[1].message:find('java 21 found, 25+ needed', 1, true) ~= nil, true)
 end
 
 T['missing()']['reports missing java once, without a version check'] = function()
@@ -57,6 +58,34 @@ T['java_major()'] = function()
   eq(health.java_major 'java version "1.8.0_402"', 8)
   eq(health.java_major 'openjdk version "25" 2025-09-16', 25)
   eq(health.java_major 'command not found', nil)
+end
+
+-- tests/e2e/preflight.lua with PATH limited to fake programs: everything required except `without`.
+local function preflight(without)
+  local bin = helpers.tree { ['bin/'] = '' } .. '/bin'
+  for _, req in ipairs(health.requirements) do
+    if req.name ~= without then
+      local path = vim.fs.joinpath(bin, req.name)
+      local script = req.name == 'java' and 'echo \'openjdk version "25.0.5" 2026-10-20 LTS\' >&2' or 'true'
+      vim.fn.writefile({ '#!/bin/sh', script }, path)
+      vim.fn.setfperm(path, 'rwxr-xr-x')
+    end
+  end
+  local start = vim.uv.hrtime()
+  local result = vim.system({ vim.v.progpath, '--clean', '--headless', '-l', 'tests/e2e/preflight.lua' }, { env = { PATH = bin }, clear_env = true }):wait()
+  return result, (vim.uv.hrtime() - start) / 1e9
+end
+
+T['e2e preflight'] = MiniTest.new_set()
+
+T['e2e preflight']['passes with every prerequisite present'] = function() eq(preflight(nil).code, 0) end
+
+T['e2e preflight']['fails fast naming a missing program and how to install it'] = function()
+  local result, seconds = preflight 'unzip'
+  eq(result.code, 1)
+  eq(result.stderr:find('unzip not found', 1, true) ~= nil, true)
+  eq(result.stderr:find('apt install unzip', 1, true) ~= nil, true)
+  eq(seconds < 1, true)
 end
 
 local child = helpers.new_child()

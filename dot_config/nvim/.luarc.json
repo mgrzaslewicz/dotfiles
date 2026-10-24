@@ -3,7 +3,7 @@
   "runtime.version": "LuaJIT",
   "runtime.path": ["lua/?.lua", "lua/?/init.lua"],
   "workspace.library": ["$VIMRUNTIME", "${3rd}/luv/library", "tests/.tests/data/nvim/site/pack/core/opt"],
-  "workspace.ignoreDir": ["tests/.tests/config", "tests/.tests/state", "tests/.tests/cache"],
+  "workspace.ignoreDir": ["tests/.tests/config", "tests/.tests/state", "tests/.tests/cache", "tests/.tests-e2e"],
   "workspace.checkThirdParty": false,
   "diagnostics.globals": ["MiniTest"]
 }

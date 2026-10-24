@@ -15,15 +15,17 @@ in the header comment of its Lua file.
 | Kotlin debug: launch main class, project root | `lua/custom/plugins/debug.lua`, `lua/custom/jvm/` | `test_debug.lua`, `test_kotlin.lua`, `test_project.lua` |
 | Refactor maps `<leader>r` (Shift+F6, Ctrl+Alt+O/V/C/M) | `lua/custom/refactor.lua` | `test_refactor.lua` |
 | Git client survives a broken codediff | `lua/custom/plugins/git.lua` | `test_git.lua` |
-| Tested nvim version, `:checkhealth custom` | `lua/custom/health.lua` | `test_health.lua` |
+| Tested nvim version, prerequisites, `:checkhealth custom` | `lua/custom/health.lua` | `test_health.lua` |
+| Pinned Mason packages and parsers | `lua/custom/tools.lua` | `test_tools.lua`, e2e bootstrap |
+| Java LSP on Gradle (jdtls, Lombok) | `lua/custom/plugins/jdtls.lua` | `e2e/test_gradle_java.lua` |
 
 ## No tests yet
 
-Backfilled when next touched:
+Backfilled when next touched (layer B plan: `.scratch/neovim-tests`, issues 16–23):
 
 - Call/type hierarchy maps `grc`/`grC`/`grh`/`grH` (`init.lua`)
 - Go to class `gC` (`lua/custom/go_to_class.lua`)
-- nvim-jdtls wiring: Lombok, per-project workspace, refactor handlers, debug bundle, hot code replace (`lua/custom/plugins/jdtls.lua`)
+- nvim-jdtls wiring beyond attach/Lombok: refactor handlers, debug bundle, hot code replace (`lua/custom/plugins/jdtls.lua`)
 - `<leader>Q` project errors to quickfix (`init.lua`)
 - Debug maps `<leader>d` and F-keys, Java attach config, dap-ui open/close (`lua/custom/plugins/debug.lua`)
 - Neogit/codediff maps `<leader>g`, codediff as `git mergetool` (`lua/custom/plugins/git.lua`)

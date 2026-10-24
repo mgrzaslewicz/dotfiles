@@ -11,8 +11,8 @@ local M = {}
 
 M.tested_version = '0.12.6'
 
--- jdtls 1.4x+ refuses older runtimes; kotlin-lsp and the debug adapters run on the same java.
-local min_java = 21
+-- jdtls v1.63 bundles Eclipse plugins that require JavaSE 25; kotlin-lsp and the debug adapters run on the same java.
+local min_java = 25
 
 ---@class custom.Requirement
 ---@field name string executable
@@ -21,7 +21,7 @@ local min_java = 21
 
 ---@type custom.Requirement[]
 M.requirements = {
-  { name = 'java', why = ('jdtls, kotlin-lsp and the debug adapters run on it (%d+)'):format(min_java), hint = 'mise use -g java@temurin-21' },
+  { name = 'java', why = ('jdtls, kotlin-lsp and the debug adapters run on it (%d+)'):format(min_java), hint = 'mise use -g java@temurin-25' },
   { name = 'python3', why = "Mason's jdtls launcher is a Python script", hint = 'apt install python3' },
   { name = 'unzip', why = 'Mason extracts kotlin-debug-adapter and other .zip packages', hint = 'apt install unzip' },
   { name = 'tree-sitter', why = 'nvim-treesitter builds parsers with the tree-sitter CLI', hint = 'mise use -g tree-sitter' },

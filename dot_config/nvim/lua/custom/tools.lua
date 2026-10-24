@@ -5,7 +5,7 @@
 local M = {}
 
 M.mason = {
-  -- Java (Eclipse JDT LS), started by nvim-jdtls. Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
+  -- Java (Eclipse JDT LS), started by nvim-jdtls. Needs a Java 25+ runtime on PATH (custom/health.lua); Mason's launcher also needs python3.
   { 'jdtls', version = 'v1.63.0' },
   -- Java debugger, loaded into jdtls as a bundle by lua/custom/plugins/jdtls.lua.
   { 'java-debug-adapter', version = '0.59.0' },
@@ -17,6 +17,10 @@ M.mason = {
   -- Lua formatter (conform); same version as the repo's mise.toml pin used by `mise run check`.
   { 'stylua', version = 'v2.6.0' },
 }
+
+-- Treesitter parsers installed on startup (others are installed when a file type first needs one). Their revisions
+-- are pinned by nvim-treesitter's own revision in nvim-pack-lock.json. neotest finds Java/Kotlin tests with them.
+M.parsers = { 'bash', 'c', 'diff', 'html', 'java', 'kotlin', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
 
 --- Pinned version of a Mason package.
 ---@param name string

@@ -1,7 +1,7 @@
 # Layer B harness, tracer bullet: jdtls on gradle-java
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 13
 
 ## What
@@ -28,3 +28,19 @@ Spec decisions 16–22, 24. Everything layer B needs, proven on one check.
 - Second run reuses installs; time recorded in the notes.
 - Layer A (`mise run check`) unchanged in time and still hermetic.
 - Preflight with `unzip` hidden from PATH fails in under a second naming it.
+
+## Notes
+
+- Found by the tracer: jdtls v1.63.0 needs Java 25 (bundled Eclipse plugins require `osgi.ee JavaSE 25`); it
+  exits with code 13 on 21. Health minimum, hint, comments and the mise pin moved to 25 — the host needs 25 too.
+- Pins: `lua/custom/tools.lua` (Mason packages + parser list; kotlin-lsp registry override reads its version
+  from there); mise: java temurin-25.0.5, gradle 9.8.2, maven 3.9.16, tree-sitter 0.27.1. Fixture Lombok 1.18.48.
+- `tests/run.sh --e2e`: preflight → bootstrap (sync mason-tool-installer, parser install wait, verify against
+  pins) → `tests/e2e/test_*.lua`. Layer A collection restricted to `tests/test_*.lua` (mini.test's default recurses).
+- Row 1 readiness: `ServiceReady` (recorded by patching `jdtls.start_or_attach` in the child), definition of the
+  Lombok getter reaches Person.java, the fixture's deliberate unused-import warning arrives, then no errors.
+- Mutation: without the Lombok javaagent the definition wait times out.
+- Preflight acceptance as layer A tests (`test_health.lua`, fake programs on PATH): missing unzip → exit 1,
+  names it and the install hint, < 1 s.
+- Times (this container): fresh e2e 47 s (downloads, 1.7 GB root), second run 6 s; layer A check 23 s, unchanged.
+- Installed `unzip` and `gcc` in the container via apt (prerequisites).

@@ -14,6 +14,7 @@ skill list: `dot_config/nvim/INTELLIJ_TRANSITION.md`.
 |---|---|
 | `mise run test` | all tests (~5 s); `mise run test -- tests/test_x.lua` for one file (path relative to `dot_config/nvim`) |
 | `mise run check` | everything a commit must pass: `stylua --check`, tests, lua-language-server diagnostics (~20 s) |
+| `mise run test:e2e` | layer B, real servers/builds/DAP (`tests/e2e/`); on demand, see below. `-- tests/e2e/test_x.lua` for one file |
 | `mise run setup` | once per clone: repo-local `core.hooksPath=.githooks` |
 
 `stylua .` in `dot_config/nvim` fixes formatting. The pre-commit hook runs `mise run check` on commits touching
@@ -46,17 +47,42 @@ never committed as-is; kept work is rebuilt test-first. Features without tests y
 - `tests/helpers.lua`: `new_child()`, `tree(files)` (temp dir fixture, `'dir/'` for empty dirs),
   `attach_fake_lsp(child)` (fake server in the current buffer; offers code actions titled `_G.offered`, records
   applied ones in `_G.applied`).
-- In a `child.lua [[ … ]]` chunk, `]]` inside the code ends the string early — use `[=[ … ]=]`.
+- In a `child.lua [[ … ]]` chunk, `]]` inside the code ends the string early — use `[=[ … ]=]`. A syntax error
+  in a test file is not a red test: check that the failure message is the one you expect.
+
+## Layer B: end-to-end (`tests/e2e/`)
+
+Real jdtls, kotlin-lsp, Gradle, Maven, neotest and DAP on fixture projects. Not part of `check` or the hook.
+
+- **Run it** after `vim.pack.update()`, after bumping a Mason pin (`lua/custom/tools.lua`) or the JDK, and when
+  changing LSP, DAP, test or task wiring. First run downloads ~1.7 GB into `tests/.tests-e2e/` (about a minute
+  here); later runs reuse it.
+- `tests/run.sh --e2e`: preflight (`tests/e2e/preflight.lua`, prerequisites from `custom/health.lua`), then
+  `tests/e2e/bootstrap.lua` installs pinned Mason packages and parsers and fails if anything is not as pinned.
+  No `NVIM_TEST`. Gradle/Maven caches live in the e2e root.
+- Layout: one file per fixture (`tests/e2e/test_<fixture>.lua`), one child for the file (`pre_once`), cases in
+  order and cleaning up after themselves; names `<fixture> | <feature> | <behaviour>`. Fixtures in
+  `tests/e2e/fixtures/`, copied to a temp dir by `e2e.copy_fixture` — never built in place.
+- `tests/e2e/helpers.lua`: `e2e.wait(child, kind, what, condition)` waits for a condition evaluated in the child,
+  timeouts by kind (`attach`, `index`, `build`, `dap`) scaled by `E2E_TIMEOUT_FACTOR`; on timeout it dumps LSP
+  clients, `_G.e2e`, `:messages` and the LSP log. No retries, no sleeps. `e2e.record_jdtls_status` records
+  `ServiceReady`.
+- Assert positive signals: "no errors" means nothing until something proves diagnostics arrived (the fixtures
+  carry a deliberate warning for that).
+- A gap found by an e2e test is asserted as a named known limit (also in the feature's Lua header); the fix is
+  separate work. Manual checks, not automated: Shift+F8 delivery in terminals, dap-ui look, `git mergetool`
+  conflict flow, Rust refactor titles.
 
 ## Environment
 
 - `tests/run.sh` isolates everything in `tests/.tests/` (gitignored): XDG dirs, plugins, state. Config comes from
   the source tree, no `chezmoi apply` needed. First run installs plugins at `nvim-pack-lock.json` revisions;
-  delete `tests/.tests` to start over.
+  delete `tests/.tests` to start over. Layer A only collects `tests/test_*.lua` (not `tests/e2e/`).
 - `NVIM_TEST=1` (set by `run.sh`, read as `vim.g.test_mode` in `init.lua`): skips Mason tool installs and
   treesitter parser installs. Plugins load; LSP servers are declared but never start (no JDK, no servers).
-  Real-server tests (layer B) are not built yet.
-- Versions are pinned in the repo `mise.toml` (neovim, stylua, lua-language-server). `lua/custom/health.lua`
+  Real servers are layer B.
+- Versions are pinned: neovim, stylua, lua-language-server, and for e2e java (25: jdtls needs it), gradle, maven,
+  tree-sitter in the repo `mise.toml`; Mason packages and the parser list in `lua/custom/tools.lua`. `lua/custom/health.lua`
   `tested_version` must equal the neovim pin (a test enforces it); `:checkhealth custom` warns on the host when
   they differ.
 - Plugin update: `:lua vim.pack.update()` in daily nvim, `chezmoi re-add ~/.config/nvim/nvim-pack-lock.json`,

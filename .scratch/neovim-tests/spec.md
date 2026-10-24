@@ -135,7 +135,8 @@ Real jdtls, kotlin_lsp, Gradle, Maven, neotest and DAP against fixture projects.
 16. **On demand only**: `mise run test:e2e`, not part of `check` or the hook. Run after
     `vim.pack.update()`, Mason version bumps, JDK changes, or when touching LSP/DAP/task wiring.
 17. **Pinned**: Mason package versions in the config's `ensure_installed` (daily use too; update =
-    bump version → `test:e2e` → commit). JDK, Gradle, Maven, tree-sitter CLI in the repo `mise.toml`.
+    bump version → `test:e2e` → commit), in `lua/custom/tools.lua` with the parser list. JDK (25: jdtls
+    v1.63 requires it), Gradle, Maven, tree-sitter CLI in the repo `mise.toml`.
 18. **Fixtures** committed in `tests/e2e/fixtures/`, no wrappers, Gradle/Maven from mise, caches
     in the e2e root: `gradle-java` (multi-module, Lombok, JUnit 5), `gradle-kotlin` (Kotlin only),
     `gradle-mixed` and `maven-mixed` (Java + Kotlin calling each other), `maven-java` (multi-module).
