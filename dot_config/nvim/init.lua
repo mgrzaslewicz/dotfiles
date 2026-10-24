@@ -851,18 +851,8 @@ do
   --    :Mason
   --
   -- You can press `g?` for help in this menu.
-  local ensure_installed = vim.tbl_keys(servers or {})
-  vim.list_extend(ensure_installed, {
-    -- You can add other tools here that you want Mason to install
-    -- Java (Eclipse JDT LS), started by nvim-jdtls. Needs a Java 21+ runtime on PATH; Mason's launcher also needs python3.
-    'jdtls',
-    -- Java debugger, loaded into jdtls as a bundle by lua/custom/plugins/jdtls.lua.
-    'java-debug-adapter',
-    -- Kotlin debugger, configured in lua/custom/plugins/debug.lua.
-    'kotlin-debug-adapter',
-  })
-
-  if not vim.g.test_mode then require('mason-tool-installer').setup { ensure_installed = ensure_installed } end
+  -- Pinned versions of every server and tool, including the ones in `servers` above: lua/custom/tools.lua.
+  if not vim.g.test_mode then require('mason-tool-installer').setup { ensure_installed = require('custom.tools').mason } end
 
   for name, server in pairs(servers) do
     vim.lsp.config(name, server)
