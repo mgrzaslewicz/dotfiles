@@ -39,16 +39,8 @@ local function kotlin_project_root() return require('custom.jvm.project').debug_
 
 -- Top-level `fun main` in `Foo.kt` compiles to class `<package>.FooKt`; offer that as the default.
 local function kotlin_main_class()
-  local pkg = ''
-  for _, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, 50, false)) do
-    local name = line:match '^%s*package%s+([%w_.]+)'
-    if name then
-      pkg = name .. '.'
-      break
-    end
-  end
-  local file_class = vim.fn.expand '%:t:r' .. 'Kt'
-  return vim.fn.input('Main class: ', pkg .. file_class)
+  local default = require('custom.jvm.kotlin').main_class(vim.api.nvim_buf_get_lines(0, 0, -1, false), vim.api.nvim_buf_get_name(0))
+  return vim.fn.input('Main class: ', default)
 end
 
 dap.configurations.kotlin = {
