@@ -1,7 +1,8 @@
 -- Init for the test runner process only (the config under test runs in child processes, see helpers.lua).
 -- Started by tests/run.sh with cwd = the config root.
 vim.opt.rtp:prepend(vim.fs.joinpath(vim.fn.stdpath 'data', 'site', 'pack', 'core', 'opt', 'mini.nvim'))
-package.path = './?.lua;' .. package.path
+-- `tests.*` and the config's own pure modules (`custom.*`), for unit tests that need no child.
+package.path = './?.lua;./lua/?.lua;./lua/?/init.lua;' .. package.path
 
 -- An error here would leave headless nvim running forever; fail the run instead.
 local ok, minitest = pcall(require, 'mini.test')

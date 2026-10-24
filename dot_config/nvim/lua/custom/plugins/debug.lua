@@ -35,7 +35,7 @@ dap.configurations.java = {
 
 dap.adapters.kotlin = { type = 'executable', command = 'kotlin-debug-adapter', options = { auto_continue_if_many_stopped = false } }
 
-local function kotlin_project_root() return vim.fs.root(0, { 'settings.gradle.kts', 'settings.gradle', 'gradlew', 'pom.xml' }) or vim.fn.getcwd() end
+local function kotlin_project_root() return require('custom.jvm.project').debug_root(0) or vim.fn.getcwd() end
 
 -- Top-level `fun main` in `Foo.kt` compiles to class `<package>.FooKt`; offer that as the default.
 local function kotlin_main_class()

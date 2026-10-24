@@ -11,6 +11,24 @@ function M.new_child()
   return child
 end
 
+--- Creates a temp dir tree for fixtures and returns its path. Keys are relative paths; a trailing `/` makes an
+--- empty dir, anything else a file with the value as content.
+---@param files table<string, string>
+---@return string
+function M.tree(files)
+  local root = vim.fn.tempname()
+  for path, content in pairs(files) do
+    local full = vim.fs.joinpath(root, path)
+    if vim.endswith(path, '/') then
+      vim.fn.mkdir(full, 'p')
+    else
+      vim.fn.mkdir(vim.fs.dirname(full), 'p')
+      vim.fn.writefile(vim.split(content, '\n'), full)
+    end
+  end
+  return root
+end
+
 --- Entry point for tests/run.sh: all test files, or only `file` when given.
 ---@param file string
 function M.run(file)

@@ -52,9 +52,11 @@ that touches the config.
    - `project.root(dir)` — marker priority: `gradlew`/`mvnw` > `settings.gradle*`
      > `build.gradle*`/`pom.xml` (today's `tasks.lua` semantics). Returns
      `{ tool, root, cmd }`. Used by tasks.
-   - `project.module(dir)` — nearest module dir (today's `kotlin_project_root`
-     behaviour). Used by Kotlin debug.
-   - Whether kotlin-debug-adapter needs the module or the root: layer B check.
+   - `project.debug_root(source)` — today's `kotlin_project_root`, unchanged and
+     honestly named (not a module concept: Gradle build root, nearest Maven module).
+     Used by Kotlin debug.
+   - Whether kotlin-debug-adapter needs the module or the root: layer B check;
+     a real `module(dir)` comes test-first if the answer calls for it.
 8. Test profile `NVIM_TEST=1`: config skips mason-tool-installer and treesitter
    auto-installs. Plugins still load. LSP configs are declared, not attached.
    Layer B runs without it.
@@ -108,7 +110,7 @@ that touches the config.
    overseer template registered, quickfix populated from sample compiler
    output through the real errorformat.
 5. Extract + unit test:
-   - `project` (`root`, `module`) — fixtures in temp dirs: Gradle subproject,
+   - `project` (`root`, `debug_root`) — fixtures in temp dirs: Gradle subproject,
      Maven submodule, wrapper-less builds, no project, nested `build/`/`target/`.
    - `errorformat` — javac, kotlinc (new and old format), Maven `[ERROR]`/`[WARNING]`,
      kotlin-maven-plugin `file://` paths; asserted via `vim.fn.getqflist` on `setqflist({lines=…, efm=…})`.

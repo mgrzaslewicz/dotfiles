@@ -1,7 +1,7 @@
 # Extract `project` module: root, module, Spring Boot detection
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 02
 
 ## What
@@ -20,3 +20,12 @@ Spec decision 7; slice 1 item 5.
 `tests/test_project.lua` covers: Gradle wrapper root from a subproject, Maven `mvnw` root from a submodule,
 wrapper-less Gradle (settings file) and Maven (`pom.xml`), no project → `nil`, `module` returns the nearest
 submodule, Spring Boot found in a subproject build file, `build/`/`target/`/dot dirs skipped.
+
+## Notes
+
+- `module(dir)` became `debug_root(source)` (Q17 = B): today's marker list tried in order, each searched all the
+  way up, gives the Gradle build root but the nearest Maven module. Kept unchanged and pinned by tests; the
+  module-vs-root question stays with issue 13.
+- Module: `lua/custom/jvm/project.lua`. `tests/helpers.lua` gained `tree(files)` for temp-dir fixtures; the
+  runner's `package.path` now includes `lua/`, so pure modules are tested in-process, without a child.
+- Mutation check: dropping the dot-dir skip turns the skip test red.
