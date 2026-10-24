@@ -1,7 +1,7 @@
 # Agent skill: testing the nvim config
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 04
 
 ## What
@@ -17,3 +17,10 @@ prefix registry → `tests/test_keymaps.lua`).
 ## Acceptance
 
 A fresh agent session asked to "add a feature to the nvim config" loads the skill and starts with a failing test.
+
+## Notes
+
+- Skill: `.claude/skills/nvim-config/SKILL.md`. Includes the former "Notes for agents" (removed from
+  `INTELLIJ_TRANSITION.md` in issue 12), the "prove it bites" rule for tests that pass before the change, and the
+  `[[ ]]` vs `[=[ ]=]` pitfall in `child.lua` chunks.
+- Acceptance (fresh session starts with a failing test) not verified by a separate session; check on first use.
