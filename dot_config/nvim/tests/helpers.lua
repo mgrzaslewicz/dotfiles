@@ -11,6 +11,40 @@ function M.new_child()
   return child
 end
 
+--- Attaches a fake LSP server to the child's current buffer and waits for the LspAttach keymaps. It offers the code
+--- actions whose titles are in the child's `_G.offered`; each applies by running a client-side command that records
+--- its title in `_G.applied`.
+function M.attach_fake_lsp(child)
+  child.lua [[
+    _G.offered, _G.applied = {}, {}
+    vim.lsp.commands['test.apply'] = function(cmd) table.insert(_G.applied, cmd.arguments[1]) end
+    vim.lsp.start {
+      name = 'fake',
+      root_dir = vim.fn.getcwd(),
+      cmd = function()
+        local closing = false
+        return {
+          request = function(method, params, callback)
+            local result = ({
+              initialize = { capabilities = { codeActionProvider = true, renameProvider = true, inlayHintProvider = true } },
+              ['textDocument/codeAction'] = vim.tbl_map(
+                function(title) return { title = title, kind = params.context and params.context.only[1], command = { title = title, command = 'test.apply', arguments = { title } } } end,
+                _G.offered
+              ),
+            })[method]
+            vim.schedule(function() callback(nil, result) end)
+            return true, 1
+          end,
+          notify = function() return true end,
+          is_closing = function() return closing end,
+          terminate = function() closing = true end,
+        }
+      end,
+    }
+    vim.wait(2000, function() return vim.fn.maparg(' rn', 'n') ~= '' end)
+  ]]
+end
+
 --- Creates a temp dir tree for fixtures and returns its path. Keys are relative paths; a trailing `/` makes an
 --- empty dir, anything else a file with the value as content.
 ---@param files table<string, string>

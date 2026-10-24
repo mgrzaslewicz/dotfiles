@@ -756,7 +756,13 @@ do
       --
       -- This may be unwanted, since they displace some of your code
       if client and client:supports_method('textDocument/inlayHint', event.buf) then
-        map('<leader>th', function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end, '[T]oggle Inlay [H]ints')
+        -- Not via `map`: <leader>t descs start with "[T]oggle" (tests/test_keymaps.lua).
+        vim.keymap.set(
+          'n',
+          '<leader>th',
+          function() vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf }) end,
+          { buffer = event.buf, desc = '[T]oggle Inlay [H]ints' }
+        )
       end
     end,
   })

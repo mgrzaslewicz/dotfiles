@@ -3,45 +3,11 @@ local eq = MiniTest.expect.equality
 
 local child = helpers.new_child()
 
--- A buffer with a fake LSP server attached. It offers the code actions in `_G.offered` (titles; each applies by
--- running a client-side command that records its title in `_G.applied`).
-local function attach_fake_lsp()
-  child.lua [[
-    _G.offered, _G.applied = {}, {}
-    vim.lsp.commands['test.apply'] = function(cmd) table.insert(_G.applied, cmd.arguments[1]) end
-    vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'val x = 1 + 2' })
-    vim.lsp.start {
-      name = 'fake',
-      root_dir = vim.fn.getcwd(),
-      cmd = function()
-        local closing = false
-        return {
-          request = function(method, params, callback)
-            local result = ({
-              initialize = { capabilities = { codeActionProvider = true, renameProvider = true } },
-              ['textDocument/codeAction'] = vim.tbl_map(
-                function(title) return { title = title, kind = params.context and params.context.only[1], command = { title = title, command = 'test.apply', arguments = { title } } } end,
-                _G.offered
-              ),
-            })[method]
-            vim.schedule(function() callback(nil, result) end)
-            return true, 1
-          end,
-          notify = function() return true end,
-          is_closing = function() return closing end,
-          terminate = function() closing = true end,
-        }
-      end,
-    }
-    vim.wait(2000, function() return vim.fn.maparg(' rn', 'n') ~= '' end)
-  ]]
-end
-
 local T = MiniTest.new_set {
   hooks = {
     pre_case = function()
       child.start()
-      attach_fake_lsp()
+      helpers.attach_fake_lsp(child)
     end,
     post_case = function() child.stop() end,
   },
