@@ -17,7 +17,9 @@ in the header comment of its Lua file.
 | Git client survives a broken codediff | `lua/custom/plugins/git.lua` | `test_git.lua` |
 | Tested nvim version, prerequisites, `:checkhealth custom` | `lua/custom/health.lua` | `test_health.lua` |
 | Pinned Mason packages and parsers | `lua/custom/tools.lua` | `test_tools.lua`, e2e bootstrap |
-| Java LSP on Gradle (jdtls, Lombok) | `lua/custom/plugins/jdtls.lua` | `e2e/test_gradle_java.lua` |
+| JVM servers rooted at the whole build (Maven multi-module too) | `lua/custom/jvm/project.lua`, `jdtls.lua`, `init.lua` | `test_lsp_roots.lua`, `test_project.lua` |
+| Java LSP (jdtls, Lombok) on Gradle and Maven | `lua/custom/plugins/jdtls.lua` | `e2e/test_gradle_java.lua`, `e2e/test_maven_java.lua` |
+| Kotlin LSP (kotlin_lsp) on Gradle and Maven, mixed projects (one server per language) | `init.lua` | `e2e/test_gradle_kotlin.lua`, `e2e/test_*_mixed.lua` |
 
 ## No tests yet
 

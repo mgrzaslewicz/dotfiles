@@ -6,6 +6,10 @@
 -- bundle (from Mason) lets nvim-jdtls register the `java` nvim-dap adapter (custom/plugins/debug.lua).
 -- jdtls itself is installed by Mason (see `ensure_installed` in init.lua) and is on PATH.
 -- The client is still named `jdtls`, which neotest-java relies on to find it.
+--
+-- Known limit: jdtls has no Kotlin support. In mixed Java/Kotlin projects, Java code using Kotlin classes shows
+-- "cannot be resolved" errors and has no navigation, although the build compiles; Kotlin files get kotlin_lsp,
+-- which does resolve Java classes (tests/e2e/test_*_mixed.lua).
 
 vim.pack.add { 'https://github.com/mfussenegger/nvim-jdtls' }
 

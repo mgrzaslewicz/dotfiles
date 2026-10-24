@@ -63,12 +63,19 @@ Real jdtls, kotlin-lsp, Gradle, Maven, neotest and DAP on fixture projects. Not 
 - Layout: one file per fixture (`tests/e2e/test_<fixture>.lua`), one child for the file (`pre_once`), cases in
   order and cleaning up after themselves; names `<fixture> | <feature> | <behaviour>`. Fixtures in
   `tests/e2e/fixtures/`, copied to a temp dir by `e2e.copy_fixture` — never built in place.
-- `tests/e2e/helpers.lua`: `e2e.wait(child, kind, what, condition)` waits for a condition evaluated in the child,
-  timeouts by kind (`attach`, `index`, `build`, `dap`) scaled by `E2E_TIMEOUT_FACTOR`; on timeout it dumps LSP
-  clients, `_G.e2e`, `:messages` and the LSP log. No retries, no sleeps. `e2e.record_jdtls_status` records
-  `ServiceReady`.
-- Assert positive signals: "no errors" means nothing until something proves diagnostics arrived (the fixtures
-  carry a deliberate warning for that).
+- `tests/e2e/helpers.lua`: `e2e.fixture_set(name)` (copy, one child, `ctx.child`/`ctx.project`), `e2e.wait(child,
+  kind, what, condition)` — the runner polls `condition` (a Lua expression run in the child) until a deadline by
+  kind (`attach`, `index`, `build`, `dap`) × `E2E_TIMEOUT_FACTOR`, then fails with a dump (clients and their
+  diagnostics capabilities, `_G.e2e`, `:messages`, LSP log). Conditions must be cheap and never block: send LSP
+  requests asynchronously and poll the result (see `definition_reaches`); a long `vim.wait` or
+  `buf_request_sync` inside the child once hung a run for 30+ minutes. Also `expect_jdtls`, `expect_kotlin_lsp`,
+  `clients`, `definition_reaches`, `errors`. No retries, no sleeps.
+- Assert positive signals: "no errors" means nothing until something proves diagnostics arrived. Each fixture
+  source carries a deliberate warning: an unused import for jdtls, an unnecessary `!!` on a Kotlin `String` for
+  kotlin-lsp (which does not report unused variables).
+- Debugging a stuck e2e child: it listens on a socket (`nvim --server <addr> --remote-expr 'luaeval(...)'`), and
+  kotlin-lsp logs to `/tmp/idea-system*/system/log/intellij-server.log`. Throwaway probe test files can live in
+  the scratchpad and run with `mise run test:e2e -- <absolute path>`.
 - A gap found by an e2e test is asserted as a named known limit (also in the feature's Lua header); the fix is
   separate work. Manual checks, not automated: Shift+F8 delivery in terminals, dap-ui look, `git mergetool`
   conflict flow, Rust refactor titles.
