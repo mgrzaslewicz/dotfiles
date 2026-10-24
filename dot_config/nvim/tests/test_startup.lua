@@ -17,4 +17,12 @@ T['config loads without errors or messages'] = function()
   eq(child.cmd_capture 'messages', '')
 end
 
+-- Test children share one state dir; a session saved by one would be restored by the next (layer B tests sessions).
+T['test profile neither restores nor saves sessions'] = function()
+  child.cmd('edit ' .. require('tests.helpers').tree { ['Leak.txt'] = '' } .. '/Leak.txt')
+  child.restart()
+  local listed = child.lua 'return vim.tbl_map(vim.api.nvim_buf_get_name, vim.tbl_filter(function(b) return vim.bo[b].buflisted end, vim.api.nvim_list_bufs()))'
+  eq(vim.tbl_filter(function(name) return name ~= '' end, listed), {})
+end
+
 return T

@@ -4,7 +4,8 @@
 -- Chosen over mini.sessions: per-directory sessions without extra code.
 -- One session per working directory (and git branch other than main/master), saved on exit to
 -- stdpath('state')/sessions/. Starting `nvim` without arguments restores the session for the cwd;
--- starting it with files (or stdin) leaves the session alone and doesn't save one.
+-- starting it with files (or stdin) leaves the session alone and doesn't save one. Neither happens in the test
+-- profile (NVIM_TEST); session restore is covered by the e2e tests.
 
 vim.pack.add { 'https://github.com/folke/persistence.nvim' }
 
@@ -29,6 +30,8 @@ vim.api.nvim_create_autocmd('VimEnter', {
   -- nested: restored buffers must fire their BufRead/FileType autocmds (treesitter, LSP)
   nested = true,
   callback = function()
+    -- Test children share one state dir; a session would carry buffers from one test into the next.
+    if vim.g.test_mode then return persistence.stop() end
     if vim.fn.argc() == 0 and not vim.g.started_with_stdin then
       persistence.load()
     else
