@@ -114,9 +114,8 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
       Maps: `<leader>gg` status (stage/commit/push), `gc` commit, `gb` branches, `gl` log, `gd` diff changes
       (conflicted files open in the 3-way view), `gD` diff against a revision, `gh` file history (visual: selection history),
       `gH` repo history. `git mergetool` opens codediff's merge view (`run_onchange_git_config.sh`).
-- [x] [fix] Snap nvim (core22 glibc 2.35) can't load codediff's library with the host libgomp (needs glibc 2.38):
-      `git.lua` downloads codediff's bundled old-glibc libgomp next to the library when running from snap.
-      codediff failing no longer aborts startup (Neogit falls back to inline diffs). Cleaner long-term: non-snap nvim.
+- [x] [fix] codediff failing to load its native library no longer aborts startup; Neogit falls back to inline diffs
+      (`tests/test_git.lua`).
 - [ ] [verify] codediff downloads its native diff library on first use (`:CodeDiff install` to retry); Neogit `d` popup opens codediff;
       resolve a real merge conflict with `<leader>gd` and with `git mergetool`
 - [ ] [skill] Neogit status buffer: `s`/`u` stage/unstage, `c` commit, `P` push, `p` pull, `b` branch, `?` help
@@ -159,5 +158,4 @@ Tick boxes (`- [x]`) as items are done and keep notes inline.
 - 2026-10-22: Step 3 setup — nvim-dap + dap-ui + virtual text, Java debugging via nvim-jdtls, `<leader>d` maps, `<leader>ud` debug test.
 - 2026-10-22: Kotlin debugging via kotlin-debug-adapter (launch main class, attach on 5005).
 - 2026-10-22: Step 4 setup — Neogit + codediff.nvim (instead of unmaintained diffview), `<leader>g` maps, codediff as git mergetool.
-- 2026-10-22: Fixed codediff failing to load under snap nvim (bundle libgomp).
 - 2026-10-23: Step 5 setup — overseer.nvim with Gradle/Maven tasks and compiler errors in quickfix (`<leader>b`), persistence.nvim sessions (`<leader>w`).

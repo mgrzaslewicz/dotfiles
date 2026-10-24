@@ -12,27 +12,6 @@ vim.pack.add {
   'https://github.com/NeogitOrg/neogit',
 }
 
--- Snap-packaged nvim runs against Ubuntu core22's glibc, but the host's libgomp (which codediff's native
--- library links) needs a newer one. codediff's installer only bundles its own old-glibc libgomp for Nix,
--- so bundle it here for snap; the library finds it next to itself via RPATH $ORIGIN.
-local function bundle_libgomp_for_snap()
-  if not (vim.env.SNAP or vim.v.progpath:find '^/snap/') then return end
-  local root = vim.pack.get({ 'codediff.nvim' })[1].path
-  local libgomp = vim.fs.joinpath(root, 'libgomp.so.1')
-  if vim.uv.fs_stat(libgomp) then return end
-
-  local version = vim.trim(table.concat(vim.fn.readfile(vim.fs.joinpath(root, 'VERSION')), ''))
-  local arch = ({ x86_64 = 'x64', aarch64 = 'arm64' })[vim.uv.os_uname().machine]
-  if not arch then return end
-  local url = ('https://github.com/esmuellert/codediff.nvim/releases/download/v%s/libgomp_linux_%s_%s.so.1'):format(version, arch, version)
-  local result = vim.system({ 'curl', '-fsSL', '-o', libgomp, url }):wait()
-  if result.code ~= 0 then
-    os.remove(libgomp)
-    vim.notify('codediff: failed to download bundled libgomp: ' .. (result.stderr or ''), vim.log.levels.WARN)
-  end
-end
-bundle_libgomp_for_snap()
-
 -- A broken native diff library should not abort the rest of the config; Neogit works without it.
 local codediff_ok, codediff_err = pcall(function() require('codediff').setup {} end)
 if not codediff_ok then vim.notify('codediff.nvim disabled: ' .. codediff_err, vim.log.levels.WARN) end
