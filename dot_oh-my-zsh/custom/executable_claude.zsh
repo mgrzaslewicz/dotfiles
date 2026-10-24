@@ -114,6 +114,45 @@ claude-toolbox() {
     FUSE_DEVICE_ARGS+=(--device /dev/fuse)
   fi
 
+  # workmux status tracking (working/waiting/done in the tmux window): its
+  # Claude Code hooks run inside the container, where neither workmux nor the
+  # host tmux server is reachable -- and mounting the tmux socket in would hand
+  # the agent a full host shell (`tmux run-shell`), undoing the isolation. So
+  # the container's `workmux` is a shim that only spools hook events into a
+  # mounted dir (.containers/claude/workmux-shim.sh), and this background relay
+  # replays them through the real host workmux, which already knows the pane
+  # from the inherited TMUX/TMUX_PANE. Only a fixed allowlist of subcommands is
+  # replayed, so the spool can't be used to run anything else on the host.
+  # The relay runs until the `always` block below removes its dir after
+  # podman exits (or this shell goes away); `&!` keeps zsh's job-control
+  # notices out of the terminal. Skipped outside a tmux pane or without
+  # workmux on the host.
+  WORKMUX_RELAY_ARGS=()
+  RELAY_DIR=""
+  if [ -n "${TMUX_PANE:-}" ] && command -v workmux >/dev/null 2>&1; then
+    RELAY_PARENT="${XDG_RUNTIME_DIR:-${HOME}/.cache}"
+    mkdir -p "$RELAY_PARENT"
+    RELAY_DIR="$(mktemp -d "${RELAY_PARENT}/claude-workmux-relay.XXXXXX")"
+    SHELL_PID=$$
+    (
+      while [ -d "$RELAY_DIR" ] && kill -0 "$SHELL_PID" 2>/dev/null; do
+        for evt in "$RELAY_DIR"/*.evt(N); do
+          { IFS= read -r relay_args; IFS= read -r relay_payload; } < "$evt" || true
+          rm -f "$evt"
+          case "$relay_args" in
+            "register-agent"|"set-window-status working"|"set-window-status waiting"|"set-window-status done"|"set-window-status clear") ;;
+            *) continue ;;
+          esac
+          # ${=...} word-splits: relay_args is one of the fixed strings above.
+          printf '%s' "$relay_payload" | base64 -d 2>/dev/null | workmux ${=relay_args} || true
+        done
+        sleep 0.2
+      done
+      rm -rf "$RELAY_DIR"
+    ) </dev/null >/dev/null 2>&1 &!
+    WORKMUX_RELAY_ARGS+=(-v "$RELAY_DIR:/home/claude-user/.workmux-relay:rw" --env WORKMUX_RELAY_DIR=/home/claude-user/.workmux-relay)
+  fi
+
   # --cap-add=SYS_ADMIN: podman's own default capability set excludes it, and
   # a capability absent here can never be granted to anything nested inside,
   # no matter how that nested container maps identities — a namespace's
@@ -123,7 +162,14 @@ claude-toolbox() {
   # expected requirement for podman/docker-in-docker, not container
   # escalation: it widens what THIS outer container can do, not what it's
   # isolated from.
-  podman run \
+  #
+  # ARGV0=claude: tmux reports a pane's pane_current_command from the
+  # foreground process's argv[0], and workmux uses that to recognize the pane
+  # as a Claude agent (sidebar/dashboard, agent-exit detection). zsh's ARGV0
+  # sets it for this one external command, like `exec -a` in the
+  # ~/.local/bin/claude wrapper, without replacing the shell.
+  {
+  ARGV0=claude podman run \
     -it \
     --rm \
     --userns=keep-id \
@@ -136,9 +182,13 @@ claude-toolbox() {
     "${GIT_ENV_ARGS[@]}" \
     "${SSH_MOUNT_ARGS[@]}" \
     "${FUSE_DEVICE_ARGS[@]}" \
+    "${WORKMUX_RELAY_ARGS[@]}" \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
     claude-toolbox:latest
+  } always {
+    [ -n "$RELAY_DIR" ] && rm -rf "$RELAY_DIR"
+  }
 }
 
 claude-toolbox-new () {

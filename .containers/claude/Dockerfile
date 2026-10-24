@@ -152,6 +152,11 @@ RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add ma
 RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add JuliusBrussee/caveman \
     && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install caveman@caveman
 
+# workmux status tracking: the plugin's hooks call `workmux`, which resolves
+# to the spool-only shim below, not a real workmux (see workmux-shim.sh).
+RUN CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin marketplace add raine/workmux \
+    && CLAUDE_CONFIG_DIR=${CLAUDE_CONFIG_DIR_BAKE} claude plugin install workmux-status@workmux
+
 # Container-only default: lite. Env var, not a repo-committed .caveman.json —
 # a repo file would apply on the host too wherever this repo is checked out.
 ENV CAVEMAN_DEFAULT_MODE=lite
@@ -171,6 +176,7 @@ ENV PATH="/opt/mise/shims:/opt/mise/bin:${PATH}"
 
 ADD --chown=claude-user:claude-user --chmod=500 setup-and-run-claude.sh /home/claude-user/setup-and-run-claude.sh
 ADD --chown=claude-user:claude-user --chmod=500 claude-statusline.sh /home/claude-user/.local/bin/claude-statusline.sh
+ADD --chown=claude-user:claude-user --chmod=500 workmux-shim.sh /home/claude-user/.local/bin/workmux
 
 ENTRYPOINT ["/usr/bin/tini", "--"]
 CMD /home/claude-user/setup-and-run-claude.sh
