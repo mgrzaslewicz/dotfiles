@@ -40,4 +40,36 @@ T['gradle-kotlin | neotest | run all in a Kotlin-only project'] = function()
   eq(ctx.child.lua_get "vim.api.nvim_exec2('messages', { output = true }).output", '')
 end
 
+T['gradle-kotlin | refactor | <leader>rv extracts the expression at the cursor'] = function()
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  e2e.expect_kotlin_lsp(ctx.child, ctx.project)
+  local lines = e2e.refactor(ctx.child, { text = 'greeting("Ada")', keys = ' rv', from = 'val greeting' })
+  eq(lines, { '    val greeting = greeting("Ada")', '    println(greeting!!)', '}' })
+end
+
+T['gradle-kotlin | refactor | visual <leader>rv extracts the selection'] = function()
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  e2e.expect_kotlin_lsp(ctx.child, ctx.project)
+  local lines = e2e.refactor(ctx.child, { text = 'greeting("Ada")', visual = true, keys = ' rv', from = 'val greeting' })
+  eq(lines, { '    val greeting = greeting("Ada")', '    println(greeting!!)', '}' })
+end
+
+-- Known limit: kotlin-lsp offers no extract function/method action. See custom/refactor.lua.
+T['gradle-kotlin | refactor | known limit: visual <leader>rm has no action'] = function()
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  e2e.expect_kotlin_lsp(ctx.child, ctx.project)
+  ctx.child.cmd 'messages clear'
+  ctx.child.lua [[
+    local line = vim.fn.search('println', 'n')
+    vim.api.nvim_win_set_cursor(0, { line, 4 })
+  ]]
+  ctx.child.type_keys('v', '$', 'h', ' rm')
+  e2e.wait(
+    ctx.child,
+    'edit',
+    'No code actions available',
+    "vim.api.nvim_exec2('messages', { output = true }).output:find('No code actions available', 1, true)"
+  )
+end
+
 return T

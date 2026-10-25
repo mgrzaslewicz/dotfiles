@@ -10,6 +10,7 @@ M.timeouts = {
   index = 180000, -- project import and first build (jdtls, kotlin-lsp)
   build = 120000, -- a Gradle/Maven task
   dap = 60000, -- debug session events
+  edit = 30000, -- a refactoring from a ready server
 }
 
 local fixtures = vim.fs.joinpath(vim.fn.getcwd(), 'tests', 'e2e', 'fixtures')
@@ -49,7 +50,7 @@ end
 --- Waits until `condition` (a Lua expression evaluated in the child) is truthy, or fails the test with what was
 --- awaited and a dump of the child's state. The runner owns the deadline and polls: a condition must be cheap and
 --- never block (start LSP requests asynchronously and poll their result), so a stuck server cannot hang the run.
----@param kind 'attach'|'index'|'build'|'dap'
+---@param kind 'attach'|'index'|'build'|'dap'|'edit'
 ---@param what string shown on timeout
 ---@param condition string
 function M.wait(child, kind, what, condition)
@@ -237,6 +238,52 @@ function M.neotest_run_file(child, keys)
     end
     return ret
   ]]
+end
+
+--- Row 3: puts the cursor on the first `text` in the current buffer, or selects it in visual mode, presses `keys`
+--- and answers a picker (vim.ui.select) with the item shown as `pick`. Waits until the buffer changes, and returns
+--- its lines from the first line containing `from`.
+---@param opts { text: string, visual?: boolean, keys: string, pick?: string, from: string }
+---@return string[]
+function M.refactor(child, opts)
+  child.lua(
+    [[
+    local opts = ...
+    _G.e2e = _G.e2e or {}
+    _G.e2e.tick = vim.b.changedtick
+    vim.ui.select = function(items, select_opts, on_choice)
+      for _, item in ipairs(items) do
+        if (select_opts.format_item or tostring)(item) == opts.pick then return on_choice(item) end
+      end
+      error('picker without ' .. tostring(opts.pick) .. ': ' .. vim.inspect(vim.tbl_map(select_opts.format_item or tostring, items)))
+    end
+    for i, line in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      local col = line:find(opts.text, 1, true)
+      if col then
+        vim.api.nvim_win_set_cursor(0, { i, col - 1 })
+        if opts.visual then
+          vim.cmd 'normal! v'
+          vim.api.nvim_win_set_cursor(0, { i, col + #opts.text - 2 })
+        end
+        return
+      end
+    end
+    error(opts.text .. ' not in buffer')
+  ]],
+    { opts }
+  )
+  child.type_keys(opts.keys)
+  M.wait(child, 'edit', opts.keys .. ' changed the buffer', 'vim.b.changedtick ~= _G.e2e.tick')
+  return child.lua(
+    [[
+    local lines = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    for i, line in ipairs(lines) do
+      if line:find(..., 1, true) then return vim.list_slice(lines, i) end
+    end
+    return lines
+  ]],
+    { opts.from }
+  )
 end
 
 return M

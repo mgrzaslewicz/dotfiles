@@ -33,4 +33,35 @@ T['gradle-java | neotest | JUnit file run: per-test results, listed once (neotes
   )
 end
 
+T['gradle-java | refactor | <leader>rv on an expression asks which one, then extracts it'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  local lines = e2e.refactor(ctx.child, { text = '"Hello, "', keys = ' rv', pick = '"Hello, " + name', from = 'static String greeting' })
+  eq(lines, { '    static String greeting(String name) {', '        String string = "Hello, " + name;', '        return string;', '    }', '}' })
+end
+
+T['gradle-java | refactor | visual <leader>rv extracts the selection'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  local lines = e2e.refactor(ctx.child, { text = '"Hello, " + name', visual = true, keys = ' rv', from = 'static String greeting' })
+  eq(lines, { '    static String greeting(String name) {', '        String string = "Hello, " + name;', '        return string;', '    }', '}' })
+end
+
+T['gradle-java | refactor | visual <leader>rm extracts the selection into a method'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  local lines =
+    e2e.refactor(ctx.child, { text = 'System.out.println(greeting(person.getName()));', visual = true, keys = ' rm', from = 'public static void main' })
+  eq(vim.list_slice(lines, 1, 8), {
+    '    public static void main(String[] args) {',
+    '        Person person = new Person("Ada");',
+    '        extracted(person);',
+    '    }',
+    '',
+    '    private static void extracted(Person person) {',
+    '        System.out.println(greeting(person.getName()));',
+    '    }',
+  })
+end
+
 return T
