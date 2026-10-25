@@ -72,4 +72,26 @@ T['a registered handler replaces the default and learns about visual mode'] = fu
   eq(child.lua_get '_G.applied', {})
 end
 
+-- nvim-jdtls reads the selection from the '< and '> marks, which Vim sets only when visual mode ends.
+T['a registered handler called from visual mode sees the current selection in its marks'] = function()
+  child.lua [[
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'one two three', 'four five six' })
+    require('custom.refactor').register(0, {
+      extract_method = function() _G.seen = { vim.fn.mode(), vim.api.nvim_buf_get_mark(0, '<'), vim.api.nvim_buf_get_mark(0, '>') } end,
+    })
+  ]]
+  child.type_keys('2G', 'v', 'e', '<Esc>') -- an older selection: "four"
+  child.type_keys('gg', 'w', 'v', 'e', ' rm') -- "two"
+  eq(child.lua_get '_G.seen', { 'n', { 1, 4 }, { 1, 6 } })
+end
+
+T['the default code action gets the visual selection as its range'] = function()
+  child.lua "vim.api.nvim_buf_set_lines(0, 0, -1, false, { 'one two three', 'four five six' })"
+  child.type_keys('2G', 'v', 'e', '<Esc>')
+  child.lua('_G.offered = ...', { { 'Extract variable' } })
+  child.type_keys('gg', 'w', 'v', 'e', ' rv')
+  child.lua 'vim.wait(2000, function() return #_G.applied > 0 end)'
+  eq(child.lua_get '_G.code_action_range', { start = { line = 0, character = 4 }, ['end'] = { line = 0, character = 7 } })
+end
+
 return T

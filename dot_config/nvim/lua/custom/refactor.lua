@@ -5,15 +5,17 @@
 -- registers it per buffer with `register` instead of adding its own keymaps (see custom/plugins/jdtls.lua).
 -- If a server titles its extract actions differently, adjust the title words below or register a handler.
 -- kotlin_lsp offers fewer refactorings than IntelliJ; large Kotlin refactors are still IntelliJ's job.
+-- Known limit: kotlin_lsp has no extract function, so <leader>rm says "No code actions available" in Kotlin.
 
 local M = {}
 
 ---@param kind string LSP code action kind
 ---@param title_words? string[] keep only actions whose title contains one of these words
 local function code_action(kind, title_words)
-  return function()
+  return function(visual)
     vim.lsp.buf.code_action {
       context = { only = { kind } },
+      range = visual and { start = vim.api.nvim_buf_get_mark(0, '<'), ['end'] = vim.api.nvim_buf_get_mark(0, '>') } or nil,
       filter = title_words and function(action)
         local title = action.title:lower()
         for _, word in ipairs(title_words) do
@@ -65,6 +67,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
     for _, action in ipairs(actions) do
       vim.keymap.set(action.mode, '<leader>r' .. action.key, function()
         local visual = vim.fn.mode():match '^[vV\22]' ~= nil
+        -- Leave visual mode first: only then are the '< and '> marks set, and nvim-jdtls reads the selection
+        -- from them (a stale, earlier selection otherwise).
+        if visual then vim.cmd 'normal! \27' end
         local handler = (overrides[event.buf] or {})[action.name] or action.default
         handler(visual)
       end, { buffer = event.buf, desc = 'Refactor: ' .. action.desc })

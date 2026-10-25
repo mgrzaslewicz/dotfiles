@@ -25,6 +25,7 @@ function M.attach_fake_lsp(child)
         local closing = false
         return {
           request = function(method, params, callback)
+            if method == 'textDocument/codeAction' then _G.code_action_range = params.range end
             local result = ({
               initialize = { capabilities = { codeActionProvider = true, renameProvider = true, inlayHintProvider = true } },
               ['textDocument/codeAction'] = vim.tbl_map(
