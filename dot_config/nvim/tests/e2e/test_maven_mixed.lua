@@ -32,7 +32,7 @@ T['maven-mixed | LSP | known limit: jdtls reports Kotlin classes used from Java 
   )
 end
 
-T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in quickfix, known limit: twice'] = function()
+T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
     ctx.project,
@@ -40,9 +40,7 @@ T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in q
     { 'package com.example.mixed', '', 'fun broken(): Int = missing' },
     'mvn compile'
   )
-  -- Known limit: Maven repeats compiler errors in its build-failure summary, so each one is listed twice.
-  local err = { file = 'core/src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' }
-  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { err, err })
+  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'core/src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' } })
 end
 
 -- Known limit: no neotest adapter runs Kotlin tests in Maven projects (neotest-gradle needs a Gradle build,

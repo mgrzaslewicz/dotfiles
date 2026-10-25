@@ -12,7 +12,7 @@ T['gradle-kotlin | LSP | kotlin_lsp attaches at the build root, resolves across 
   eq(e2e.errors(ctx.child), {})
 end
 
-T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix'] = function()
+T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
     ctx.project,

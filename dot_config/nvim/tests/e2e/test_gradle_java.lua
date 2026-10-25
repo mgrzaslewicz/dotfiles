@@ -11,7 +11,7 @@ T['gradle-java | LSP | jdtls attaches at the build root, resolves Lombok getters
   eq(e2e.errors(ctx.child), {})
 end
 
-T['gradle-java | tasks | javac errors from `gradle classes` land in quickfix, known limit: twice'] = function()
+T['gradle-java | tasks | javac errors from `gradle classes` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
     ctx.project,
@@ -19,9 +19,7 @@ T['gradle-java | tasks | javac errors from `gradle classes` land in quickfix, kn
     { 'package com.example.app;', '', 'class Broken {', '  int value() { return missing; }', '}' },
     'gradle classes'
   )
-  -- Known limit: Gradle repeats javac errors in its failure summary, so each one is listed twice.
-  local err = { file = 'app/src/main/java/com/example/app/Broken.java', lnum = 4, type = 'E' }
-  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { err, err })
+  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'app/src/main/java/com/example/app/Broken.java', lnum = 4, type = 'E' } })
 end
 
 T['gradle-java | neotest | JUnit file run: per-test results, listed once (neotest-java)'] = function()

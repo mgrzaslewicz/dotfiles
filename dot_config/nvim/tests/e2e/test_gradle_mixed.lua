@@ -32,7 +32,7 @@ T['gradle-mixed | LSP | known limit: jdtls reports Kotlin classes used from Java
   )
 end
 
-T['gradle-mixed | tasks | kotlinc errors from `gradle classes` land in quickfix'] = function()
+T['gradle-mixed | tasks | kotlinc errors from `gradle classes` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
     ctx.project,
