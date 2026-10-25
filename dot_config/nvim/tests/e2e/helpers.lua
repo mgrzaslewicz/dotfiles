@@ -94,7 +94,12 @@ function M.fixture_set(fixture)
       end,
       -- bdelete, not bwipeout: neotest's diagnostics and nvim-jdtls keep buffer ids and fail on wiped buffers.
       post_case = function() child.cmd 'silent! %bdelete!' end,
-      post_once = function() child.stop() end,
+      post_once = function()
+        -- jdtls keeps one workspace per root (custom/plugins/jdtls.lua); each copy is a new root.
+        local workspace = vim.fs.joinpath(child.lua_get "vim.fn.stdpath 'cache'", 'jdtls', (ctx.project:gsub('[/\\:]', '_')))
+        child.stop()
+        vim.fn.delete(workspace, 'rf')
+      end,
     },
   }
   return T, ctx
@@ -284,6 +289,42 @@ function M.refactor(child, opts)
   ]],
     { opts.from }
   )
+end
+
+--- Rows 6/7: sets a breakpoint with `<leader>db` on the first line containing `at`, presses `keys` and answers
+--- a picker with the first item matching the Lua pattern `pick`. Waits until the debuggee stops and returns where:
+--- `{ file, line }`, file relative to `project`.
+---@param opts { at: string, keys: string, pick?: string }
+---@return { file: string, line: integer }
+function M.debug_until_stopped(child, project, opts)
+  child.lua(
+    [[
+    local opts = ...
+    vim.ui.select = function(items, select_opts, on_choice)
+      local labels = vim.tbl_map(select_opts.format_item or tostring, items)
+      for i, label in ipairs(labels) do
+        if opts.pick and label:find(opts.pick) then return on_choice(items[i]) end
+      end
+      error('picker without ' .. tostring(opts.pick) .. ': ' .. vim.inspect(labels))
+    end
+    local line = vim.fn.search(vim.fn.escape(opts.at, '\\'), 'nw')
+    if line == 0 then error(opts.at .. ' not in buffer') end
+    vim.api.nvim_win_set_cursor(0, { line, 0 })
+  ]],
+    { opts }
+  )
+  child.type_keys ' db'
+  child.type_keys(opts.keys)
+  M.wait(child, 'dap', 'debuggee stopped at a breakpoint', "require('dap').session() and require('dap').session().current_frame ~= nil")
+  local frame =
+    child.lua_get "(function() local f = require('dap').session().current_frame return { path = f.source and f.source.path or '?', line = f.line } end)()"
+  return { file = vim.fs.relpath(project, frame.path) or frame.path, line = frame.line }
+end
+
+--- Ends every debug session and removes all breakpoints.
+function M.debug_stop(child)
+  child.lua "require('dap').terminate() require('dap').clear_breakpoints()"
+  M.wait(child, 'dap', 'no debug session', "require('dap').session() == nil")
 end
 
 return M

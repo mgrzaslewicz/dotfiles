@@ -64,4 +64,20 @@ T['gradle-java | refactor | visual <leader>rm extracts the selection into a meth
   })
 end
 
+T['gradle-java | debug | <leader>dc launches the main class and stops at a breakpoint'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  local stopped = e2e.debug_until_stopped(ctx.child, ctx.project, { at = 'return "Hello, "', keys = ' dc', pick = 'Main' })
+  eq(stopped, { file = 'app/src/main/java/com/example/app/Main.java', line = 13 })
+  e2e.debug_stop(ctx.child)
+end
+
+T['gradle-java | debug | <leader>ud debugs the nearest test and stops at a breakpoint in it'] = function()
+  ctx.child.cmd 'edit app/src/test/java/com/example/app/MainTest.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  local stopped = e2e.debug_until_stopped(ctx.child, ctx.project, { at = 'assertEquals("Hello, Ada"', keys = ' ud' })
+  eq(stopped, { file = 'app/src/test/java/com/example/app/MainTest.java', line = 10 })
+  e2e.debug_stop(ctx.child)
+end
+
 return T
