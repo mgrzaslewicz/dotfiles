@@ -4,7 +4,12 @@
 -- Adapters:
 --  - Java: neotest-java (JUnit 5, Maven/Gradle). Uses the running jdtls client for the classpath.
 --    The JUnit console launcher jar it needs is downloaded by chezmoi (run_onchange_after_nvim_neotest_java_setup.sh.tmpl).
---  - Kotlin: neotest-gradle (runs `gradlew test`, reads JUnit XML reports). Kotest specs are not detected.
+--  - Kotlin: neotest-gradle (runs `gradlew test`, reads JUnit XML reports). Kotest specs are not detected. It shows
+--    test names in words (`failsOnPurpose` as "fails on purpose").
+--  - Known limit: Kotlin tests in Maven projects are not found ("No tests found"): neotest-gradle needs a Gradle
+--    build and neotest-java is limited to .java below.
+--  - Known limit (upstream): after `:bwipeout` of a test file with failures, the next run errors in neotest's
+--    diagnostic consumer ("Invalid buffer id"). `:bdelete` is fine.
 
 vim.pack.add {
   'https://github.com/nvim-neotest/neotest',
@@ -14,12 +19,35 @@ vim.pack.add {
   'https://github.com/weilbith/neotest-gradle',
 }
 
+local gradle = require 'neotest-gradle'
+
 -- neotest-gradle also matches `*Test.java`, which neotest-java already handles,
 -- so limit it to Kotlin to avoid listing Java tests twice.
 local gradle_kotlin = setmetatable({
   name = 'neotest-gradle-kotlin',
   is_test_file = function(file_path) return file_path:match 'Test%.kt$' ~= nil end,
-}, { __index = require 'neotest-gradle' })
+}, { __index = gradle })
+
+-- neotest-gradle asks Gradle for `testResultsDir`, which Gradle 9 answers with `null`: no JUnit reports were
+-- found and every test showed as skipped. And for run all it reads only the root project's reports. Instead,
+-- read Gradle's default report dir (`build/test-results/test`) of every module below what was run: the test's
+-- module, or the directory. A custom `reports` location is not supported.
+gradle_kotlin.build_spec = function(args)
+  local spec = gradle.build_spec(args)
+  if not spec then return end
+  local pos = args.tree:data()
+  spec.context.reports_root = pos.type == 'dir' and pos.path or require 'neotest-gradle.hooks.find_project_directory'(pos.path)
+  return spec
+end
+gradle_kotlin.results = function(spec, result, tree)
+  local is_report_dir = function(name, path) return name == 'test' and vim.endswith(path, '/build/test-results') end
+  local ret = {}
+  for _, dir in ipairs(vim.fs.find(is_report_dir, { path = spec.context.reports_root, type = 'directory', limit = math.huge })) do
+    spec.context.test_resuls_directory = dir
+    ret = vim.tbl_extend('force', ret, gradle.results(spec, result, tree))
+  end
+  return ret
+end
 
 -- neotest-java matches test files by name only (e.g. `FooTest`), so it also claims `FooTest.kt`
 -- and then fails looking for Java sources. Limit it to `.java`.
