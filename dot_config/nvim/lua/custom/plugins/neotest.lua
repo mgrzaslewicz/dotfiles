@@ -6,8 +6,8 @@
 --    The JUnit console launcher jar it needs is downloaded by chezmoi (run_onchange_after_nvim_neotest_java_setup.sh.tmpl).
 --  - Kotlin: neotest-gradle (runs `gradlew test`, reads JUnit XML reports). Kotest specs are not detected. It shows
 --    test names in words (`failsOnPurpose` as "fails on purpose").
---  - Known limit: Kotlin tests in Maven projects are not found ("No tests found"): neotest-gradle needs a Gradle
---    build and neotest-java is limited to .java below.
+--  - Kotlin in Maven: no plugin covers it, so `neotest-maven-kotlin` below reuses neotest-gradle's Kotlin test
+--    discovery and JUnit report parsing, and runs `mvn test` (with `-pl <module> -am` for a file or test).
 --  - Known limit (upstream): after `:bwipeout` of a test file with failures, the next run errors in neotest's
 --    diagnostic consumer ("Invalid buffer id"). `:bdelete` is fine.
 
@@ -64,12 +64,70 @@ java_adapter.build_spec = function(args)
   end
 end
 
+local project = require 'custom.jvm.project'
+local maven_kotlin = {
+  name = 'neotest-maven-kotlin',
+  root = function(dir)
+    local build = project.root(dir)
+    return build and build.tool == 'maven' and build.root or nil
+  end,
+  filter_dir = function(name) return name ~= 'target' and name ~= 'node_modules' and not vim.startswith(name, '.') end,
+  is_test_file = function(file_path) return file_path:match 'Test%.kt$' ~= nil end,
+  discover_positions = gradle.discover_positions,
+  build_spec = function(args)
+    local pos = args.tree:data()
+    local build = assert(project.root(pos.type == 'dir' and pos.path or vim.fs.dirname(pos.path)))
+    local command = { 'mvn', 'test' }
+    if pos.type ~= 'dir' then
+      local module = vim.fs.relpath(build.root, vim.fs.root(pos.path, 'pom.xml') or build.root) or '.'
+      -- Surefire wants Class#method; neotest-gradle's position ids are Class.method.
+      local filter = pos.type == 'test' and pos.id:gsub('%.([^.]+)$', '#%1')
+        or table.concat(vim.iter(args.tree:iter()):filter(function(_, p) return p.type == 'namespace' end):map(function(_, p) return p.id end):totable(), ',')
+      vim.list_extend(command, { '-pl', module, '-am', '-Dtest=' .. filter, '-Dsurefire.failIfNoSpecifiedTests=false' })
+    end
+    return { command = command, cwd = build.root, context = { reports_root = pos.type == 'dir' and pos.path or vim.fs.root(pos.path, 'pom.xml') } }
+  end,
+  -- Surefire's XML reports (JUnit format). Not neotest-gradle's parser: it reads every file in the directory and
+  -- fails on surefire's .txt summaries next to them.
+  results = function(spec, _, tree)
+    local xml, files = require 'neotest.lib.xml', require('neotest.lib').files
+    local as_list = function(value) return (type(value) == 'table' and #value > 0) and value or { value } end
+    local ret, run = {}, {}
+    for _, pos in tree:iter() do
+      run[pos.id] = true
+    end
+    local is_report_dir = function(name, path) return name == 'surefire-reports' and vim.endswith(path, '/target') end
+    for _, dir in ipairs(vim.fs.find(is_report_dir, { path = spec.context.reports_root, type = 'directory', limit = math.huge })) do
+      for name, type in vim.fs.dir(dir) do
+        if type == 'file' and name:match '^TEST%-.*%.xml$' then
+          local report = xml.parse(files.read(vim.fs.joinpath(dir, name)))
+          for _, suite in ipairs(as_list(report.testsuite)) do
+            for _, case in ipairs(as_list(suite.testcase)) do
+              local id = case._attr.classname .. '.' .. case._attr.name:gsub('%(.*%)$', '')
+              if run[id] then
+                local problem = case.failure or case.error
+                ret[id] = {
+                  status = problem and 'failed' or case.skipped and 'skipped' or 'passed',
+                  short = problem and problem._attr and problem._attr.message,
+                  errors = problem and { { message = problem._attr and problem._attr.message or '' } } or nil,
+                }
+              end
+            end
+          end
+        end
+      end
+    end
+    return ret
+  end,
+}
+
 local neotest = require 'neotest'
 ---@diagnostic disable-next-line: missing-fields
 neotest.setup {
   adapters = {
     java_adapter,
     gradle_kotlin,
+    maven_kotlin,
   },
 }
 
