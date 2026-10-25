@@ -4,6 +4,11 @@
 -- Gradle and Maven have no built-in overseer provider, so one is registered below. It offers the common
 -- tasks for the project root (see custom/jvm/project.lua) plus a free-form
 -- "gradle …"/"mvn …" task. Compiler errors (javac, kotlinc, Maven) stream into the quickfix list.
+-- Output goes to a plain buffer, not a terminal: on exit overseer re-parses the output buffer for the quickfix,
+-- and a terminal buffer wraps long lines (absolute paths) at its width, so nothing matched. The cost is no
+-- colors in the task output.
+-- Known limit: javac errors (Gradle, Maven) and kotlin-maven-plugin errors are listed twice: both tools repeat
+-- them in their build-failure summary (issue 25). kotlinc errors from Gradle are listed once.
 -- Other runners (make, npm, cargo, just, mise, VS Code tasks.json) are built into overseer.
 
 vim.pack.add { 'https://github.com/stevearc/overseer.nvim' }
@@ -13,10 +18,15 @@ local project = require 'custom.jvm.project'
 local errorformat = require 'custom.jvm.errorformat'
 overseer.setup {}
 
-local function components()
+local function task(cmd, cwd)
   return {
-    { 'on_output_quickfix', errorformat = errorformat, items_only = true, open_on_exit = 'failure' },
-    'default',
+    cmd = cmd,
+    cwd = cwd,
+    strategy = { 'jobstart', use_terminal = false },
+    components = {
+      { 'on_output_quickfix', errorformat = errorformat, items_only = true, open_on_exit = 'failure' },
+      'default',
+    },
   }
 end
 
@@ -55,19 +65,19 @@ overseer.register_template {
     if project.uses_spring_boot(build.root) then vim.list_extend(list, spring_boot_tasks[build.tool]) end
 
     local ret = {}
-    for _, task in ipairs(list) do
-      local args, tag = task[1], task[2]
+    for _, entry in ipairs(list) do
+      local args, tag = entry[1], entry[2]
       table.insert(ret, {
         name = ('%s %s'):format(tool, args),
         tags = { tag },
-        builder = function() return { cmd = vim.list_extend({ build.cmd }, vim.split(args, ' ')), cwd = build.root, components = components() } end,
+        builder = function() return task(vim.list_extend({ build.cmd }, vim.split(args, ' ')), build.root) end,
       })
     end
     table.insert(ret, {
       name = tool .. ' …',
       desc = 'Run with custom arguments',
       params = { args = { type = 'list', delimiter = ' ', desc = 'e.g. :app:test --tests "*FooTest"' } },
-      builder = function(params) return { cmd = vim.list_extend({ build.cmd }, params.args), cwd = build.root, components = components() } end,
+      builder = function(params) return task(vim.list_extend({ build.cmd }, params.args), build.root) end,
     })
     return ret
   end,

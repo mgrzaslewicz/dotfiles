@@ -21,7 +21,7 @@ local function jvm_tasks(dir)
     for _, t in ipairs(found) do
       if t.name:match '^gradle ' or t.name:match '^mvn ' then
         local task = t.builder { args = { 'help' } }
-        ret[t.name] = { cmd = task.cmd, cwd = task.cwd, efm = task.components[1].errorformat }
+        ret[t.name] = { cmd = task.cmd, cwd = task.cwd, efm = task.components[1].errorformat, strategy = task.strategy and { task.strategy[1], task.strategy.use_terminal } }
       end
     end
     return ret
@@ -50,6 +50,14 @@ T['gradle/maven tasks fill the quickfix list through the JVM errorformat'] = fun
   local dir = helpers.tree { ['build.gradle'] = '' }
   local efm = child.lua_get "require 'custom.jvm.errorformat'"
   eq(jvm_tasks(dir)['gradle test'].efm, efm)
+end
+
+-- Overseer re-parses the output buffer on exit; a terminal buffer wraps long lines (absolute paths) at its width.
+T['gradle/maven tasks write to a plain buffer, so long error lines stay whole'] = function()
+  local dir = helpers.tree { ['pom.xml'] = '' }
+  local tasks = jvm_tasks(dir)
+  eq(tasks['mvn compile'].strategy, { 'jobstart', false })
+  eq(tasks['mvn …'].strategy, { 'jobstart', false })
 end
 
 return T
