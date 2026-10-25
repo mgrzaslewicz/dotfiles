@@ -56,8 +56,8 @@ that touches the config.
      honestly named (not a module concept: Gradle build root, nearest Maven module).
      Used by Kotlin debug. Settled by issue 21 (e2e): this is what kotlin-debug-adapter needs; a Gradle
      module root breaks source mapping across modules, a Maven build root does not find the main class.
-   - Whether kotlin-debug-adapter needs the module or the root: layer B check;
-     a real `module(dir)` comes test-first if the answer calls for it.
+   - Whether kotlin-debug-adapter needs the module or the root: answered by layer B (issue 21), no
+     `module(dir)` needed.
 8. Test profile `NVIM_TEST=1`: config skips mason-tool-installer and treesitter
    auto-installs. Plugins still load. LSP configs are declared, not attached.
    Layer B runs without it.
