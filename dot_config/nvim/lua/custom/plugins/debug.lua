@@ -8,6 +8,14 @@
 --    is used. Launch runs already compiled classes (`./gradlew classes` first); it does not build.
 --    Tests: `./gradlew test --tests '<name>' --debug-jvm`, then attach (<leader>ud is Java-only: neotest-gradle has
 --    no dap strategy). If the adapter fails on current Kotlin/JDK versions, debug Kotlin in IntelliJ.
+--    Known limits (tests/e2e/test_gradle_kotlin.lua, test_maven_mixed.lua):
+--    - A breakpoint in the launched main class itself is often missed (the class runs before it is set);
+--      breakpoints in classes loaded later are hit.
+--    - Attach (`gradle run --debug-jvm`) connects and sets breakpoints, but no stop ever reaches nvim and the
+--      adapter stops answering requests; not pinned by a test (no reliable signal). Launch instead, or use IntelliJ.
+--    - Multi-module Maven: sibling modules are on the classpath only from ~/.m2 (`mvn install` them first).
+--    projectRoot (custom/jvm/project.lua `debug_root`) is the build root for Gradle (a module root breaks source
+--    mapping across modules) and the module for Maven (with the build root the main class is not found).
 -- IntelliJ F-keys work too, but Shift+F8 does not reach nvim in some terminals; <leader>dO always does.
 -- `kickstart.plugins.debug` (Go-focused) stays unused.
 

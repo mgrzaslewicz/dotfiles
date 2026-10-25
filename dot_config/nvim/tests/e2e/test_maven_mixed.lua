@@ -53,4 +53,33 @@ T['maven-mixed | neotest | known limit: Kotlin tests are not found'] = function(
   e2e.wait(ctx.child, 'index', 'neotest says No tests found', "vim.api.nvim_exec2('messages', { output = true }).output:find('No tests found', 1, true)")
 end
 
+-- Known limit: kotlin-debug-adapter puts sibling modules on the classpath only from ~/.m2 (`mvn install`), so
+-- launching from a module that uses another one fails once that module's classes are needed. With the build root
+-- as projectRoot the main class itself is not found. See custom/plugins/debug.lua.
+T['maven-mixed | debug | known limit: <leader>dc launch lacks the sibling module classes'] = function()
+  eq(vim.system({ 'mvn', '-q', 'compile' }, { cwd = ctx.project }):wait().code, 0)
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  ctx.child.lua [[
+    _G.e2e = _G.e2e or {}
+    _G.e2e.dap_output = {}
+    require('dap').listeners.after.event_output['e2e'] = function(_, body)
+      if body.category ~= 'console' then table.insert(_G.e2e.dap_output, body.output) end
+    end
+    vim.fn.input = function(_, default) return default end
+    vim.ui.select = function(items, o, on_choice)
+      for _, item in ipairs(items) do
+        if (o.format_item or tostring)(item):find 'Launch' then return on_choice(item) end
+      end
+    end
+  ]]
+  ctx.child.type_keys ' dc'
+  e2e.wait(
+    ctx.child,
+    'dap',
+    'NoClassDefFoundError for the core module',
+    "table.concat(_G.e2e.dap_output, ''):find('NoClassDefFoundError: com/example/mixed/KotlinFormatter', 1, true)"
+  )
+  e2e.wait(ctx.child, 'dap', 'debuggee ended', "require('dap').session() == nil")
+end
+
 return T

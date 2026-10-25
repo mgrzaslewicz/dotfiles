@@ -13,7 +13,7 @@ in the header comment of its Lua file.
 | `<leader>` groups and desc prefixes, no duplicate maps | all | `test_keymaps.lua` |
 | Gradle/Maven tasks (Run Configurations, Ctrl+F9), compiler errors in quickfix | `lua/custom/plugins/tasks.lua`, `lua/custom/jvm/` | `test_tasks.lua`, `test_project.lua`, `test_errorformat.lua`, `e2e/test_*.lua` (real javac/kotlinc errors) |
 | Java debug: launch main class, debug nearest test (`<leader>db`, `<leader>dc`, `<leader>ud`) | `lua/custom/plugins/debug.lua`, `jdtls.lua` | `e2e/test_gradle_java.lua` |
-| Kotlin debug: launch main class, project root | `lua/custom/plugins/debug.lua`, `lua/custom/jvm/` | `test_debug.lua`, `test_kotlin.lua`, `test_project.lua` |
+| Kotlin debug: launch main class, project root | `lua/custom/plugins/debug.lua`, `lua/custom/jvm/` | `test_debug.lua`, `test_kotlin.lua`, `test_project.lua`, `e2e/test_gradle_kotlin.lua`, `e2e/test_maven_mixed.lua` |
 | Refactor maps `<leader>r` (Shift+F6, Ctrl+Alt+O/V/C/M) | `lua/custom/refactor.lua` | `test_refactor.lua`, `e2e/test_gradle_java.lua`, `e2e/test_gradle_kotlin.lua` |
 | Git client survives a broken codediff | `lua/custom/plugins/git.lua` | `test_git.lua` |
 | Tested nvim version, prerequisites, `:checkhealth custom` | `lua/custom/health.lua` | `test_health.lua` |

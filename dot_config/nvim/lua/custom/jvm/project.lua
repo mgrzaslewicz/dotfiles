@@ -37,8 +37,8 @@ function M.root(dir)
 end
 
 --- kotlin-debug-adapter's `projectRoot`: each marker in turn, searched all the way up. For Gradle that is the
---- build root, for Maven the nearest module. Kept as it was; whether the adapter wants the module or the
---- whole build is still open.
+--- build root, for Maven the nearest module, which is what the adapter needs (tests/e2e: a Gradle module root
+--- breaks source mapping across modules, a Maven build root does not find the main class).
 ---@param source string|integer directory, or buffer as for |vim.fs.root()|
 ---@return string|nil
 function M.debug_root(source) return vim.fs.root(source, { 'settings.gradle.kts', 'settings.gradle', 'gradlew', 'pom.xml' }) end

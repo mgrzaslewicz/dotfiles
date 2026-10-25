@@ -71,7 +71,8 @@ Real jdtls, kotlin-lsp, Gradle, Maven, neotest and DAP on fixture projects. Not 
   `buf_request_sync` inside the child once hung a run for 30+ minutes. Also `expect_jdtls`, `expect_kotlin_lsp`,
   `clients`, `definition_reaches`, `errors`, `compile_errors` (`<leader>bc` with the picker answered),
   `neotest_run_file` (neotest discovers lazily: nothing is listed before the first run), `refactor` (cursor or
-  selection on a text, keys, picker answer, buffer lines after). No retries, no sleeps.
+  selection on a text, keys, picker answer, buffer lines after), `debug_until_stopped`, `debug_to_end`,
+  `debug_stop`. `errors` re-pulls diagnostics while errors remain (kotlin-lsp answers a first pull before indexing). No retries, no sleeps.
 - Cases that read `:messages` clear them first (`messages clear`): earlier cases in the same child leave some.
 - Assert positive signals: "no errors" means nothing until something proves diagnostics arrived. Each fixture
   source carries a deliberate warning: an unused import for jdtls, an unnecessary `!!` on a Kotlin `String` for

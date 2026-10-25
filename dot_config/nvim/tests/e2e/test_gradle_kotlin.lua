@@ -72,4 +72,18 @@ T['gradle-kotlin | refactor | known limit: visual <leader>rm has no action'] = f
   )
 end
 
+-- kotlin-debug-adapter launches already compiled classes. A breakpoint in the launched main class itself is
+-- often missed (custom/plugins/debug.lua), so these stop in a class loaded later.
+T['gradle-kotlin | debug | <leader>dc launches fun main from a module and stops in another module'] = function()
+  eq(vim.system({ 'gradle', '-q', 'classes' }, { cwd = ctx.project }):wait().code, 0)
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  local stopped = e2e.debug_until_stopped(
+    ctx.child,
+    ctx.project,
+    { file = 'lib/src/main/kotlin/com/example/lib/Greeter.kt', at = 'fun greet', keys = ' dc', pick = 'Launch' }
+  )
+  eq(stopped, { file = 'lib/src/main/kotlin/com/example/lib/Greeter.kt', line = 4 })
+  MiniTest.expect.no_equality(e2e.debug_to_end(ctx.child):find('Hello, Ada', 1, true), nil)
+end
+
 return T

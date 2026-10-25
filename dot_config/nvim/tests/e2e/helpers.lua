@@ -156,10 +156,25 @@ function M.definition_reaches(child, symbol, target)
 end
 
 --- Waits for the current buffer's deliberate warning (each fixture source has one), which proves its diagnostics
---- have arrived, then returns the error messages.
+--- have arrived, then returns the error messages. While there are errors, pulls diagnostics again a few times,
+--- 5 s apart: kotlin-lsp answers a pull before it has indexed the project (stale "Unresolved reference" errors).
 ---@return string[]
 function M.errors(child)
-  M.wait(child, 'index', 'a warning in the current buffer', '#vim.diagnostic.get(0, { severity = vim.diagnostic.severity.WARN }) > 0')
+  child.lua [[
+    _G.e2e = _G.e2e or {}
+    local state = { pulls = 0, last = 0 }
+    _G.e2e.errors_poll = function()
+      local severity = vim.diagnostic.severity
+      if #vim.diagnostic.get(0, { severity = severity.WARN }) == 0 then return false end
+      if #vim.diagnostic.get(0, { severity = severity.ERROR }) == 0 or state.pulls == 3 then return true end
+      if vim.uv.now() - state.last > 5000 then
+        state.pulls, state.last = state.pulls + 1, vim.uv.now()
+        vim.lsp.diagnostic._refresh(0)
+      end
+      return false
+    end
+  ]]
+  M.wait(child, 'index', 'a warning in the current buffer, and errors that stay', '_G.e2e.errors_poll()')
   return child.lua_get 'vim.tbl_map(function(d) return d.message end, vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR }))'
 end
 
@@ -291,15 +306,24 @@ function M.refactor(child, opts)
   )
 end
 
---- Rows 6/7: sets a breakpoint with `<leader>db` on the first line containing `at`, presses `keys` and answers
---- a picker with the first item matching the Lua pattern `pick`. Waits until the debuggee stops and returns where:
---- `{ file, line }`, file relative to `project`.
----@param opts { at: string, keys: string, pick?: string }
+--- Rows 6/7: sets a breakpoint with `<leader>db` on the first line containing `at` (in `file` if given, else the
+--- current buffer), then from the current buffer presses `keys`, answers a picker with the first item matching the
+--- Lua pattern `pick` and a `vim.fn.input` prompt with its default. Waits until the debuggee stops and returns
+--- where: `{ file, line }`, file relative to `project`. The debuggee's output is collected for `debug_to_end`.
+---@param opts { at: string, file?: string, keys: string, pick?: string }
 ---@return { file: string, line: integer }
 function M.debug_until_stopped(child, project, opts)
+  local launch_from = child.lua_get 'vim.api.nvim_buf_get_name(0)'
+  if opts.file then child.cmd('edit ' .. opts.file) end
   child.lua(
     [[
     local opts = ...
+    _G.e2e = _G.e2e or {}
+    _G.e2e.dap_output = {}
+    require('dap').listeners.after.event_output['e2e'] = function(_, body)
+      if body.category ~= 'console' then table.insert(_G.e2e.dap_output, body.output) end
+    end
+    vim.fn.input = function(_, default) return default end
     vim.ui.select = function(items, select_opts, on_choice)
       local labels = vim.tbl_map(select_opts.format_item or tostring, items)
       for i, label in ipairs(labels) do
@@ -314,11 +338,20 @@ function M.debug_until_stopped(child, project, opts)
     { opts }
   )
   child.type_keys ' db'
+  child.cmd('edit ' .. launch_from)
   child.type_keys(opts.keys)
   M.wait(child, 'dap', 'debuggee stopped at a breakpoint', "require('dap').session() and require('dap').session().current_frame ~= nil")
   local frame =
     child.lua_get "(function() local f = require('dap').session().current_frame return { path = f.source and f.source.path or '?', line = f.line } end)()"
   return { file = vim.fs.relpath(project, frame.path) or frame.path, line = frame.line }
+end
+
+--- Removes the breakpoints, continues until the debuggee ends and returns its output (stdout and stderr).
+---@return string
+function M.debug_to_end(child)
+  child.lua "require('dap').clear_breakpoints() require('dap').continue()"
+  M.wait(child, 'dap', 'debuggee ended', "require('dap').session() == nil")
+  return table.concat(child.lua_get '_G.e2e.dap_output', '')
 end
 
 --- Ends every debug session and removes all breakpoints.
