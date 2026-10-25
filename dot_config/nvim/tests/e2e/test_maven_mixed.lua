@@ -32,4 +32,17 @@ T['maven-mixed | LSP | known limit: jdtls reports Kotlin classes used from Java 
   )
 end
 
+T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in quickfix, known limit: twice'] = function()
+  local items = e2e.compile_errors(
+    ctx.child,
+    ctx.project,
+    'core/src/main/kotlin/com/example/mixed/Broken.kt',
+    { 'package com.example.mixed', '', 'fun broken(): Int = missing' },
+    'mvn compile'
+  )
+  -- Known limit: Maven repeats compiler errors in its build-failure summary, so each one is listed twice.
+  local err = { file = 'core/src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' }
+  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { err, err })
+end
+
 return T

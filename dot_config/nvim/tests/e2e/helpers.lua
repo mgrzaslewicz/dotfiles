@@ -156,4 +156,47 @@ function M.errors(child)
   return child.lua_get 'vim.tbl_map(function(d) return d.message end, vim.diagnostic.get(0, { severity = vim.diagnostic.severity.ERROR }))'
 end
 
+--- Row 4: writes `lines` as `path` (relative to the project copy), runs the build task named `task` the way
+--- `<leader>bc` does (the picker answered with `task`), waits for it to finish and returns the quickfix list as
+--- `{ file, lnum, type }` with files relative to the project and types upper case (kotlinc's `e:` gives `e`, which
+--- quickfix shows as an error too); then deletes the file and the task.
+---@param lines string[]
+---@return { file: string, lnum: integer, type: string }[]
+function M.compile_errors(child, project, path, lines, task)
+  local file = vim.fs.joinpath(project, path)
+  vim.fn.writefile(lines, file)
+  child.lua(
+    [[
+    local task = ...
+    vim.ui.select = function(items, opts, on_choice)
+      for _, item in ipairs(items) do
+        if item.name == task then return on_choice(item) end
+      end
+      error(task .. ' not offered: ' .. vim.inspect(vim.tbl_map(function(i) return i.name end, items)))
+    end
+  ]],
+    { task }
+  )
+  child.type_keys ' bc'
+  M.wait(
+    child,
+    'build',
+    task .. ' finished',
+    ("vim.iter(require('overseer').list_tasks()):any(function(t) return t.name == %q and t:is_complete() end)"):format(task)
+  )
+  local items = child.lua(
+    [[
+    local project = ...
+    return vim.tbl_map(function(i)
+      local name = vim.fn.fnamemodify(vim.fn.bufname(i.bufnr), ':p')
+      return { file = vim.fs.relpath(project, name) or name, lnum = i.lnum, type = i.type:upper() }
+    end, vim.fn.getqflist())
+  ]],
+    { project }
+  )
+  child.lua "for _, t in ipairs(require('overseer').list_tasks()) do t:dispose(true) end"
+  vim.fn.delete(file)
+  return items
+end
+
 return M

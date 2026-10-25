@@ -32,4 +32,15 @@ T['gradle-mixed | LSP | known limit: jdtls reports Kotlin classes used from Java
   )
 end
 
+T['gradle-mixed | tasks | kotlinc errors from `gradle classes` land in quickfix'] = function()
+  local items = e2e.compile_errors(
+    ctx.child,
+    ctx.project,
+    'src/main/kotlin/com/example/mixed/Broken.kt',
+    { 'package com.example.mixed', '', 'fun broken(): Int = missing' },
+    'gradle classes'
+  )
+  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' } })
+end
+
 return T

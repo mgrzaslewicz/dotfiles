@@ -12,4 +12,15 @@ T['gradle-kotlin | LSP | kotlin_lsp attaches at the build root, resolves across 
   eq(e2e.errors(ctx.child), {})
 end
 
+T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix'] = function()
+  local items = e2e.compile_errors(
+    ctx.child,
+    ctx.project,
+    'app/src/main/kotlin/com/example/app/Broken.kt',
+    { 'package com.example.app', '', 'fun broken(): Int = missing' },
+    'gradle classes'
+  )
+  eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'app/src/main/kotlin/com/example/app/Broken.kt', lnum = 3, type = 'E' } })
+end
+
 return T
