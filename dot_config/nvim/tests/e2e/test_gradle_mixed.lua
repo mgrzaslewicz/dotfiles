@@ -43,4 +43,21 @@ T['gradle-mixed | tasks | kotlinc errors from `gradle classes` land in quickfix'
   eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' } })
 end
 
+T['gradle-mixed | neotest | Java test file: per-test results, listed once (neotest-java)'] = function()
+  ctx.child.cmd 'edit src/test/java/com/example/mixed/JavaGreeterTest.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  eq(
+    e2e.neotest_run_file(ctx.child),
+    { tests = { ['neotest-java'] = { 'greets', 'failsOnPurpose' } }, results = { greets = 'passed', failsOnPurpose = 'failed' } }
+  )
+end
+
+T['gradle-mixed | neotest | Kotlin test file: per-test results, listed once (neotest-gradle-kotlin)'] = function()
+  ctx.child.cmd 'edit src/test/kotlin/com/example/mixed/KotlinFormatterTest.kt'
+  eq(
+    e2e.neotest_run_file(ctx.child),
+    { tests = { ['neotest-gradle-kotlin'] = { 'shouts', 'fails on purpose' } }, results = { shouts = 'passed', ['fails on purpose'] = 'failed' } }
+  )
+end
+
 return T

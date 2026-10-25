@@ -91,7 +91,8 @@ function M.fixture_set(fixture)
         child.cmd('cd ' .. ctx.project)
         M.record_jdtls_status(child)
       end,
-      post_case = function() child.cmd 'silent! %bwipeout!' end,
+      -- bdelete, not bwipeout: neotest's diagnostics and nvim-jdtls keep buffer ids and fail on wiped buffers.
+      post_case = function() child.cmd 'silent! %bdelete!' end,
       post_once = function() child.stop() end,
     },
   }
@@ -197,6 +198,45 @@ function M.compile_errors(child, project, path, lines, task)
   child.lua "for _, t in ipairs(require('overseer').list_tasks()) do t:dispose(true) end"
   vim.fn.delete(file)
   return items
+end
+
+--- Row 5: runs the current file's tests with `<leader>uf`, or `keys` (which also starts neotest: it discovers lazily), waits
+--- until every test listed for the buffer has a result, and returns
+--- `{ tests = { [adapter] = { test names } }, results = { [test name] = status } }`: adapter names without the
+--- root, statuses as the gutter signs show them (`passed`, `failed`, `skipped`).
+---@param keys? string default `' uf'`
+function M.neotest_run_file(child, keys)
+  child.type_keys(keys or ' uf')
+  local done = [[(function()
+    local neotest, buf, total, finished, running = require 'neotest', vim.api.nvim_get_current_buf(), 0, 0, 0
+    for _, id in ipairs(neotest.state.adapter_ids()) do
+      local c = neotest.state.status_counts(id, { buffer = buf })
+      if c then
+        total, finished, running = total + c.total, finished + c.passed + c.failed + c.skipped, running + c.running
+      end
+    end
+    return total > 0 and running == 0 and finished == total
+  end)()]]
+  M.wait(child, 'build', 'neotest results for every test in the current buffer', done)
+  return child.lua [[
+    local neotest, buf = require 'neotest', vim.api.nvim_get_current_buf()
+    local ret, signs = { tests = {}, results = {} }, {}
+    for _, sign in ipairs(vim.fn.sign_getplaced(buf, { group = 'neotest-status' })[1].signs) do
+      signs[sign.lnum] = sign.name:gsub('^neotest_', '')
+    end
+    for _, id in ipairs(neotest.state.adapter_ids()) do
+      local tree = neotest.state.positions(id, { buffer = buf })
+      for _, pos in tree and tree:iter() or function() end do
+        if pos.type == 'test' then
+          local adapter = id:match '^[^:]+'
+          ret.tests[adapter] = ret.tests[adapter] or {}
+          table.insert(ret.tests[adapter], pos.name)
+          ret.results[pos.name] = signs[pos.range[1] + 1] or 'no sign'
+        end
+      end
+    end
+    return ret
+  ]]
 end
 
 return M

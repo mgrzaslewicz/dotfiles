@@ -20,6 +20,7 @@ in the header comment of its Lua file.
 | JVM servers rooted at the whole build (Maven multi-module too) | `lua/custom/jvm/project.lua`, `jdtls.lua`, `init.lua` | `test_lsp_roots.lua`, `test_project.lua` |
 | Java LSP (jdtls, Lombok) on Gradle and Maven | `lua/custom/plugins/jdtls.lua` | `e2e/test_gradle_java.lua`, `e2e/test_maven_java.lua` |
 | Kotlin LSP (kotlin_lsp) on Gradle and Maven, mixed projects (one server per language) | `init.lua` | `e2e/test_gradle_kotlin.lua`, `e2e/test_*_mixed.lua` |
+| Run tests (JUnit 5, Java and Kotlin on Gradle, Java on Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet
 
@@ -33,7 +34,6 @@ Backfilled when next touched (layer B plan: `.scratch/neovim-tests`, issues 16â€
 - Neogit/codediff maps `<leader>g`, codediff as `git mergetool` (`lua/custom/plugins/git.lua`)
 - Sessions: restore/save rules, panels closed before saving (`lua/custom/plugins/sessions.lua`)
 - IntelliJ-style highlights, readable mini.jump2d labels (`lua/custom/highlights.lua`)
-- neotest adapters, incl. the neotest-java fix for Kotlin-only projects (`lua/custom/plugins/neotest.lua`)
 - LSP formatting fallback for Java/Kotlin, autopairs (`init.lua`)
 
 ## Open ideas

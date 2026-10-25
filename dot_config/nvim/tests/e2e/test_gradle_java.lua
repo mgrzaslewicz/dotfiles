@@ -24,4 +24,13 @@ T['gradle-java | tasks | javac errors from `gradle classes` land in quickfix, kn
   eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { err, err })
 end
 
+T['gradle-java | neotest | JUnit file run: per-test results, listed once (neotest-java)'] = function()
+  ctx.child.cmd 'edit app/src/test/java/com/example/app/MainTest.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  eq(
+    e2e.neotest_run_file(ctx.child),
+    { tests = { ['neotest-java'] = { 'greets', 'failsOnPurpose' } }, results = { greets = 'passed', failsOnPurpose = 'failed' } }
+  )
+end
+
 return T

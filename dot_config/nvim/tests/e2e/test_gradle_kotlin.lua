@@ -23,4 +23,21 @@ T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix
   eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'app/src/main/kotlin/com/example/app/Broken.kt', lnum = 3, type = 'E' } })
 end
 
+T['gradle-kotlin | neotest | JUnit file run: per-test results, listed once (neotest-gradle-kotlin)'] = function()
+  ctx.child.cmd 'edit app/src/test/kotlin/com/example/app/MainTest.kt'
+  eq(
+    e2e.neotest_run_file(ctx.child),
+    { tests = { ['neotest-gradle-kotlin'] = { 'greets', 'fails on purpose' } }, results = { greets = 'passed', ['fails on purpose'] = 'failed' } }
+  )
+end
+
+-- Run all hands neotest-java the root of a project without Java tests; it used to fail there
+-- (custom/plugins/neotest.lua).
+T['gradle-kotlin | neotest | run all in a Kotlin-only project'] = function()
+  ctx.child.cmd 'edit app/src/test/kotlin/com/example/app/MainTest.kt'
+  ctx.child.cmd 'messages clear'
+  eq(e2e.neotest_run_file(ctx.child, ' ua').results, { greets = 'passed', ['fails on purpose'] = 'failed' })
+  eq(ctx.child.lua_get "vim.api.nvim_exec2('messages', { output = true }).output", '')
+end
+
 return T

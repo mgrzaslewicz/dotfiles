@@ -45,4 +45,12 @@ T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in q
   eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { err, err })
 end
 
+-- Known limit: no neotest adapter runs Kotlin tests in Maven projects (neotest-gradle needs a Gradle build,
+-- neotest-java only takes .java files). See custom/plugins/neotest.lua.
+T['maven-mixed | neotest | known limit: Kotlin tests are not found'] = function()
+  ctx.child.cmd 'edit app/src/test/kotlin/com/example/app/MainTest.kt'
+  ctx.child.type_keys ' uf'
+  e2e.wait(ctx.child, 'index', 'neotest says No tests found', "vim.api.nvim_exec2('messages', { output = true }).output:find('No tests found', 1, true)")
+end
+
 return T
