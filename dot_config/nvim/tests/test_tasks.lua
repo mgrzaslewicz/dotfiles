@@ -60,4 +60,35 @@ T['gradle/maven tasks write to a plain buffer, so long error lines stay whole'] 
   eq(tasks['mvn …'].strategy, { 'jobstart', false })
 end
 
+-- Gradle and Maven repeat compiler errors in their failure summary; IntelliJ lists each error once.
+T['gradle/maven tasks list each compiler error once'] = function()
+  local dir = helpers.tree { ['pom.xml'] = '' }
+  local output = table.concat({
+    '[ERROR] COMPILATION ERROR :',
+    '[ERROR] ' .. dir .. '/src/main/java/Foo.java:[4,24] cannot find symbol',
+    '[ERROR] ' .. dir .. '/src/main/java/Foo.java:[7,1] class, interface, enum, or record expected',
+    '[ERROR] Failed to execute goal org.apache.maven.plugins:maven-compiler-plugin:3.16.0:compile: Compilation failure: ',
+    '[ERROR] ' .. dir .. '/src/main/java/Foo.java:[4,24] cannot find symbol',
+    '[ERROR] ' .. dir .. '/src/main/java/Foo.java:[7,1] class, interface, enum, or record expected',
+  }, '\n')
+  local items = child.lua(
+    [[
+    local dir, output = ...
+    local found
+    require('overseer.template').list({ dir = dir }, function(templates) found = templates end)
+    vim.wait(5000, function() return found ~= nil end)
+    local template = vim.iter(found):find(function(t) return t.name == 'mvn compile' end)
+    local definition = template.builder {}
+    definition.cmd = { 'printf', '%s\\n', output }
+    local task = require('overseer').new_task(definition)
+    task:start()
+    vim.wait(5000, function() return task:is_complete() end)
+    vim.wait(100)
+    return vim.tbl_map(function(i) return { lnum = i.lnum, text = i.text } end, vim.fn.getqflist())
+  ]],
+    { dir, output }
+  )
+  eq(items, { { lnum = 4, text = 'cannot find symbol' }, { lnum = 7, text = 'class, interface, enum, or record expected' } })
+end
+
 return T

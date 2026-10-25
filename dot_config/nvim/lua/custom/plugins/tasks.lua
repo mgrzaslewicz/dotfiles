@@ -7,8 +7,8 @@
 -- Output goes to a plain buffer, not a terminal: on exit overseer re-parses the output buffer for the quickfix,
 -- and a terminal buffer wraps long lines (absolute paths) at its width, so nothing matched. The cost is no
 -- colors in the task output.
--- Known limit: javac errors (Gradle, Maven) and kotlin-maven-plugin errors are listed twice: both tools repeat
--- them in their build-failure summary (issue 25). kotlinc errors from Gradle are listed once.
+-- Gradle and Maven repeat javac and kotlin-maven-plugin errors in their build-failure summary; the
+-- `unique_quickfix` component below drops the repeats so each error is listed once.
 -- Other runners (make, npm, cargo, just, mise, VS Code tasks.json) are built into overseer.
 
 vim.pack.add { 'https://github.com/stevearc/overseer.nvim' }
@@ -18,6 +18,30 @@ local project = require 'custom.jvm.project'
 local errorformat = require 'custom.jvm.errorformat'
 overseer.setup {}
 
+-- Overseer loads components as `overseer.component.<name>` modules.
+package.preload['overseer.component.unique_quickfix'] = function()
+  return {
+    desc = 'Drop repeated items from the quickfix list the task filled',
+    constructor = function()
+      return {
+        on_complete = function(_, task)
+          local list = vim.fn.getqflist { id = 0, context = 0, items = 0 }
+          if list.context ~= task.id then return end
+          local seen, items = {}, {}
+          for _, item in ipairs(list.items) do
+            local key = table.concat({ item.bufnr, item.lnum, item.col, item.type, item.text }, '\0')
+            if not seen[key] then
+              seen[key] = true
+              table.insert(items, item)
+            end
+          end
+          if #items < #list.items then vim.fn.setqflist({}, 'r', { id = list.id, items = items }) end
+        end,
+      }
+    end,
+  }
+end
+
 local function task(cmd, cwd)
   return {
     cmd = cmd,
@@ -25,6 +49,7 @@ local function task(cmd, cwd)
     strategy = { 'jobstart', use_terminal = false },
     components = {
       { 'on_output_quickfix', errorformat = errorformat, items_only = true, open_on_exit = 'failure' },
+      'unique_quickfix',
       'default',
     },
   }
