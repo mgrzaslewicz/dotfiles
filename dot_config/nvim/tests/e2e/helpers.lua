@@ -79,7 +79,8 @@ function M.record_jdtls_status(child)
 end
 
 --- MiniTest set for one fixture: the fixture is copied and one child started for the whole file; each case starts
---- from no buffers. `ctx.child`, and `ctx.project` (the copy) once the set runs.
+--- from no buffers. `ctx.child`, and `ctx.project` (the copy) once the set runs. A case may stop `ctx.child`
+--- (e.g. to start nvim afresh in the project); later cases then have none.
 ---@param fixture string
 function M.fixture_set(fixture)
   local ctx = { child = require('tests.helpers').new_child() }
@@ -91,14 +92,16 @@ function M.fixture_set(fixture)
         child.start()
         child.cmd('cd ' .. ctx.project)
         M.record_jdtls_status(child)
+        -- jdtls keeps one workspace per root (custom/plugins/jdtls.lua); each copy is a new root.
+        ctx.workspace = vim.fs.joinpath(child.lua_get "vim.fn.stdpath 'cache'", 'jdtls', (ctx.project:gsub('[/\\:]', '_')))
       end,
       -- bdelete, not bwipeout: neotest's diagnostics and nvim-jdtls keep buffer ids and fail on wiped buffers.
-      post_case = function() child.cmd 'silent! %bdelete!' end,
+      post_case = function()
+        if child.is_running() then child.cmd 'silent! %bdelete!' end
+      end,
       post_once = function()
-        -- jdtls keeps one workspace per root (custom/plugins/jdtls.lua); each copy is a new root.
-        local workspace = vim.fs.joinpath(child.lua_get "vim.fn.stdpath 'cache'", 'jdtls', (ctx.project:gsub('[/\\:]', '_')))
         child.stop()
-        vim.fn.delete(workspace, 'rf')
+        vim.fn.delete(ctx.workspace, 'rf')
       end,
     },
   }

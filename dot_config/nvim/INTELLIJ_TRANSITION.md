@@ -12,6 +12,7 @@ in the header comment of its Lua file.
 | Config starts without errors or messages | `init.lua` | `test_startup.lua` |
 | `<leader>` groups and desc prefixes, no duplicate maps | all | `test_keymaps.lua` |
 | Gradle/Maven tasks (Run Configurations, Ctrl+F9), compiler errors in quickfix | `lua/custom/plugins/tasks.lua`, `lua/custom/jvm/` | `test_tasks.lua`, `test_project.lua`, `test_errorformat.lua`, `e2e/test_*.lua` (real javac/kotlinc errors) |
+| Sessions: reopen the project as left, without panels | `lua/custom/plugins/sessions.lua` | `e2e/test_gradle_java.lua` |
 | Java debug: launch main class, debug nearest test (`<leader>db`, `<leader>dc`, `<leader>ud`) | `lua/custom/plugins/debug.lua`, `jdtls.lua` | `e2e/test_gradle_java.lua` |
 | Kotlin debug: launch main class, project root | `lua/custom/plugins/debug.lua`, `lua/custom/jvm/` | `test_debug.lua`, `test_kotlin.lua`, `test_project.lua`, `e2e/test_gradle_kotlin.lua`, `e2e/test_maven_mixed.lua` |
 | Refactor maps `<leader>r` (Shift+F6, Ctrl+Alt+O/V/C/M) | `lua/custom/refactor.lua` | `test_refactor.lua`, `e2e/test_gradle_java.lua`, `e2e/test_gradle_kotlin.lua` |
@@ -33,7 +34,7 @@ Backfilled when next touched (layer B plan: `.scratch/neovim-tests`, issues 16â€
 - `<leader>Q` project errors to quickfix (`init.lua`)
 - Debug F-keys and stepping maps, Java attach config, dap-ui open/close (`lua/custom/plugins/debug.lua`)
 - Neogit/codediff maps `<leader>g`, codediff as `git mergetool` (`lua/custom/plugins/git.lua`)
-- Sessions: restore/save rules, panels closed before saving (`lua/custom/plugins/sessions.lua`)
+- Sessions: no restore/save when started with files, `<leader>w` maps (`lua/custom/plugins/sessions.lua`)
 - IntelliJ-style highlights, readable mini.jump2d labels (`lua/custom/highlights.lua`)
 - LSP formatting fallback for Java/Kotlin, autopairs (`init.lua`)
 

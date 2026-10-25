@@ -80,4 +80,40 @@ T['gradle-java | debug | <leader>ud debugs the nearest test and stops at a break
   e2e.debug_stop(ctx.child)
 end
 
+-- Last in the file: stops the shared child, as two jdtls on one workspace conflict.
+T['gradle-java | sessions | nvim in the project restores the splits of the last exit, with jdtls, without panels'] = function()
+  ctx.child.stop()
+  local helpers = require 'tests.helpers'
+  local first, second = helpers.new_child(), helpers.new_child()
+  MiniTest.finally(function()
+    first.stop()
+    second.stop()
+  end)
+  first.start { '--cmd', 'cd ' .. ctx.project }
+  first.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  first.cmd 'vsplit model/src/main/java/com/example/model/Person.java'
+  first.cmd 'Neotree show'
+  first.cmd 'copen'
+  pcall(first.cmd, 'qall!')
+  first.stop()
+
+  second.start { '--cmd', 'cd ' .. ctx.project }
+  local windows = second.lua [[
+    local ret = {}
+    for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+      local buf = vim.api.nvim_win_get_buf(win)
+      local name = vim.api.nvim_buf_get_name(buf)
+      -- A panel saved in the session comes back as an empty window.
+      table.insert(ret, vim.bo[buf].buftype ~= '' and ('panel: ' .. vim.bo[buf].filetype) or name == '' and 'empty window' or vim.fs.relpath(vim.fn.getcwd(), name) or name)
+    end
+    table.sort(ret)
+    return ret
+  ]]
+  eq(windows, { 'app/src/main/java/com/example/app/Main.java', 'model/src/main/java/com/example/model/Person.java' })
+  -- Started by the restore itself, so without the ServiceReady hook of `expect_jdtls`.
+  second.cmd 'buffer app/src/main/java/com/example/app/Main.java'
+  e2e.wait(second, 'attach', 'jdtls attached', "#vim.lsp.get_clients { bufnr = 0, name = 'jdtls' } > 0")
+  eq(second.lua_get "vim.lsp.get_clients({ bufnr = 0, name = 'jdtls' })[1].root_dir", ctx.project)
+end
+
 return T
