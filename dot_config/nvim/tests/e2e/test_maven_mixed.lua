@@ -43,12 +43,12 @@ T['maven-mixed | tasks | kotlin-maven-plugin errors from `mvn compile` land in q
   eq(vim.tbl_filter(function(i) return i.type == 'E' end, items), { { file = 'core/src/main/kotlin/com/example/mixed/Broken.kt', lnum = 3, type = 'E' } })
 end
 
--- Known limit: no neotest adapter runs Kotlin tests in Maven projects (neotest-gradle needs a Gradle build,
--- neotest-java only takes .java files). See custom/plugins/neotest.lua.
-T['maven-mixed | neotest | known limit: Kotlin tests are not found'] = function()
+T['maven-mixed | neotest | Kotlin test file: per-test results, listed once (neotest-maven-kotlin)'] = function()
   ctx.child.cmd 'edit app/src/test/kotlin/com/example/app/MainTest.kt'
-  ctx.child.type_keys ' uf'
-  e2e.wait(ctx.child, 'index', 'neotest says No tests found', "vim.api.nvim_exec2('messages', { output = true }).output:find('No tests found', 1, true)")
+  eq(
+    e2e.neotest_run_file(ctx.child),
+    { tests = { ['neotest-maven-kotlin'] = { 'headline', 'fails on purpose' } }, results = { headline = 'passed', ['fails on purpose'] = 'failed' } }
+  )
 end
 
 -- Known limit: kotlin-debug-adapter puts sibling modules on the classpath only from ~/.m2 (`mvn install`), so
