@@ -96,6 +96,48 @@ T['<leader>es with the tree open runs without errors'] = function()
   eq(messages:find('E5108', 1, true), nil)
 end
 
+-- `w` on a file asks for a window (nvim-window-picker) and opens the file there. The tree window never counts.
+T['w opens the file in the only other window without asking'] = function()
+  local root = helpers.tree { ['a.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  child.cmd 'Neotree focus'
+  child.lua [=[
+    vim.wait(5000, function() return vim.bo.filetype == 'neo-tree' end)
+    for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if l:match '(%S+)$' == 'a.txt' then vim.api.nvim_win_set_cursor(0, { i, 0 }) end
+    end
+  ]=]
+  child.type_keys 'w'
+  child.lua [=[ vim.wait(5000, function() return vim.api.nvim_buf_get_name(0):match 'a%.txt$' ~= nil end) ]=]
+
+  eq(child.lua_get [=[ vim.api.nvim_buf_get_name(0):match 'a%.txt$' ~= nil ]=], true)
+  eq(child.lua_get [=[ vim.bo.filetype ]=] ~= 'neo-tree', true)
+end
+
+T['w with several windows prompts, and the file opens in the picked one'] = function()
+  local root = helpers.tree { ['a.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  child.cmd 'vsplit'
+  child.cmd 'Neotree focus'
+  child.lua [=[
+    vim.wait(5000, function() return vim.bo.filetype == 'neo-tree' end)
+    for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if l:match '(%S+)$' == 'a.txt' then vim.api.nvim_win_set_cursor(0, { i, 0 }) end
+    end
+  ]=]
+  child.type_keys 'w'
+  child.type_keys 'F'
+  child.lua [=[ vim.wait(5000, function() return vim.iter(vim.api.nvim_list_wins()):any(function(w) return vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(w)):match 'a%.txt$' ~= nil end) end) ]=]
+
+  local opened =
+    child.lua_get [=[ vim.iter(vim.api.nvim_list_wins()):filter(function(w) return vim.api.nvim_buf_get_name(vim.api.nvim_win_get_buf(w)):match 'a%.txt$' ~= nil end):totable() ]=]
+  eq(#opened, 1)
+end
+
 T['<leader>eh shows hidden files'] = function()
   local root = helpers.tree { ['.hidden.txt'] = 'x', ['visible.txt'] = 'x' }
   child.start()
