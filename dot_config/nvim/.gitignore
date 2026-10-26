@@ -5,7 +5,7 @@ nvim
 spell/
 
 # Test state (plugins, Mason, shada) for dot_config/nvim/tests
-tests/.tests/
-tests/.tests-e2e/
+tests/.tests
+tests/.tests-e2e
 
 .DS_Store

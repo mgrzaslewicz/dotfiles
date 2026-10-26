@@ -11,11 +11,19 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 root=$PWD
 
-layer=tests state=$root/tests/.tests
+layer=tests name=.tests
 if [ "${1:-}" = --e2e ]; then
   shift
-  layer=tests/e2e state=$root/tests/.tests-e2e
+  layer=tests/e2e name=.tests-e2e
 fi
+
+# Real state lives in a short per-checkout dir; tests/$name is a symlink to it. Neovim's luac cache file
+# names are the escaped plugin paths, which overflow ENAMETOOLONG (255 bytes) under long checkout paths.
+short=/tmp/nvim-$name-$(printf %s "$root" | cksum | cut -d " " -f1)
+mkdir -p "$short"
+if [ -d "$root/tests/$name" ] && [ ! -L "$root/tests/$name" ]; then rm -rf "$root/tests/$name"; fi
+ln -sfn "$short" "$root/tests/$name"
+state=$(cd "$short" && pwd -P)
 
 mkdir -p "$state/config"
 ln -sfn "$root" "$state/config/nvim"
