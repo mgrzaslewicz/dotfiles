@@ -80,6 +80,22 @@ T['<leader>es toggles autoscroll, on by default'] = function()
   eq(child.lua_get 'vim.g.explorer_autoscroll', true)
 end
 
+T['<leader>es with the tree open runs without errors'] = function()
+  local root = helpers.tree { ['a/b/c/deep.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  child.cmd 'Neotree focus'
+  child.lua [=[ vim.wait(5000, function() return vim.bo.filetype == 'neo-tree' end) ]=]
+  child.cmd 'messages clear'
+  child.type_keys(' ', 'e', 's')
+  child.type_keys(' ', 'e', 's')
+  child.lua [=[ vim.wait(500) ]=]
+  local messages = child.cmd_capture 'messages'
+  eq(messages:find('attempt to call', 1, true), nil)
+  eq(messages:find('E5108', 1, true), nil)
+end
+
 T['<leader>eh shows hidden files'] = function()
   local root = helpers.tree { ['.hidden.txt'] = 'x', ['visible.txt'] = 'x' }
   child.start()

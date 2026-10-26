@@ -16,6 +16,7 @@ vim.keymap.set('n', '<leader>ef', '<Cmd>Neotree focus<CR>', { desc = 'Explorer: 
 local common = require 'neo-tree.sources.common.commands'
 local filesystem = require 'neo-tree.sources.filesystem.commands'
 local manager = require 'neo-tree.sources.manager'
+local source = require 'neo-tree.sources.filesystem'
 
 -- Runs fn on the open filesystem tree's state; does nothing when the tree is closed.
 local function with_open_tree(fn)
@@ -26,20 +27,47 @@ end
 vim.keymap.set('n', '<leader>eh', function() with_open_tree(filesystem.toggle_hidden) end, { desc = 'Explorer: toggle hidden files', silent = true })
 vim.keymap.set('n', '<leader>ec', function() with_open_tree(common.close_all_nodes) end, { desc = 'Explorer: collapse all', silent = true })
 
+-- Node actions act on the node under the tree cursor, so they focus the tree first.
+local function on_tree_node(fn)
+  with_open_tree(function(state)
+    vim.api.nvim_set_current_win(state.winid)
+    fn(state)
+  end)
+end
+
+vim.keymap.set('n', '<leader>ea', function() on_tree_node(filesystem.add) end, { desc = 'Explorer: add file or dir', silent = true })
+vim.keymap.set('n', '<leader>er', function() on_tree_node(filesystem.rename) end, { desc = 'Explorer: rename (plain file rename)', silent = true })
+vim.keymap.set('n', '<leader>ed', function() on_tree_node(filesystem.delete) end, { desc = 'Explorer: delete', silent = true })
+
+-- Copies the path of the node under the tree cursor to the system clipboard.
+local function copy_node_path(to_path)
+  with_open_tree(function(state)
+    local node = state.tree:get_node()
+    if node and node.path then vim.fn.setreg('+', to_path(node.path)) end
+  end)
+end
+
+vim.keymap.set('n', '<leader>ey', function()
+  copy_node_path(function(path) return path end)
+end, { desc = 'Explorer: copy absolute path', silent = true })
+vim.keymap.set('n', '<leader>eY', function()
+  copy_node_path(function(path) return vim.fn.fnamemodify(path, ':.') end)
+end, { desc = 'Explorer: copy relative path', silent = true })
+
 -- Autoscroll: reveal the file of each buffer entered while the tree is open. Neo-tree's own follow option cannot be
 -- switched at runtime, so this uses a flag checked on every BufEnter.
 vim.g.explorer_autoscroll = true
 vim.api.nvim_create_autocmd('BufEnter', {
   callback = function(args)
     if vim.g.explorer_autoscroll and vim.bo[args.buf].buftype == '' and vim.api.nvim_buf_get_name(args.buf) ~= '' then
-      with_open_tree(function() filesystem.follow() end)
+      with_open_tree(function() source.follow() end)
     end
   end,
 })
 vim.keymap.set('n', '<leader>es', function()
   vim.g.explorer_autoscroll = not vim.g.explorer_autoscroll
   vim.notify('Explorer autoscroll ' .. (vim.g.explorer_autoscroll and 'on' or 'off'))
-  if vim.g.explorer_autoscroll then with_open_tree(function() filesystem.follow() end) end
+  if vim.g.explorer_autoscroll then with_open_tree(function() source.follow() end) end
 end, { desc = 'Explorer: toggle autoscroll', silent = true })
 
 require('neo-tree').setup {
