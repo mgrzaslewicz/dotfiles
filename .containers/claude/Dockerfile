@@ -22,6 +22,7 @@ RUN apt-get update \
         # command line tools claude might use \
         git \
         jq \
+        unzip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -58,6 +59,7 @@ RUN mise use --global npm@latest
 RUN mise use --global python@latest
 RUN mise use --global aqua:colbymchenry/codegraph
 RUN mise use --global claude@latest
+RUN mise use --global rust@latest
 RUN mise install
 RUN node --version
 RUN npm --version
