@@ -8,6 +8,7 @@ vim.pack.add {
 }
 
 vim.keymap.set('n', '\\', '<Cmd>Neotree reveal<CR>', { desc = 'NeoTree reveal', silent = true })
+vim.keymap.set('n', '<leader>en', '<Cmd>Neotree reveal<CR>', { desc = 'Explorer: reveal current file', silent = true })
 
 -- Z: expand the selected directory recursively, or collapse it again when it is already expanded.
 local common = require 'neo-tree.sources.common.commands'

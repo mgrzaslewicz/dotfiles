@@ -13,6 +13,7 @@ local groups = {
   d = 'Debug: ',
   b = 'Task: ',
   w = 'Session: ',
+  e = 'Explorer: ', -- neo-tree
 }
 
 local child = helpers.new_child()
