@@ -155,6 +155,25 @@ T['<leader>eh shows hidden files'] = function()
   eq(after:find('.hidden.txt', 1, true) ~= nil, true)
 end
 
+-- With no node under the cursor, Z does nothing: neo-tree would otherwise expand every root node. The command is
+-- called directly with a tree that has no node, and the expansion is counted.
+T['Z with no node under the cursor expands nothing'] = function()
+  local root = helpers.tree { ['a/b/c/deep.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  local expansions = child.lua_get [=[(function()
+    local fs = require 'neo-tree.sources.filesystem.commands'
+    local calls = 0
+    fs.expand_all_subnodes = function() calls = calls + 1 end
+    local state = require('neo-tree.sources.manager').get_state 'filesystem'
+    state.tree = { get_node = function() return nil end }
+    state.commands.toggle_all_subnodes(state)
+    return calls
+  end)()]=]
+  eq(expansions, 0)
+end
+
 T['<leader>eg opens the git status tree'] = function()
   local root = helpers.tree { ['new.txt'] = 'x' }
   vim.system({ 'git', 'init', '-q' }, { cwd = root }):wait()

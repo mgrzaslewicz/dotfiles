@@ -86,7 +86,7 @@ require('neo-tree').setup {
         local node = state.tree:get_node()
         if node and node.type == 'directory' and node:is_expanded() then
           common.close_all_subnodes(state)
-        else
+        elseif node then
           filesystem.expand_all_subnodes(state, node)
         end
       end,

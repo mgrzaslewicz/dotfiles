@@ -47,11 +47,14 @@ function M.attach_fake_lsp(child)
 end
 
 --- Creates a temp dir tree for fixtures and returns its path. Keys are relative paths; a trailing `/` makes an
---- empty dir, anything else a file with the value as content.
+--- empty dir, anything else a file with the value as content. The path is resolved (macOS: /var is /private/var),
+--- since nvim reports resolved paths and tests compare against them.
 ---@param files table<string, string>
 ---@return string
 function M.tree(files)
   local root = vim.fn.tempname()
+  vim.fn.mkdir(root, 'p')
+  root = vim.uv.fs_realpath(root) or root
   for path, content in pairs(files) do
     local full = vim.fs.joinpath(root, path)
     if vim.endswith(path, '/') then
