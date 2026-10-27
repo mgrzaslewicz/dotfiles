@@ -261,6 +261,14 @@ do
     group = vim.api.nvim_create_augroup('kickstart-highlight-yank', { clear = true }),
     callback = function() vim.hl.on_yank() end,
   })
+
+  -- Equalize splits when the terminal (or tmux window) is resized. Otherwise Neovim keeps each split's size and gives
+  -- the difference to the last window, so the proportions are lost. Same as `<C-w>=`.
+  vim.api.nvim_create_autocmd('VimResized', {
+    desc = 'Equalize splits after the terminal is resized',
+    group = vim.api.nvim_create_augroup('custom-equalize-on-resize', { clear = true }),
+    command = 'wincmd =',
+  })
 end
 
 -- ============================================================
