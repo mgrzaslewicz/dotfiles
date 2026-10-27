@@ -13,6 +13,7 @@ vim.keymap.set('n', '\\', '<Cmd>Neotree reveal<CR>', { desc = 'NeoTree reveal', 
 vim.keymap.set('n', '<leader>en', '<Cmd>Neotree reveal<CR>', { desc = 'Explorer: reveal current file', silent = true })
 vim.keymap.set('n', '<leader>ee', '<Cmd>Neotree toggle<CR>', { desc = 'Explorer: toggle tree', silent = true })
 vim.keymap.set('n', '<leader>ef', '<Cmd>Neotree focus<CR>', { desc = 'Explorer: focus tree', silent = true })
+vim.keymap.set('n', '<leader>eg', '<Cmd>Neotree focus source=git_status<CR>', { desc = 'Explorer: git status', silent = true })
 
 -- Z: expand the selected directory recursively, or collapse it again when it is already expanded.
 local common = require 'neo-tree.sources.common.commands'

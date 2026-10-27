@@ -155,4 +155,21 @@ T['<leader>eh shows hidden files'] = function()
   eq(after:find('.hidden.txt', 1, true) ~= nil, true)
 end
 
+T['<leader>eg opens the git status tree'] = function()
+  local root = helpers.tree { ['new.txt'] = 'x' }
+  vim.system({ 'git', 'init', '-q' }, { cwd = root }):wait()
+  child.start()
+  child.cmd('cd ' .. root)
+  child.type_keys(' ', 'e', 'g')
+  child.lua [=[
+    vim.wait(5000, function()
+      local state = require('neo-tree.sources.manager').get_state 'git_status'
+      return state and state.winid and vim.api.nvim_win_is_valid(state.winid)
+    end)
+  ]=]
+
+  local after = child.lua_get [=[ table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n') ]=]
+  eq(after:find('new.txt', 1, true) ~= nil, true)
+end
+
 return T
