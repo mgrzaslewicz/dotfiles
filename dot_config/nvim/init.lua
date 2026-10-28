@@ -517,6 +517,15 @@ do
   -- ... and there is more!
   --  Check out: https://github.com/nvim-mini/mini.nvim
   require('mini.jump2d').setup()
+
+  -- Show hex colors (#rrggbb) and 256-color names (colour247) in their own color, e.g. in ~/.tmux.conf
+  local hipatterns = require 'mini.hipatterns'
+  hipatterns.setup {
+    highlighters = {
+      hex_color = hipatterns.gen_highlighter.hex_color(),
+      term_color = require('custom.term_colors').highlighter(),
+    },
+  }
 end
 
 -- ============================================================
