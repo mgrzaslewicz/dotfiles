@@ -994,6 +994,8 @@ do
 
     sources = {
       default = { 'lsp', 'path', 'snippets' },
+      -- tmux has no language server: keywords of its syntax file instead (lua/custom/plugins/tmux.lua).
+      per_filetype = { tmux = { inherit_defaults = true, 'omni' } },
     },
 
     snippets = { preset = 'luasnip' },
@@ -1102,6 +1104,7 @@ do
   require 'custom.plugins.jdtls'
   require 'custom.plugins.git'
   require 'custom.plugins.tmux-navigator'
+  require 'custom.plugins.tmux'
   require 'custom.plugins.tasks'
   require 'custom.plugins.sessions'
 
