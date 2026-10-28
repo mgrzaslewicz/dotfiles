@@ -40,10 +40,28 @@ Backfilled when next touched (layer B plan: `.scratch/neovim-tests`, issues 16â€
 
 ## Open ideas
 
+Proposals, ranked by daily-use value for Java/Kotlin. Each lands test-first (see the skill). Not yet decided.
+
+### High value
+
+- Snippets (live templates) for `psvm`, `sout`, test methods: enable friendly-snippets (commented out in `init.lua`) and/or add custom LuaSnip snippets for Java/Kotlin. Cheap win.
+- Inline debugger values: `nvim-dap-virtual-text` shows variable values at line end while stepping, as IntelliJ does. Today values need hover or dap-ui panels. Wiring in `lua/custom/plugins/debug.lua`.
+- Non-LSP linting: `kickstart/plugins/lint.lua` is disabled. Add `nvim-lint` with `ktlint` or `detekt` (Kotlin) and `checkstyle` (Java). kotlin-lsp does not report unused variables, so this fills an inspection gap.
+- Tree-sitter textobjects and motions: `nvim-treesitter-textobjects` for method/class jumps (`]m`, `[m`), function/class objects, parameter swap. mini.ai covers only part of this. Parsers are already pinned in `lua/custom/tools.lua`.
+- Project-wide replace panel: grug-far.nvim (or nvim-spectre) for Ctrl+Shift+R with preview and per-hunk apply. Today it is `:cdo` from quickfix: works, clumsy.
+
+### Medium value
+
+- Quick terminal: toggleable floating or bottom terminal (`snacks.terminal` or `toggleterm`). Today only `:term`.
+- Breadcrumbs: `nvim-navic` in winbar, the IntelliJ path bar. Helps in deep Java packages.
+- Pinned working set of files: mini.visits or harpoon.
+- Indent scope: `mini.indentscope` (kickstart `indent_line` is off). Cosmetic, IntelliJ-like.
+- Formatting check: confirm conform covers Java (`google-java-format`) and Kotlin (`ktlint`). The LSP-formatting fallback for Java/Kotlin has no tests; if conform misses either, that is a gap to fix.
+- Coverage: neotest coverage display (JaCoCo) for Gradle and Maven. Stands in for IntelliJ "Run with coverage". Needs layer B, since it needs real builds.
+
+### Unranked
+
 - `<leader>ud` debugging Kotlin tests (run the Gradle test with `--debug-jvm` and auto-attach)
-- Snippets (live templates) for `psvm`, `sout`, test methods: friendly-snippets and/or LuaSnip
-- Interactive project-wide replace panel: grug-far.nvim or nvim-spectre
-- Pinned working set of files: mini.visits or harpoon
 
 ## Skills to practice
 
