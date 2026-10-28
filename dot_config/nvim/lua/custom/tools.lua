@@ -13,6 +13,8 @@ M.mason = {
   { 'kotlin-lsp', version = 'kotlin-lsp/v263.6379.0' },
   -- Kotlin debugger, configured in lua/custom/plugins/debug.lua.
   { 'kotlin-debug-adapter', version = '0.4.4' },
+  -- Python, started by enabling `pyright` in `servers` (init.lua).
+  { 'pyright', version = '1.1.414' },
   { 'lua-language-server', version = '3.19.2' },
   -- Lua formatter (conform); same version as the repo's mise.toml pin used by `mise run check`.
   { 'stylua', version = 'v2.6.0' },

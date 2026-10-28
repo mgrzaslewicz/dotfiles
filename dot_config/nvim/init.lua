@@ -783,7 +783,6 @@ do
   local servers = {
     -- clangd = {},
     -- gopls = {},
-    -- pyright = {},
     -- tsc = {},
     --
     -- Some languages (like rust) have entire language plugins that can be useful:
@@ -803,6 +802,10 @@ do
         if build then on_dir(build.root) end
       end,
     },
+
+    -- Python (Microsoft's pyright, Mason package). Default root markers (pyproject.toml, setup.py, ...) root it at the
+    -- project, so a package's sibling modules resolve. Tests: tests/test_python.lua.
+    pyright = {},
 
     stylua = {}, -- Used to format Lua code
 
