@@ -30,6 +30,10 @@ T['tmux 256-color names are shown in their own color'] = function()
   eq(backgrounds("set -g window-style 'fg=colour247,bg=color232'\n", 'term_color'), { 0x9E9E9E, 0x080808 })
 end
 
+T['rgb() colors are shown in their own color'] = function()
+  eq(backgrounds('color: rgb(163, 190, 140); border: rgba(0 0 255 / 50%) myrgb(1,2,3)\n', 'rgb_color'), { 0xA3BE8C, 0x0000FF })
+end
+
 T['tmux color names beyond 255 or inside words are not highlighted'] = function() eq(backgrounds('colour256 mycolour7 colour12x\n', 'term_color'), {}) end
 
 return T
