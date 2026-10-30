@@ -89,6 +89,28 @@ T_smoke['does not save a file outside any project'] = function()
   eq(vim.fn.readfile(dir .. '/notes.txt'), { 'todo' })
 end
 
+T_smoke['<leader>ta turns autosave off and on'] = function()
+  local repo = tree { ['.git/'] = '', ['Foo.kt'] = 'fun main() {}' }
+  child.start()
+  child.type_keys(' ', 't', 'a')
+  edit_and_leave(repo .. '/Foo.kt')
+  child.lua 'vim.wait(1500, function() return false end)'
+  eq(vim.fn.readfile(repo .. '/Foo.kt'), { 'fun main() {}' })
+  child.type_keys(' ', 't', 'a')
+  child.type_keys('i', 'y', '<Esc>')
+  wait_saved(repo .. '/Foo.kt', 'yxfun main() {}')
+  eq(vim.fn.readfile(repo .. '/Foo.kt'), { 'yxfun main() {}' })
+end
+
+T_smoke['<leader>ta can turn autosave on in a session started on a file'] = function()
+  local repo = tree { ['.git/'] = '', ['Foo.kt'] = 'fun main() {}' }
+  child.start { repo .. '/Foo.kt' }
+  child.type_keys(' ', 't', 'a')
+  edit_and_leave(repo .. '/Foo.kt')
+  wait_saved(repo .. '/Foo.kt', 'xfun main() {}')
+  eq(vim.fn.readfile(repo .. '/Foo.kt'), { 'xfun main() {}' })
+end
+
 T['in nvim'] = T_smoke
 
 return T
