@@ -1108,6 +1108,9 @@ do
   require 'custom.plugins.tasks'
   require 'custom.plugins.sessions'
 
+  -- Save project files on leaving insert mode or changing text; not when started on a file. See custom/autosave.lua.
+  require('custom.autosave').setup()
+
   -- NOTE: You can add your own plugins, configuration, etc. in `lua/custom/plugins/*.lua`.
   --
   -- For independent modules, uncomment the convenience loader:
