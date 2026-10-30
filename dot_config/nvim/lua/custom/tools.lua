@@ -10,7 +10,7 @@ M.mason = {
   -- Java debugger, loaded into jdtls as a bundle by lua/custom/plugins/jdtls.lua.
   { 'java-debug-adapter', version = '0.59.0' },
   -- Kotlin, JetBrains' official server, from our registry override (lua/custom/mason-registry).
-  { 'kotlin-lsp', version = 'kotlin-lsp/v263.6379.0' },
+  { 'kotlin-lsp', version = 'kotlin-lsp/v263.7084.0' },
   -- Kotlin debugger, configured in lua/custom/plugins/debug.lua.
   { 'kotlin-debug-adapter', version = '0.4.4' },
   -- Python, started by enabling `pyright` in `servers` (init.lua).
