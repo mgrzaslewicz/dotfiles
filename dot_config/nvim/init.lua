@@ -1102,6 +1102,7 @@ do
   require 'custom.refactor'
   require 'custom.plugins.debug'
   require 'custom.plugins.jdtls'
+  require('custom.jvm.jdk_source').setup()
   require 'custom.plugins.git'
   require 'custom.plugins.tmux-navigator'
   require 'custom.plugins.tmux'
