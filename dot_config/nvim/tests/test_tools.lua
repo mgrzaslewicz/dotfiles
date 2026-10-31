@@ -18,6 +18,16 @@ T['the kotlin-lsp registry override installs the pinned version'] = function()
   eq(spec.source.id, 'pkg:generic/Kotlin/kotlin-lsp@' .. require('custom.tools').version 'kotlin-lsp')
 end
 
+-- The kotlin-lsp build expires and prints this, then exits (seen in lsp.log after the pin went stale).
+T['an expired kotlin-lsp build is found in the LSP log'] = function()
+  local e2e = require 'tests.e2e.helpers'
+  local log = {
+    '[ERROR] "rpc" "intellij-server" "stderr" "This build of kotlin-server has expired.\\nThe IDE will now close.\\n"',
+  }
+  eq(e2e.expired(log) ~= nil, true)
+  eq(e2e.expired { '[INFO] "rpc" "intellij-server" "stderr" "Log file: /tmp/x.log"' }, nil)
+end
+
 local child = helpers.new_child()
 
 T['every enabled LSP server with a Mason package is in the pinned list'] = function()

@@ -90,6 +90,38 @@ end
 
 local child = helpers.new_child()
 
+T['drift()'] = MiniTest.new_set()
+
+-- Installed source ids as Mason writes them in mason-receipt.json; every id ends `@<version>`.
+local function installed(ids)
+  return function(name) return ids[name] end
+end
+
+T['drift()']['is empty when every pinned package is installed at its pin'] = function()
+  local tools = { { 'kotlin-lsp', version = 'kotlin-lsp/v263.7084.0' }, { 'pyright', version = '1.1.414' } }
+  local ids = {
+    ['kotlin-lsp'] = 'pkg:generic/Kotlin/kotlin-lsp@kotlin-lsp/v263.7084.0',
+    pyright = 'pkg:npm/pyright@1.1.414',
+  }
+  eq(health.drift { tools = tools, installed = installed(ids) }, {})
+end
+
+T['drift()']['reports an installed version that differs from the pin'] = function()
+  local tools = { { 'kotlin-lsp', version = 'kotlin-lsp/v263.7084.0' } }
+  local ids = { ['kotlin-lsp'] = 'pkg:generic/Kotlin/kotlin-lsp@kotlin-lsp/v263.6379.0' }
+  local drift = health.drift { tools = tools, installed = installed(ids) }
+  eq(names(drift), { 'kotlin-lsp' })
+  eq(drift[1].pinned, 'kotlin-lsp/v263.7084.0')
+  eq(drift[1].installed, 'kotlin-lsp/v263.6379.0')
+end
+
+T['drift()']['reports a pinned package that is not installed'] = function()
+  local tools = { { 'stylua', version = 'v2.6.0' } }
+  local drift = health.drift { tools = tools, installed = installed {} }
+  eq(names(drift), { 'stylua' })
+  eq(drift[1].installed, nil)
+end
+
 T[':checkhealth custom'] = MiniTest.new_set {
   hooks = {
     pre_case = function() child.start() end,
@@ -113,6 +145,12 @@ T[':checkhealth custom']['lists the prerequisites'] = function()
   for _, req in ipairs(health.requirements) do
     eq({ req.name, report:find(req.name .. ':', 1, true) ~= nil }, { req.name, true })
   end
+end
+
+T[':checkhealth custom']['checks Mason packages against the pins'] = function()
+  local report = checkhealth()
+  eq(report:find('Mason packages', 1, true) ~= nil, true)
+  eq(report:find('kotlin-lsp', 1, true) ~= nil, true)
 end
 
 T[':checkhealth custom']['warns on any other version'] = function()

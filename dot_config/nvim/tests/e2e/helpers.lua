@@ -47,17 +47,37 @@ function M.dump(child)
   ]]
 end
 
+--- Lines of the child's LSP log (empty before it exists).
+---@param child table
+---@return string[]
+function M.lsp_log(child)
+  local path = child.lua_get 'vim.lsp.log.get_filename()'
+  return vim.fn.filereadable(path) == 1 and vim.fn.readfile(path) or {}
+end
+
+--- The line saying the kotlin-lsp build has expired (it prints this and exits), or nil.
+---@param lines string[]
+---@return string|nil
+function M.expired(lines)
+  for _, line in ipairs(lines) do
+    if line:find('has expired', 1, true) then return line end
+  end
+end
+
 --- Waits until `condition` (a Lua expression evaluated in the child) is truthy, or fails the test with what was
 --- awaited and a dump of the child's state. The runner owns the deadline and polls: a condition must be cheap and
 --- never block (start LSP requests asynchronously and poll their result), so a stuck server cannot hang the run.
 ---@param kind 'attach'|'index'|'build'|'dap'|'edit'
 ---@param what string shown on timeout
 ---@param condition string
-function M.wait(child, kind, what, condition)
+---@param abort? fun(child): string|nil checked each poll; a message fails the wait at once
+function M.wait(child, kind, what, condition, abort)
   local ms = M.timeouts[kind] * factor
   local deadline = vim.uv.hrtime() + ms * 1e6
   repeat
     if child.lua(('return (%s) and true or false'):format(condition)) then return end
+    local reason = abort and abort(child)
+    if reason then error(reason .. '\n' .. M.dump(child), 0) end
     vim.wait(250)
   until vim.uv.hrtime() > deadline
   error(('timed out after %d s (%s) waiting for: %s\n%s'):format(ms / 1000, kind, what, M.dump(child)), 0)
@@ -120,7 +140,10 @@ end
 
 --- Row 2: kotlin-lsp attaches to the current buffer with `root` as root.
 function M.expect_kotlin_lsp(child, root)
-  M.wait(child, 'attach', 'kotlin_lsp attached', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
+  M.wait(child, 'attach', 'kotlin_lsp attached', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0", function(c)
+    local line = M.expired(M.lsp_log(c))
+    if line then return 'kotlin-lsp build expired, bump its pin in lua/custom/tools.lua and reinstall it: ' .. line end
+  end)
   MiniTest.expect.equality(child.lua_get "vim.lsp.get_clients({ bufnr = 0, name = 'kotlin_lsp' })[1].root_dir", root)
 end
 
