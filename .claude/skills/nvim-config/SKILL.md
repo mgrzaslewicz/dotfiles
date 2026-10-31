@@ -15,6 +15,8 @@ skill list: `dot_config/nvim/INTELLIJ_TRANSITION.md`.
 | `mise run test` | all tests (~5 s); `mise run test -- tests/test_x.lua` for one file (path relative to `dot_config/nvim`) |
 | `mise run check` | everything a commit must pass: `stylua --check`, tests, lua-language-server diagnostics (~20 s) |
 | `mise run test:e2e` | layer B, real servers/builds/DAP (`tests/e2e/`); on demand, see below. `-- tests/e2e/test_x.lua` for one file |
+| `mise run nvim:update` | bump plugins (lockfile) and Mason pins to latest, `check` (+ e2e if a Mason pin moved), commit on the current branch; no push. Refuses on unrelated dirty files |
+| `mise run nvim:sync` | make this host match the dotfiles: `chezmoi apply ~/.config/nvim`, then lockfile revisions and Mason pins |
 | `mise run setup` | once per clone: repo-local `core.hooksPath=.githooks` |
 
 `stylua .` in `dot_config/nvim` fixes formatting. The pre-commit hook runs `mise run check` on commits touching

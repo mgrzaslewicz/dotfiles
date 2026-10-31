@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# Neovim packages, the dotfiles side and the host side.
+#   nvim-packages update  bumps plugins (nvim-pack-lock.json) and Mason pins (lua/custom/tools.lua) to latest in the
+#                         dotfiles repo, runs `mise run check` (and `test:e2e` when a Mason pin moved), commits on the
+#                         current branch. No push. Repo: $NVIM_PACKAGES_REPO, else `chezmoi source-path`.
+#   nvim-packages sync    chezmoi apply ~/.config/nvim, then makes host plugins match the lockfile and Mason match the pins.
+# Driver: dot_config/nvim/lua/custom/packages.lua.
+set -euo pipefail
+
+usage() {
+  echo 'usage: nvim-packages update|sync' >&2
+  exit 2
+}
+[ $# -eq 1 ] || usage
+
+if [ "$1" = sync ]; then
+  chezmoi apply "$HOME/.config/nvim"
+  nvim --headless -c "lua require('custom.packages').sync_main()"
+  exit 0
+fi
+[ "$1" = update ] || usage
+
+repo=$(git -C "${NVIM_PACKAGES_REPO:-$(chezmoi source-path)}" rev-parse --show-toplevel)
+cd "$repo"
+config=dot_config/nvim
+lock=$config/nvim-pack-lock.json
+tools=$config/lua/custom/tools.lua
+
+# Refuse when anything outside the two files update writes is dirty: the commit would sweep it in.
+dirty=$(git status --porcelain -- . ":!$lock" ":!$tools")
+if [ -n "$dirty" ]; then
+  echo 'nvim-packages: uncommitted changes outside the lock and pin files, commit or stash them first:' >&2
+  echo "$dirty" >&2
+  exit 1
+fi
+
+# Isolated state: the config comes from this repo (lockfile writes land here), plugins and Mason live in $state.
+state=${XDG_STATE_HOME:-$HOME/.local/state}/nvim-packages
+mkdir -p "$state/config"
+ln -sfn "$repo/$config" "$state/config/nvim"
+report=$state/report.txt
+XDG_CONFIG_HOME=$state/config XDG_DATA_HOME=$state/data XDG_STATE_HOME=$state/state XDG_CACHE_HOME=$state/cache \
+  NVIM_TEST=1 nvim --headless -c "lua require('custom.packages').update_main('$report')"
+
+if [ -z "$(git status --porcelain -- "$lock" "$tools")" ]; then
+  echo 'nvim-packages: already up to date, nothing to commit'
+  exit 0
+fi
+
+# The check reads tests/.tests, which holds plugins from the last run's lockfile: drop it so the new revisions are used.
+tests=$config/tests/.tests
+if [ -e "$tests" ]; then
+  rm -rf "$(cd "$tests" && pwd -P)" "$tests"
+fi
+mise run check
+
+if ! git diff --quiet -- "$tools"; then
+  mise run test:e2e
+fi
+
+git add -- "$lock" "$tools"
+msg=$(mktemp)
+{
+  echo 'chore(nvim): update packages'
+  echo
+  cat "$report"
+} >"$msg"
+git commit -q -F "$msg"
+rm -f "$msg"
+git log -1 --format='nvim-packages: committed %h %s' | cat

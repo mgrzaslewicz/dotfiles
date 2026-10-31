@@ -1,6 +1,6 @@
 -- External tools installed by Mason, pinned like the plugins in nvim-pack-lock.json: Mason has no lockfile, so
 -- versions only change here. To update: bump a version (`:Mason` shows newer ones), run `mise run test:e2e`,
--- commit. Names are Mason package names. Tests: tests/test_tools.lua.
+-- commit. Or `mise run nvim:update` bumps all of them (and the plugin lockfile) to latest and commits. Names are Mason package names. Tests: tests/test_tools.lua.
 
 local M = {}
 

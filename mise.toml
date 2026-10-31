@@ -41,6 +41,14 @@ wait "$pid"
 description = "Everything a commit to dot_config/nvim must pass: format, tests, types"
 run = ["mise run check:format", "mise run test", "mise run check:types"]
 
+[tasks."nvim:update"]
+description = "Bump Neovim plugins and Mason pins to latest, check (e2e if a Mason pin moved), commit on this branch; no push"
+run = 'NVIM_PACKAGES_REPO="$MISE_PROJECT_ROOT" dot_local/bin/executable_nvim-packages update'
+
+[tasks."nvim:sync"]
+description = "Make this host match the dotfiles: chezmoi apply ~/.config/nvim, then plugin lockfile revisions and Mason pins"
+run = "dot_local/bin/executable_nvim-packages sync"
+
 [tasks.setup]
 description = "Use the repo's git hooks (.githooks); repo-local config, shared by all worktrees"
 run = "git config core.hooksPath .githooks"
