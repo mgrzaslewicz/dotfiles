@@ -16,6 +16,9 @@
 --    - Multi-module Maven: sibling modules are on the classpath only from ~/.m2 (`mvn install` them first).
 --    projectRoot (custom/jvm/project.lua `debug_root`) is the build root for Gradle (a module root breaks source
 --    mapping across modules) and the module for Maven (with the build root the main class is not found).
+--  - Rust: codelldb (Mason) debugs the binary cargo builds; build it first (`cargo build`). Launch asks for the
+--    executable, defaulting to `target/debug/<package>` of the crate the file belongs to (custom/rust.lua).
+--    Known limit: no `cargo test` debugging yet (no neotest adapter for Rust).
 -- IntelliJ F-keys work too, but Shift+F8 does not reach nvim in some terminals; <leader>dO always does.
 -- `kickstart.plugins.debug` (Go-focused) stays unused.
 
@@ -65,6 +68,24 @@ dap.configurations.kotlin = {
     port = 5005,
     timeout = 5000,
   },
+}
+
+dap.adapters.codelldb = {
+  type = 'server',
+  port = '${port}',
+  executable = { command = 'codelldb', args = { '--port', '${port}' } },
+}
+
+-- Default executable: the binary of the crate the current file belongs to, as `cargo build` writes it.
+local function rust_program()
+  local root = vim.fs.root(0, 'Cargo.toml') or vim.fn.getcwd()
+  local cargo_toml = vim.fn.filereadable(root .. '/Cargo.toml') == 1 and table.concat(vim.fn.readfile(root .. '/Cargo.toml'), '\n') or ''
+  local default = root .. '/target/debug/' .. (require('custom.rust').package_name(cargo_toml) or '')
+  return vim.fn.input('Executable: ', default)
+end
+
+dap.configurations.rust = {
+  { type = 'codelldb', request = 'launch', name = 'Launch binary', program = rust_program, cwd = '${workspaceFolder}', stopOnEntry = false },
 }
 
 local breakpoint_icons = { Breakpoint = '●', BreakpointCondition = '◆', LogPoint = '◇', BreakpointRejected = '○', Stopped = '▶' }

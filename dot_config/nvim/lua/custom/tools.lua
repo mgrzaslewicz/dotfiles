@@ -15,6 +15,10 @@ M.mason = {
   { 'kotlin-debug-adapter', version = '0.4.4' },
   -- Python, started by enabling `pyright` in `servers` (init.lua).
   { 'pyright', version = '1.1.414' },
+  -- Rust, started by enabling `rust_analyzer` in `servers` (init.lua).
+  { 'rust-analyzer', version = '2026-10-26' },
+  -- Rust/C/C++ debugger (LLDB based), used by the Rust launch config in lua/custom/plugins/debug.lua.
+  { 'codelldb', version = 'v1.12.3' },
   { 'lua-language-server', version = '3.19.2' },
   -- Lua formatter (conform); same version as the repo's mise.toml pin used by `mise run check`.
   { 'stylua', version = 'v2.6.0' },

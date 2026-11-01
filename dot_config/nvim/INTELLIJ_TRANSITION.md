@@ -23,6 +23,8 @@ in the header comment of its Lua file.
 | Java LSP (jdtls, Lombok) on Gradle and Maven | `lua/custom/plugins/jdtls.lua` | `e2e/test_gradle_java.lua`, `e2e/test_maven_java.lua` |
 | Kotlin LSP (kotlin_lsp) on Gradle and Maven, mixed projects (one server per language) | `init.lua` | `e2e/test_gradle_kotlin.lua`, `e2e/test_*_mixed.lua` |
 | Python LSP (pyright) enabled and rooted at the project; navigation across packages not yet covered by a layer B fixture | `init.lua`, `lua/custom/tools.lua` | `test_python.lua`, `test_tools.lua` |
+| Rust LSP (rust-analyzer) enabled and rooted at the Cargo workspace; no layer B fixture yet | `init.lua`, `lua/custom/tools.lua` | `test_rust.lua`, `test_tools.lua` |
+| Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet

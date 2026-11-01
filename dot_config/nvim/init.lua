@@ -795,11 +795,9 @@ do
     -- gopls = {},
     -- tsc = {},
     --
-    -- Some languages (like rust) have entire language plugins that can be useful:
-    --    https://github.com/mrcjkb/rustaceanvim
-    --
-    -- But for many setups, the LSP (`rust_analyzer`) will work just fine
-    -- rust_analyzer = {},
+    -- Rust (rust-analyzer, Mason package), plain nvim-lspconfig: no rustaceanvim. Root detection is nvim-lspconfig's.
+    -- Tests: tests/test_rust.lua.
+    rust_analyzer = {},
 
     -- Java (Eclipse JDT LS) is started by nvim-jdtls (lua/custom/plugins/jdtls.lua), not here.
     -- Kotlin, JetBrains' official server (alpha). Supports Gradle/Maven JVM projects, not KMP yet.
