@@ -64,6 +64,14 @@ function M.source(uri)
   return M.read_zip(zip, entry)
 end
 
+--- Attaches the running kotlin_lsp to a source buffer, so go-to-definition works inside it. kotlin_lsp's root_dir cannot
+--- root a `jar:`/`jrt:` name and its filetypes do not include `java`, so the lspconfig path never attaches it here.
+---@param buf integer
+function M.attach_kotlin_lsp(buf)
+  local client = vim.lsp.get_clients({ name = 'kotlin_lsp' })[1]
+  if client then vim.lsp.buf_attach_client(buf, client.id) end
+end
+
 --- Reads `jrt:` and `jar:` buffers from their source zip, and fixes nvim-jdtls's `*.class` reader for them (below).
 function M.setup()
   -- nvim-jdtls registers its readers when its plugin/ files are sourced: after init.lua, before VimEnter.
@@ -87,6 +95,7 @@ function M.setup()
       vim.api.nvim_buf_set_lines(args.buf, 0, -1, false, vim.split(text, '\r?\n'))
       vim.bo[args.buf].filetype = vim.filetype.match { filename = args.match:match '[^/]*$' } or 'java'
       vim.bo[args.buf].modifiable = false
+      M.attach_kotlin_lsp(args.buf)
     end,
   })
 end

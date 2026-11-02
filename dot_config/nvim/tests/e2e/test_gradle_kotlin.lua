@@ -35,6 +35,8 @@ T['gradle-kotlin | LSP | go to definition of a JDK class opens its source (jrt: 
     end)
   ]=]
   e2e.wait(ctx.child, 'index', 'JDK source of ArrayList opened', '_G.e2e.jdk.ok')
+  -- Navigation from inside the JDK source needs the server attached to that buffer too.
+  e2e.wait(ctx.child, 'attach', 'kotlin_lsp attached to JDK source', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
 end
 
 T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix, once each'] = function()
