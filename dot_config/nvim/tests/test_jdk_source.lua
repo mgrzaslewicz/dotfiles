@@ -56,4 +56,41 @@ T['jar_entry()']['is nil for anything but a jar: URI'] = function()
   eq({ jar_entry 'jrt:///jbr/Home!/java.base/java/util/ArrayList.class' }, {})
 end
 
+T['class_path()'] = MiniTest.new_set()
+
+T['class_path()']['uses the explicit import of the word'] = function()
+  eq(jdk_source.class_path('Objects', { 'package java.time', 'import java.util.Objects;' }), 'java/util/Objects.java')
+end
+
+T['class_path()']['uses the package when the word is not imported'] = function()
+  eq(jdk_source.class_path('Instant', { 'package java.time', 'import java.util.Objects;' }), 'java/time/Instant.java')
+end
+
+T['class_path()']['falls back to java.lang'] = function()
+  eq(jdk_source.class_path('String', { 'package java.util' }), 'java/util/String.java')
+  eq(jdk_source.class_path('String', {}), 'java/lang/String.java')
+end
+
+T['class_path()']['accepts a Kotlin import without semicolon'] = function()
+  eq(jdk_source.class_path('UUID', { 'import java.util.UUID' }), 'java/util/UUID.java')
+end
+
+T['class_path()']['is nil for a non-identifier'] = function()
+  eq(jdk_source.class_path('a.b', {}), nil)
+  eq(jdk_source.class_path('', {}), nil)
+end
+
+T['find_entry()'] = MiniTest.new_set()
+
+T['find_entry()']['matches the entry under its module directory'] = function()
+  eq(
+    jdk_source.find_entry({ 'java.base/java/util/Objects.java', 'java.base/java/util/ObjectsX.java' }, 'java/util/Objects.java'),
+    'java.base/java/util/Objects.java'
+  )
+end
+
+T['find_entry()']['does not match a longer path with the same tail'] = function()
+  eq(jdk_source.find_entry({ 'java.base/xjava/util/Objects.java' }, 'java/util/Objects.java'), nil)
+end
+
 return T

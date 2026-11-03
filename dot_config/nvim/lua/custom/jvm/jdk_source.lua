@@ -72,6 +72,75 @@ function M.attach_kotlin_lsp(buf)
   if client then vim.lsp.buf_attach_client(buf, client.id) end
 end
 
+--- Path in src.zip of the JDK class named `word`, from the buffer's own text: an explicit import, else its package,
+--- else `java.lang`. Wildcard imports are not followed. Returns nil for something that is not an identifier.
+---@param word string
+---@param lines string[]
+---@return string?
+function M.class_path(word, lines)
+  if not word:match '^[%a_][%w_]*$' then return nil end
+  local pkg
+  for _, line in ipairs(lines) do
+    pkg = pkg or line:match '^package%s+([%w_%.]+)'
+    local fqn = line:match('^import%s+([%w_%.]+%.' .. word .. ')%s*;?%s*$')
+    if fqn then return (fqn:gsub('%.', '/')) .. '.java' end
+  end
+  return ((pkg or 'java.lang'):gsub('%.', '/')) .. '/' .. word .. '.java'
+end
+
+--- The src.zip entry ending in `path`, e.g. `java.base/java/util/Objects.java` for `java/util/Objects.java`.
+---@param names string[]
+---@param path string
+---@return string?
+function M.find_entry(names, path)
+  for _, name in ipairs(names) do
+    if name == path or name:sub(-#path - 1) == '/' .. path then return name end
+  end
+end
+
+--- The zip a JDK source buffer was read from: the `jar:` URI's file, or the JDK's src.zip for a `jrt:` one.
+---@param name string buffer name
+---@return string?
+local function zip_of(name)
+  if vim.startswith(name, 'jar:') then return (M.jar_entry(name)) end
+  local home = M.java_home()
+  return home and vim.fs.joinpath(home, 'lib', 'src.zip')
+end
+
+local zip_names = {}
+
+--- Entry names of a zip, listed once per zip.
+---@param zip string
+---@return string[]
+local function list_zip(zip)
+  if not zip_names[zip] then
+    local done = vim.system({ 'unzip', '-Z1', zip }, { text = true }):wait()
+    zip_names[zip] = done.code == 0 and vim.split(done.stdout, '\n', { trimempty = true }) or {}
+  end
+  return zip_names[zip]
+end
+
+--- Go to definition for the word under the cursor in a JDK source buffer. The server is asked first, which answers
+--- in-file symbols and what it can resolve; when it has nothing (kotlin_lsp does not resolve JDK-to-JDK references
+--- inside a `jar:` buffer), the class is looked up by its import or package in the same src.zip and opened from there.
+function M.goto_definition()
+  local buf = vim.api.nvim_get_current_buf()
+  local word = vim.fn.expand '<cword>'
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  vim.lsp.buf_request_all(buf, 'textDocument/definition', { textDocument = params.textDocument, position = params.position }, function(results)
+    for _, r in pairs(results) do
+      -- An empty list is truthy in Lua, so take the first location explicitly.
+      local loc = vim.islist(r.result) and r.result[1] or (not vim.islist(r.result) and r.result) or nil
+      if loc then return vim.lsp.util.show_document(loc, 'utf-16', { reuse_win = true }) end
+    end
+    local zip = zip_of(vim.api.nvim_buf_get_name(buf))
+    local path = M.class_path(word, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+    local entry = zip and path and M.find_entry(list_zip(zip), path)
+    if not entry then return vim.notify(('No definition of %s in the JDK sources'):format(word), vim.log.levels.WARN) end
+    vim.cmd.edit(vim.fn.fnameescape(('jar://%s!/%s'):format(zip, entry)))
+  end)
+end
+
 --- Reads `jrt:` and `jar:` buffers from their source zip, and fixes nvim-jdtls's `*.class` reader for them (below).
 function M.setup()
   -- nvim-jdtls registers its readers when its plugin/ files are sourced: after init.lua, before VimEnter.
@@ -96,6 +165,18 @@ function M.setup()
       vim.bo[args.buf].filetype = vim.filetype.match { filename = args.match:match '[^/]*$' } or 'java'
       vim.bo[args.buf].modifiable = false
       M.attach_kotlin_lsp(args.buf)
+    end,
+  })
+  -- The LSP attach maps `grd` to Telescope, which shows nothing for a JDK-to-JDK jump, so it is mapped again after
+  -- the attach and on every entry into the buffer.
+  local function map_goto(buf)
+    if vim.api.nvim_buf_is_valid(buf) then vim.keymap.set('n', 'grd', M.goto_definition, { buffer = buf, desc = '[G]oto [D]efinition in JDK source' }) end
+  end
+  vim.api.nvim_create_autocmd({ 'BufEnter', 'LspAttach' }, {
+    group = group,
+    callback = function(args)
+      local name = vim.api.nvim_buf_get_name(args.buf)
+      if vim.startswith(name, 'jrt:') or vim.startswith(name, 'jar:') then vim.schedule(function() map_goto(args.buf) end) end
     end,
   })
 end
