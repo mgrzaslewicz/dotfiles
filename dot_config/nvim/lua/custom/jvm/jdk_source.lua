@@ -221,6 +221,30 @@ function M.goto_definition()
   end)
 end
 
+--- References of the word under the cursor in a dependency source buffer. kotlin-lsp answers a Java declaration inside a
+--- `jar:` buffer with nothing (its usages in Kotlin are found), so when the server has no references the word is grepped
+--- as a whole word through the project's build instead. Telescope's references picker is used when the server has some.
+function M.references()
+  local buf = vim.api.nvim_get_current_buf()
+  local word = vim.fn.expand '<cword>'
+  local params = vim.tbl_extend('force', vim.lsp.util.make_position_params(0, 'utf-16'), { context = { includeDeclaration = true } })
+  vim.lsp.buf_request_all(buf, 'textDocument/references', params, function(results)
+    for _, r in pairs(results) do
+      if r.result and not vim.tbl_isempty(r.result) then return require('telescope.builtin').lsp_references() end
+    end
+    -- An annotation's usages are written `@Word`, so that is searched instead of the bare word.
+    local line = vim.api.nvim_get_current_line()
+    local annotation = line:find('@interface%s+' .. word .. '%f[^%w_]') or line:find('@' .. word .. '%f[^%w_]')
+    local build = require('custom.jvm.project').root(vim.fn.getcwd())
+    require('telescope.builtin').grep_string {
+      search = annotation and '@' .. word or word,
+      word_match = not annotation and '-w' or nil,
+      cwd = build and build.root or vim.fn.getcwd(),
+      prompt_title = ('No LSP references to %s; word search'):format(word),
+    }
+  end)
+end
+
 --- Reads `jrt:` and `jar:` buffers from their source zip, and fixes nvim-jdtls's `*.class` reader for them (below).
 function M.setup()
   -- nvim-jdtls registers its readers when its plugin/ files are sourced: after init.lua, before VimEnter.
@@ -249,11 +273,12 @@ function M.setup()
       M.attach_kotlin_lsp(args.buf)
     end,
   })
-  -- The LSP attach maps `grd` and `gO` to Telescope, which shows nothing for a JDK-to-JDK jump or for the symbols of a
-  -- `jar:` buffer, so both are mapped again after the attach and on every entry into the buffer.
+  -- The LSP attach maps `grd`, `grr` and `gO` to Telescope, which shows nothing for a JDK-to-JDK jump, for the symbols of a
+  -- `jar:` buffer, or for a Java declaration in one, so they are mapped again after the attach and on every entry into the buffer.
   local function map_goto(buf)
     if not vim.api.nvim_buf_is_valid(buf) then return end
     vim.keymap.set('n', 'grd', M.goto_definition, { buffer = buf, desc = '[G]oto [D]efinition in JDK source' })
+    vim.keymap.set('n', 'grr', M.references, { buffer = buf, desc = '[G]oto [R]eferences in JDK source' })
     vim.keymap.set('n', 'gO', M.document_symbols, { buffer = buf, desc = 'Open Document Symbols in JDK source' })
   end
   vim.api.nvim_create_autocmd({ 'BufEnter', 'LspAttach' }, {
