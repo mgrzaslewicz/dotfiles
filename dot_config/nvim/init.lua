@@ -613,6 +613,9 @@ do
       -- Find references for the word under your cursor.
       vim.keymap.set('n', 'grr', builtin.lsp_references, { buffer = buf, desc = '[G]oto [R]eferences' })
 
+      -- References of the word under your cursor, plus those of its implementations (the overrides of an interface member).
+      vim.keymap.set('n', 'grR', require('custom.implementations').references, { buffer = buf, desc = '[G]oto [R]eferences incl. implementations' })
+
       -- Jump to the implementation of the word under your cursor.
       -- Useful when your language has ways of declaring types without an actual implementation.
       vim.keymap.set('n', 'gri', builtin.lsp_implementations, { buffer = buf, desc = '[G]oto [I]mplementation' })
