@@ -64,6 +64,54 @@ function M.source(uri)
   return M.read_zip(zip, entry)
 end
 
+--- Declarations of a Java source text, from its tree-sitter tree: types, constructors and methods, nested ones
+--- included, in source order. `lnum` is 1-based and `col` the 0-based byte column of the name, as the cursor wants them.
+---@param text string
+---@return { text: string, kind: string, lnum: integer, col: integer }[]
+function M.declarations(text)
+  local kinds = {
+    class_declaration = 'Class',
+    interface_declaration = 'Interface',
+    enum_declaration = 'Enum',
+    record_declaration = 'Record',
+    constructor_declaration = 'Constructor',
+    method_declaration = 'Method',
+  }
+  local items = {}
+  local function walk(node)
+    for child in node:iter_children() do
+      local kind = kinds[child:type()]
+      local name = kind and child:field('name')[1]
+      if name then
+        local row, col = name:start()
+        items[#items + 1] = { text = vim.treesitter.get_node_text(name, text), kind = kind, lnum = row + 1, col = col }
+      end
+      walk(child)
+    end
+  end
+  walk(vim.treesitter.get_string_parser(text, 'java'):parse()[1]:root())
+  return items
+end
+
+--- Document symbols for a JDK source buffer. kotlin_lsp answers `textDocument/documentSymbol` with nothing for a `jar:`
+--- buffer, so when the server has no symbols the declarations are listed from the buffer's Java text instead.
+function M.document_symbols()
+  local buf = vim.api.nvim_get_current_buf()
+  vim.lsp.buf_request_all(buf, 'textDocument/documentSymbol', { textDocument = vim.lsp.util.make_text_document_params(buf) }, function(results)
+    for _, r in pairs(results) do
+      if r.result and not vim.tbl_isempty(r.result) then return require('telescope.builtin').lsp_document_symbols() end
+    end
+    local items = M.declarations(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
+    if #items == 0 then return vim.notify('No declarations found in the JDK source', vim.log.levels.WARN) end
+    vim.ui.select(items, {
+      prompt = 'JDK source symbols',
+      format_item = function(item) return ('%s %s (%d)'):format(item.kind, item.text, item.lnum) end,
+    }, function(item)
+      if item then vim.api.nvim_win_set_cursor(0, { item.lnum, item.col }) end
+    end)
+  end)
+end
+
 --- Attaches the running kotlin_lsp to a source buffer, so go-to-definition works inside it. kotlin_lsp's root_dir cannot
 --- root a `jar:`/`jrt:` name and its filetypes do not include `java`, so the lspconfig path never attaches it here.
 ---@param buf integer
@@ -167,10 +215,12 @@ function M.setup()
       M.attach_kotlin_lsp(args.buf)
     end,
   })
-  -- The LSP attach maps `grd` to Telescope, which shows nothing for a JDK-to-JDK jump, so it is mapped again after
-  -- the attach and on every entry into the buffer.
+  -- The LSP attach maps `grd` and `gO` to Telescope, which shows nothing for a JDK-to-JDK jump or for the symbols of a
+  -- `jar:` buffer, so both are mapped again after the attach and on every entry into the buffer.
   local function map_goto(buf)
-    if vim.api.nvim_buf_is_valid(buf) then vim.keymap.set('n', 'grd', M.goto_definition, { buffer = buf, desc = '[G]oto [D]efinition in JDK source' }) end
+    if not vim.api.nvim_buf_is_valid(buf) then return end
+    vim.keymap.set('n', 'grd', M.goto_definition, { buffer = buf, desc = '[G]oto [D]efinition in JDK source' })
+    vim.keymap.set('n', 'gO', M.document_symbols, { buffer = buf, desc = 'Open Document Symbols in JDK source' })
   end
   vim.api.nvim_create_autocmd({ 'BufEnter', 'LspAttach' }, {
     group = group,

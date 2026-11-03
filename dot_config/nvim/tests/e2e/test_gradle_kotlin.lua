@@ -39,6 +39,21 @@ T['gradle-kotlin | LSP | go to definition of a JDK class opens its source (jrt: 
   e2e.wait(ctx.child, 'attach', 'kotlin_lsp attached to JDK source', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
 end
 
+-- kotlin_lsp has no document symbols for a `jar:` JDK source, so gO lists its declarations from the tree-sitter parse.
+T['gradle-kotlin | LSP | document symbols of a JDK source list its declarations (tree-sitter, server has none)'] = function()
+  eq(
+    ctx.child.lua_get [[require('custom.jvm.jdk_source').declarations(table.concat({
+      'package java.util;', 'public class ArrayList<E> {', '  private int size;', '  public ArrayList() {}', '  public boolean add(E e) { return true; }', '  static class Itr {}', '}',
+    }, '\n'))]],
+    {
+      { text = 'ArrayList', kind = 'Class', lnum = 2, col = 13 },
+      { text = 'ArrayList', kind = 'Constructor', lnum = 4, col = 9 },
+      { text = 'add', kind = 'Method', lnum = 5, col = 17 },
+      { text = 'Itr', kind = 'Class', lnum = 6, col = 15 },
+    }
+  )
+end
+
 T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
