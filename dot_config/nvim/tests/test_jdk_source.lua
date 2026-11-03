@@ -93,4 +93,51 @@ T['find_entry()']['does not match a longer path with the same tail'] = function(
   eq(jdk_source.find_entry({ 'java.base/xjava/util/Objects.java' }, 'java/util/Objects.java'), nil)
 end
 
+T['sources_jar()'] = MiniTest.new_set()
+
+T['sources_jar()']['finds the sources jar next to a Maven jar'] = function()
+  local dir = vim.fn.tempname() .. '/g/a/1.0'
+  vim.fn.mkdir(dir, 'p')
+  vim.fn.writefile({}, dir .. '/a-1.0.jar')
+  vim.fn.writefile({}, dir .. '/a-1.0-sources.jar')
+  eq(jdk_source.sources_jar(dir .. '/a-1.0.jar'), dir .. '/a-1.0-sources.jar')
+end
+
+T['sources_jar()']['finds the sources jar in a sibling Gradle hash directory'] = function()
+  local version = vim.fn.tempname() .. '/g/a/1.0'
+  vim.fn.mkdir(version .. '/aaa', 'p')
+  vim.fn.mkdir(version .. '/bbb', 'p')
+  vim.fn.writefile({}, version .. '/aaa/a-1.0.jar')
+  vim.fn.writefile({}, version .. '/bbb/a-1.0-sources.jar')
+  eq(jdk_source.sources_jar(version .. '/aaa/a-1.0.jar'), version .. '/bbb/a-1.0-sources.jar')
+end
+
+T['sources_jar()']['is nil when no sources jar exists'] = function()
+  local version = vim.fn.tempname() .. '/g/a/1.0'
+  vim.fn.mkdir(version .. '/aaa', 'p')
+  vim.fn.writefile({}, version .. '/aaa/a-1.0.jar')
+  eq(jdk_source.sources_jar(version .. '/aaa/a-1.0.jar'), nil)
+end
+
+T['class_source()'] = MiniTest.new_set()
+
+-- A sources jar holding `org/x/Y.kt`, zipped from a temp directory; `jar` is the binary jar beside it.
+local function sources_fixture()
+  local dir = vim.fn.tempname()
+  vim.fn.mkdir(dir .. '/src/org/x', 'p')
+  vim.fn.writefile({ 'class Y' }, dir .. '/src/org/x/Y.kt')
+  vim.system({ 'zip', '-qr', dir .. '/a-1.0-sources.jar', 'org' }, { cwd = dir .. '/src' }):wait()
+  return dir .. '/a-1.0.jar'
+end
+
+T['class_source()']['reads the Kotlin source of a class from the sources jar'] = function()
+  eq(jdk_source.class_source(sources_fixture(), 'org/x/Y.class'), 'class Y\n')
+end
+
+T['class_source()']['maps a nested class to its outer class source'] = function()
+  eq(jdk_source.class_source(sources_fixture(), 'org/x/Y$Inner.class'), 'class Y\n')
+end
+
+T['class_source()']['is nil when the sources jar has no such class'] = function() eq(jdk_source.class_source(sources_fixture(), 'org/x/Z.class'), nil) end
+
 return T

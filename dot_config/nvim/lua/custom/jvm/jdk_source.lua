@@ -48,13 +48,29 @@ function M.read_zip(zip, entry)
   return done.stdout
 end
 
---- Source text for a `jrt:` or `jar:` URI, or nil when none can be read.
+--- The sources jar of a binary jar, or nil. Maven puts it next to the jar; Gradle's cache keeps it in another directory
+--- named by a hash, under the same `<group>/<artifact>/<version>/`, so every sibling directory is checked.
+---@param jar string
+---@return string?
+function M.sources_jar(jar)
+  local sources = jar:gsub('%.jar$', '-sources.jar')
+  if vim.uv.fs_stat(sources) then return sources end
+  local version_dir = vim.fs.dirname(vim.fs.dirname(jar))
+  for name, type in vim.fs.dir(version_dir) do
+    local candidate = type == 'directory' and vim.fs.joinpath(version_dir, name, vim.fs.basename(sources))
+    if candidate and vim.uv.fs_stat(candidate) then return candidate end
+  end
+end
+
+--- Source text for a `jrt:` or `jar:` URI, or nil when none can be read. A class file in a jar has no source of its own,
+--- so its sources jar is read instead.
 ---@param uri string
 ---@return string?
 function M.source(uri)
   local zip, entry
   if vim.startswith(uri, 'jar:') then
     zip, entry = M.jar_entry(uri)
+    if zip and entry and entry:match '%.class$' then return M.class_source(zip, entry) end
   else
     local home = M.java_home()
     zip = home and vim.fs.joinpath(home, 'lib', 'src.zip')
@@ -168,6 +184,22 @@ local function list_zip(zip)
   return zip_names[zip]
 end
 
+--- Source text of the class `entry` (e.g. `org/x/Y.class`) in `jar`, read from the jar's sources jar: the `.kt` or
+--- `.java` file of the same name. Nested classes use their outer class's file. Nil when there is no sources jar or no file.
+---@param jar string
+---@param entry string
+---@return string?
+function M.class_source(jar, entry)
+  local sources = M.sources_jar(jar)
+  if not sources then return nil end
+  local base = entry:gsub('%.class$', ''):gsub('%$.*$', '')
+  local names = list_zip(sources)
+  for _, ext in ipairs { '.kt', '.java' } do
+    local name = M.find_entry(names, base .. ext)
+    if name then return M.read_zip(sources, name) end
+  end
+end
+
 --- Go to definition for the word under the cursor in a JDK source buffer. The server is asked first, which answers
 --- in-file symbols and what it can resolve; when it has nothing (kotlin_lsp does not resolve JDK-to-JDK references
 --- inside a `jar:` buffer), the class is looked up by its import or package in the same src.zip and opened from there.
@@ -210,7 +242,9 @@ function M.setup()
       vim.bo[args.buf].swapfile = false
       vim.bo[args.buf].buftype = 'nofile'
       vim.api.nvim_buf_set_lines(args.buf, 0, -1, false, vim.split(text, '\r?\n'))
-      vim.bo[args.buf].filetype = vim.filetype.match { filename = args.match:match '[^/]*$' } or 'java'
+      -- A `.class` name would match Stata's filetype, but the text is Java (or Kotlin) source.
+      local name = args.match:match '[^/]*$'
+      vim.bo[args.buf].filetype = name:match '%.class$' and 'java' or vim.filetype.match { filename = name } or 'java'
       vim.bo[args.buf].modifiable = false
       M.attach_kotlin_lsp(args.buf)
     end,
