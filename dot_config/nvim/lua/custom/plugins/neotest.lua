@@ -65,6 +65,7 @@ java_adapter.build_spec = function(args)
 end
 
 local project = require 'custom.jvm.project'
+local test_pair = require 'custom.jvm.test_pair'
 local maven_kotlin = {
   name = 'neotest-maven-kotlin',
   root = function(dir)
@@ -134,6 +135,14 @@ neotest.setup {
 vim.keymap.set('n', '<leader>ur', function() neotest.run.run() end, { desc = 'Test: [R]un nearest' })
 vim.keymap.set('n', '<leader>uf', function() neotest.run.run(vim.fn.expand '%') end, { desc = 'Test: Run [F]ile' })
 vim.keymap.set('n', '<leader>ua', function() neotest.run.run(vim.uv.cwd()) end, { desc = 'Test: Run [A]ll' })
+-- Test file of the implementation and back. A missing counterpart is reported, not created.
+vim.keymap.set('n', '<leader>ut', function()
+  local path = vim.api.nvim_buf_get_name(0)
+  local target = test_pair.counterpart(path)
+  if not target then return vim.notify('No test counterpart for ' .. vim.fs.basename(path), vim.log.levels.WARN) end
+  if not vim.uv.fs_stat(target) then return vim.notify('No test file ' .. vim.fs.basename(target), vim.log.levels.WARN) end
+  vim.cmd.edit(vim.fn.fnameescape(target))
+end, { desc = 'Test: [T]oggle test / implementation' })
 ---@diagnostic disable-next-line: missing-fields
 vim.keymap.set('n', '<leader>ud', function() neotest.run.run { strategy = 'dap' } end, { desc = 'Test: [D]ebug nearest' })
 vim.keymap.set('n', '<leader>ul', function() neotest.run.run_last() end, { desc = 'Test: Run [L]ast' })
