@@ -631,7 +631,12 @@ do
 
       -- Fuzzy find all the symbols in your current workspace.
       -- Similar to document symbols, except searches over your entire project.
-      vim.keymap.set('n', 'gW', builtin.lsp_dynamic_workspace_symbols, { buffer = buf, desc = 'Open Workspace Symbols' })
+      vim.keymap.set(
+        'n',
+        'gW',
+        function() require('custom.workspace_symbols').picker(nil, require('custom.workspace_symbols').title 'Workspace Symbols') end,
+        { buffer = buf, desc = require('custom.workspace_symbols').title 'Open Workspace Symbols' }
+      )
 
       -- Go to class (IntelliJ Ctrl+N): types across sources and classpath (JDK, dependencies), with a fuzzy
       -- package-aware prompt like `java.io InputStream`. See lua/custom/go_to_class.lua.
