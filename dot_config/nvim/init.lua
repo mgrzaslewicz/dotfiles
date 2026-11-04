@@ -213,6 +213,7 @@ do
     },
   }
 
+  vim.keymap.set('n', '<leader>tr', function() vim.wo.relativenumber = not vim.wo.relativenumber end, { desc = '[T]oggle [R]elative line numbers' })
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
   vim.keymap.set(
     'n',
