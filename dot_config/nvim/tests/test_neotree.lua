@@ -174,6 +174,65 @@ T['Z with no node under the cursor expands nothing'] = function()
   eq(expansions, 0)
 end
 
+-- Compact middle packages: a directory chain with one child per level shows as one line (`a/b/c`), like IntelliJ.
+T['<leader>em groups single-child folders into one line, and again to split them'] = function()
+  local root = helpers.tree { ['a/b/c/deep.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  child.cmd 'Neotree focus'
+  child.lua [=[
+    vim.wait(5000, function() return vim.bo.filetype == 'neo-tree' end)
+    for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if l:match '(%S+)$' == 'a' then vim.api.nvim_win_set_cursor(0, { i, 0 }) end
+    end
+  ]=]
+  child.type_keys 'Z'
+  child.lua [=[ vim.wait(5000, function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find('deep.txt', 1, true) ~= nil end) ]=]
+  local tree = [=[ table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n') ]=]
+  eq(child.lua_get(tree):find('a/b/c', 1, true), nil)
+
+  child.type_keys(' ', 'e', 'm')
+  child.lua [=[ vim.wait(5000, function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find('a/b/c', 1, true) ~= nil end) ]=]
+  eq(child.lua_get(tree):find('a/b/c', 1, true) ~= nil, true)
+
+  child.type_keys(' ', 'e', 'm')
+  child.lua [=[ vim.wait(5000, function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find('a/b/c', 1, true) == nil end) ]=]
+  eq(child.lua_get(tree):find('a/b/c', 1, true), nil)
+end
+
+T['a file under a compacted dir opens without neo-tree errors'] = function()
+  local root = helpers.tree { ['a/b/c/deep.txt'] = 'x' }
+  child.start()
+  child.cmd('cd ' .. root)
+  child.cmd 'Neotree show'
+  child.cmd 'Neotree focus'
+  child.lua [=[
+    vim.wait(5000, function() return vim.bo.filetype == 'neo-tree' end)
+    for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if l:match '(%S+)$' == 'a' then vim.api.nvim_win_set_cursor(0, { i, 0 }) end
+    end
+  ]=]
+  child.type_keys 'Z'
+  child.lua [=[ vim.wait(5000, function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find('deep.txt', 1, true) ~= nil end) ]=]
+  child.type_keys(' ', 'e', 'm')
+  child.lua [=[ vim.wait(5000, function() return table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n'):find('a/b/c', 1, true) ~= nil end) ]=]
+  child.lua [=[
+    for i, l in ipairs(vim.api.nvim_buf_get_lines(0, 0, -1, false)) do
+      if l:find('deep.txt', 1, true) then vim.api.nvim_win_set_cursor(0, { i, 0 }) end
+    end
+  ]=]
+  child.cmd 'messages clear'
+  child.type_keys '<CR>'
+  child.lua [=[ vim.wait(5000, function() return vim.api.nvim_buf_get_name(0):match 'deep%.txt$' ~= nil end) ]=]
+  child.lua [=[ vim.wait(500) ]=]
+
+  eq(child.lua_get [=[ vim.api.nvim_buf_get_name(0):match 'deep%.txt$' ~= nil ]=], true)
+  local messages = child.cmd_capture 'messages'
+  eq(messages:find('ERROR', 1, true), nil)
+  eq(messages:find('attempt to index', 1, true), nil)
+end
+
 T['<leader>eg opens the git status tree'] = function()
   local root = helpers.tree { ['new.txt'] = 'x' }
   vim.system({ 'git', 'init', '-q' }, { cwd = root }):wait()

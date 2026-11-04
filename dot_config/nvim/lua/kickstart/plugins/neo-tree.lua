@@ -29,6 +29,13 @@ end
 
 vim.keymap.set('n', '<leader>eh', function() with_open_tree(filesystem.toggle_hidden) end, { desc = 'Explorer: toggle hidden files', silent = true })
 vim.keymap.set('n', '<leader>ec', function() with_open_tree(common.close_all_nodes) end, { desc = 'Explorer: collapse all', silent = true })
+-- Compact middle packages: single-child folder chains show as one line (`a/b/c`), like IntelliJ. Off by default.
+vim.keymap.set('n', '<leader>em', function()
+  with_open_tree(function(state)
+    state.group_empty_dirs = not state.group_empty_dirs
+    manager.refresh 'filesystem'
+  end)
+end, { desc = 'Explorer: toggle compact middle packages', silent = true })
 
 -- Node actions act on the node under the tree cursor, so they focus the tree first.
 local function on_tree_node(fn)
