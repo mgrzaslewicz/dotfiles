@@ -46,6 +46,43 @@ function M.attach_fake_lsp(child)
   ]]
 end
 
+--- Starts a fake LSP server named `name` on the child's current buffer and waits until it is attached. It advertises
+--- `capabilities` and answers each request by calling the child's `_G.fake_handlers[method](params)` (nil when
+--- missing), so a test sets or swaps handlers in the child at any time.
+---@param capabilities table
+function M.start_fake_server(child, capabilities, name)
+  child.lua(
+    [=[
+    local capabilities, name = ...
+    _G.fake_handlers = _G.fake_handlers or {}
+    vim.lsp.start {
+      name = name,
+      root_dir = vim.fn.getcwd(),
+      cmd = function()
+        local closing = false
+        return {
+          request = function(method, params, callback)
+            local result
+            if method == 'initialize' then
+              result = { capabilities = capabilities }
+            elseif _G.fake_handlers[method] then
+              result = _G.fake_handlers[method](params)
+            end
+            vim.schedule(function() callback(nil, result) end)
+            return true, 1
+          end,
+          notify = function() return true end,
+          is_closing = function() return closing end,
+          terminate = function() closing = true end,
+        }
+      end,
+    }
+    vim.wait(2000, function() return #vim.lsp.get_clients { bufnr = 0, name = name } > 0 end)
+  ]=],
+    { capabilities, name or 'fake' }
+  )
+end
+
 --- Creates a temp dir tree for fixtures and returns its path. Keys are relative paths; a trailing `/` makes an
 --- empty dir, anything else a file with the value as content. The path is resolved (macOS: /var is /private/var),
 --- since nvim reports resolved paths and tests compare against them.

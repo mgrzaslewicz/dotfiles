@@ -632,6 +632,10 @@ do
       -- types, then the types the body uses. Opens in a picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
       vim.keymap.set('n', 'grm', require('custom.method_types').picker, { buffer = buf, desc = '[G]oto [M]ethod types' })
 
+      -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
+      -- clipboard (see lua/custom/copy_reference.lua).
+      vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })
+
       -- Fuzzy find all the symbols in your current document.
       -- Symbols are things like variables, functions, types, etc.
       vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })

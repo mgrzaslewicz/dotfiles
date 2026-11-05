@@ -26,6 +26,7 @@ in the header comment of its Lua file.
 | Rust LSP (rust-analyzer) enabled and rooted at the Cargo workspace; no layer B fixture yet | `init.lua`, `lua/custom/tools.lua` | `test_rust.lua`, `test_tools.lua` |
 | Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
 | Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H) | `lua/custom/implementations.lua` | `test_implementations.lua` |
+| Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet
@@ -75,6 +76,7 @@ Proposals, ranked by daily-use value for Java/Kotlin. Each lands test-first (see
 - [ ] `gC` go to class (Ctrl+N), with package words: `java.io InputStream`, `util HM`
 - [ ] `<leader>r` refactors (Shift+F6, Ctrl+Alt+O / V / C / M)
 - [ ] `<C-o>` / `<C-i>` jump back/forward (Ctrl+Alt+←/→)
+- [ ] `gry` copy reference for `--tests` filters and review comments
 - [ ] `gra` as Alt+Enter: imports, quick fixes, generate…
 - [ ] Completion keys: `<C-space>`, `<C-y>` accept, `<C-k>` signature
 
