@@ -22,6 +22,7 @@ RUN apt-get update \
         # command line tools claude might use \
         git \
         jq \
+        zip \
         unzip \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
