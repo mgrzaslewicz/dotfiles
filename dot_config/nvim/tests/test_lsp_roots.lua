@@ -49,6 +49,24 @@ T['jdtls falls back to the git repository outside a build'] = function()
   eq(jdtls_root(dir .. '/src/Main.java'), dir)
 end
 
+-- A class file opened by go-to-definition (`jdt://contents/…`) is no file of the build: nvim-jdtls attaches the
+-- running client to it, so no root is looked for (its name resolved against the cwd once looped forever).
+T['jdtls is not started for a jdt:// class file'] = function()
+  local dir = helpers.tree(maven)
+  local started = child.lua(
+    [[
+    local started = false
+    require('jdtls').start_or_attach = function() started = true end
+    vim.cmd.cd(...)
+    vim.api.nvim_buf_set_name(0, 'jdt://contents/java.base/java.util.concurrent.atomic/AtomicInteger.class?=x')
+    vim.bo.filetype = 'java'
+    return started
+  ]],
+    { dir }
+  )
+  eq(started, false)
+end
+
 T['kotlin_lsp is rooted at the top of a Maven multi-module build'] = function()
   local dir = helpers.tree(maven)
   eq(kotlin_lsp_root(dir .. '/app/src/main/kotlin/Main.kt'), dir)

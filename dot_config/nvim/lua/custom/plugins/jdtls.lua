@@ -14,6 +14,8 @@
 vim.pack.add { 'https://github.com/mfussenegger/nvim-jdtls' }
 
 local function start()
+  -- A class file from go-to-definition (`jdt://contents/…`) is attached to the running client by nvim-jdtls.
+  if vim.startswith(vim.api.nvim_buf_get_name(0), 'jdt://') then return end
   local jdtls = require 'jdtls'
   -- The whole build, so a module sees its siblings (custom/jvm/project.lua); outside a build, the git repository.
   local build = require('custom.jvm.project').root(vim.fs.dirname(vim.api.nvim_buf_get_name(0)))

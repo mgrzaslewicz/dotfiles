@@ -15,9 +15,11 @@ local root_markers = {
 
 --- The build (IntelliJ project) containing `dir`: nearest wrapper, else settings file, else build file, searching up;
 --- a Maven module's build is its topmost parent pom.xml. Tasks run there and the JVM language servers use it as root.
+--- A relative `dir` resolves against the cwd.
 ---@param dir string
 ---@return { tool: 'gradle'|'maven', root: string, cmd: string }|nil
 function M.root(dir)
+  dir = vim.fs.abspath(dir)
   for _, names in ipairs(root_markers) do
     local marker = vim.fs.find(names, { upward = true, path = dir })[1]
     if marker then
@@ -27,7 +29,8 @@ function M.root(dir)
       local root = vim.fs.dirname(marker)
       -- A module's pom.xml is not the build: climb to the topmost pom.xml of an unbroken chain of parents.
       if name == 'pom.xml' then
-        while vim.uv.fs_stat(vim.fs.joinpath(vim.fs.dirname(root), 'pom.xml')) do
+        -- `/` is its own parent, so the climb stops there.
+        while vim.fs.dirname(root) ~= root and vim.uv.fs_stat(vim.fs.joinpath(vim.fs.dirname(root), 'pom.xml')) do
           root = vim.fs.dirname(root)
         end
       end

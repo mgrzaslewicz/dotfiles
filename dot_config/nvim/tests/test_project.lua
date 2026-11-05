@@ -42,6 +42,32 @@ T['root()']['stops climbing poms at a directory without one'] = function()
   eq(project.root(dir .. '/tools/app/src'), { tool = 'maven', root = dir .. '/tools/app', cmd = 'mvn' })
 end
 
+--- Calls `fn(...)`, failing instead of hanging when it runs a million Lua instructions without returning.
+local function bounded(fn, ...)
+  local ticks = 0
+  debug.sethook(function()
+    ticks = ticks + 1
+    if ticks > 1000 then
+      debug.sethook()
+      error('did not return: endless loop', 0)
+    end
+  end, '', 1000)
+  local ok, result = pcall(fn, ...)
+  debug.sethook()
+  if not ok then error(result, 0) end
+  return result
+end
+
+-- A buffer that is not a file, e.g. jdtls's `jdt://contents/…` class files, has a relative-looking name: its
+-- directory resolves against the cwd, where a pom.xml must not make the climb loop at `.` (it froze nvim).
+T['root()']['resolves a relative directory against the cwd'] = function()
+  local dir = tree { ['pom.xml'] = '', ['src/main/java/'] = '' }
+  local cwd = vim.fn.getcwd()
+  MiniTest.finally(function() vim.fn.chdir(cwd) end)
+  vim.fn.chdir(dir)
+  eq(bounded(project.root, 'src/main/java'), { tool = 'maven', root = dir, cmd = 'mvn' })
+end
+
 T['root()']['returns nil outside a project'] = function()
   local dir = tree { ['src/'] = '' }
   eq(project.root(dir .. '/src'), nil)
