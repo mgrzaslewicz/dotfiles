@@ -10,3 +10,4 @@ packages.lock
 .claude
 .env
 kls_database.db
+.workmux.yaml
