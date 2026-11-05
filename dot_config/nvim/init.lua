@@ -639,6 +639,10 @@ do
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })
 
+      -- Next / previous usage in this buffer of the symbol under your cursor (IntelliJ F3 on highlighted usages).
+      vim.keymap.set('n', ']r', function() require('custom.usages').jump(1) end, { buffer = buf, desc = 'Next usage' })
+      vim.keymap.set('n', '[r', function() require('custom.usages').jump(-1) end, { buffer = buf, desc = 'Previous usage' })
+
       -- Fuzzy find all the symbols in your current document.
       -- Symbols are things like variables, functions, types, etc.
       vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })

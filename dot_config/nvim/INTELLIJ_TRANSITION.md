@@ -27,6 +27,7 @@ in the header comment of its Lua file.
 | Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
 | Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H), `grs` go to super method or supertypes (Ctrl+U) | `lua/custom/implementations.lua` | `test_implementations.lua` |
 | Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua` |
+| Next/previous usage in the buffer `]r`/`[r` (F3 on highlighted usages) | `lua/custom/usages.lua` | `test_usages.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet
@@ -76,6 +77,7 @@ Proposals, ranked by daily-use value for Java/Kotlin. Each lands test-first (see
 - [ ] `grc`/`grC`/`grh`/`grH` instead of grepping for callers and implementors (Ctrl+Alt+H, Ctrl+H)
 - [ ] `gC` go to class (Ctrl+N), with package words: `java.io InputStream`, `util HM`
 - [ ] `<leader>r` refactors (Shift+F6, Ctrl+Alt+O / V / C / M)
+- [ ] `]r` / `[r` through the usages of a symbol in the file instead of `*`
 - [ ] `<C-o>` / `<C-i>` jump back/forward (Ctrl+Alt+←/→)
 - [ ] `gry` copy reference for `--tests` filters and review comments
 - [ ] `gra` as Alt+Enter: imports, quick fixes, generate…
