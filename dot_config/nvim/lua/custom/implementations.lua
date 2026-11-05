@@ -9,6 +9,10 @@
 -- answers it with nothing). `gri` falls back to the overridden method, then to the definition, when there are no
 -- implementations.
 --
+-- `grc` (incoming_calls) on an override adds the callers of the method it overrides: a call through the interface
+-- type is a call of the interface member, which the server's incoming calls of the override leave out (IntelliJ's
+-- Ctrl+Alt+H lists both). Elsewhere it is Telescope's incoming calls picker.
+--
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
 
@@ -215,6 +219,41 @@ function M.goto_definition()
       return
     end
     require('telescope.builtin').lsp_definitions()
+  end)
+end
+
+--- The call sites of the method at `target` (a TextDocumentPositionParams), as locations, once every server has answered.
+---@param target table
+---@param callback fun(locations: {uri: string, range: table}[])
+local function call_sites(target, callback)
+  request_all('textDocument/prepareCallHierarchy', target, function(items)
+    if #items == 0 then return callback {} end
+    local pending, sites = #items, {}
+    for _, item in ipairs(items) do
+      request_all('callHierarchy/incomingCalls', { item = item }, function(calls)
+        for _, call in ipairs(calls) do
+          for _, range in ipairs(call.fromRanges) do
+            table.insert(sites, { uri = call.from.uri, range = range })
+          end
+        end
+        pending = pending - 1
+        if pending == 0 then callback(sites) end
+      end)
+    end
+  end)
+end
+
+--- Incoming calls of the method under the cursor (`grc`). On an override, merged with the calls of the method it
+--- overrides, in one picker; elsewhere Telescope's incoming calls.
+function M.incoming_calls()
+  local word = vim.fn.expand '<cword>'
+  local here = vim.lsp.util.make_position_params(0, 'utf-16')
+  M.overridden(function(declared)
+    if not declared then return require('telescope.builtin').lsp_incoming_calls() end
+    local super = { textDocument = { uri = declared.uri }, position = declared.range.start }
+    call_sites(here, function(own)
+      call_sites(super, function(inherited) M.pick(M.merge { own, inherited }, ('Incoming calls of %s, with the overridden method'):format(word)) end)
+    end)
   end)
 end
 

@@ -660,7 +660,8 @@ do
       vim.keymap.set('n', 'grt', builtin.lsp_type_definitions, { buffer = buf, desc = '[G]oto [T]ype Definition' })
 
       -- Call hierarchy (IntelliJ Ctrl+Alt+H): who calls the function under your cursor, and what it calls.
-      vim.keymap.set('n', 'grc', builtin.lsp_incoming_calls, { buffer = buf, desc = '[G]oto Incoming [C]alls' })
+      -- On an override, the callers include those of the method it overrides (see lua/custom/implementations.lua).
+      vim.keymap.set('n', 'grc', require('custom.implementations').incoming_calls, { buffer = buf, desc = '[G]oto Incoming [C]alls' })
       vim.keymap.set('n', 'grC', builtin.lsp_outgoing_calls, { buffer = buf, desc = '[G]oto Outgoing [C]alls' })
     end,
   })

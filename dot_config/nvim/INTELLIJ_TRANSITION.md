@@ -25,13 +25,14 @@ in the header comment of its Lua file.
 | Python LSP (pyright) enabled and rooted at the project; navigation across packages not yet covered by a layer B fixture | `init.lua`, `lua/custom/tools.lua` | `test_python.lua`, `test_tools.lua` |
 | Rust LSP (rust-analyzer) enabled and rooted at the Cargo workspace; no layer B fixture yet | `init.lua`, `lua/custom/tools.lua` | `test_rust.lua`, `test_tools.lua` |
 | Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
+| Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H) | `lua/custom/implementations.lua` | `test_implementations.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet
 
 Backfilled when next touched (layer B plan: `.scratch/neovim-tests`, issues 16–23):
 
-- Call/type hierarchy maps `grc`/`grC`/`grh`/`grH` (`init.lua`)
+- Call/type hierarchy maps `grC`/`grh`/`grH` (`init.lua`)
 - Go to class `gC` (`lua/custom/go_to_class.lua`)
 - nvim-jdtls wiring beyond attach/Lombok: refactor handlers, debug bundle, hot code replace (`lua/custom/plugins/jdtls.lua`)
 - `<leader>Q` project errors to quickfix (`init.lua`)

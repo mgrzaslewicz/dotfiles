@@ -89,7 +89,18 @@ T['collect()'] = MiniTest.new_set {
             return {
               request = function(method, params, callback)
                 local handlers = {
-                  initialize = function() return { capabilities = { implementationProvider = true, referencesProvider = true, definitionProvider = true, documentSymbolProvider = true } } end,
+                  initialize = function()
+                    return { capabilities = { implementationProvider = true, referencesProvider = true, definitionProvider = true, documentSymbolProvider = true, callHierarchyProvider = true } }
+                  end,
+                  -- The method at the position, then its callers: `run` of Foo is called on line 8, `run` of Iface on line 11.
+                  ['textDocument/prepareCallHierarchy'] = function()
+                    local p = params.position
+                    return { { name = 'run', kind = 6, uri = params.textDocument.uri, range = at(p.line, 0).range, selectionRange = at(p.line, p.character).range } }
+                  end,
+                  ['callHierarchy/incomingCalls'] = function()
+                    local line = params.item.uri == uri and 7 or 10
+                    return { { from = { name = 'caller', kind = 6, uri = uri, range = at(line, 0).range, selectionRange = at(line, 0).range }, fromRanges = { at(line, 2).range } } }
+                  end,
                   ['textDocument/implementation'] = function() return _G.fake.implementation() end,
                   ['textDocument/definition'] = function() return _G.fake.definition(params) end,
                   ['textDocument/references'] = function() return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
@@ -167,6 +178,29 @@ T['collect()']['goto_implementation() on an override without implementations goe
   ]=]
   eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Iface.kt')
   eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 2)
+end
+
+T['collect()']['grc on an override lists the callers of the overridden method too'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    _G.picked = nil
+    require('custom.implementations').pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+  ]=]
+  child.type_keys 'grc'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri = child.lua_get 'vim.uri_from_bufnr(0)'
+  eq(child.lua_get '_G.picked.locations', { { uri = uri, range = range(7, 2) }, { uri = uri, range = range(10, 2) } })
+  eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with the overridden method')
+end
+
+T['collect()']['grc elsewhere is the plain incoming calls picker'] = function()
+  child.lua [=[
+    _G.builtin = false
+    require('telescope.builtin').lsp_incoming_calls = function() _G.builtin = true end
+  ]=]
+  child.type_keys 'grc'
+  child.lua [=[ vim.wait(2000, function() return _G.builtin end) ]=]
+  eq(child.lua_get '_G.builtin', true)
 end
 
 T['collect()']['grR is mapped in LSP buffers next to grr, and grr keeps its own mapping'] = function()
