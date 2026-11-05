@@ -28,6 +28,7 @@ in the header comment of its Lua file.
 | Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H), `grs` go to super method or supertypes (Ctrl+U) | `lua/custom/implementations.lua` | `test_implementations.lua` |
 | Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua` |
 | Next/previous usage in the buffer `]r`/`[r` (F3 on highlighted usages) | `lua/custom/usages.lua` | `test_usages.lua` |
+| Next/previous error `]e`/`[e`, skipping warnings (F2 / Shift+F2) | `init.lua` | `test_diagnostics.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
 ## No tests yet
@@ -85,7 +86,7 @@ Proposals, ranked by daily-use value for Java/Kotlin. Each lands test-first (see
 
 ### Diagnostics and quickfix
 
-- [ ] `]d` / `[d` next/prev diagnostic, `<C-w>d` diagnostic float (F2 / Shift+F2)
+- [ ] `]e` / `[e` next/prev error (F2 / Shift+F2), `]d` / `[d` any diagnostic, `<C-w>d` diagnostic float
 - [ ] `<leader>sd` workspace diagnostics, `<leader>q` buffer location list, `<leader>Q` project errors in quickfix
 - [ ] Quickfix workflow: `:copen`, `]q` / `[q`, `:cdo` — grep results, test failures and build errors all land here
 

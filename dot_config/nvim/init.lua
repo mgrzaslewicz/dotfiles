@@ -213,6 +213,13 @@ do
     },
   }
 
+  -- Next / previous error, skipping warnings (IntelliJ F2 / Shift+F2); `]d` / `[d` stop on every diagnostic.
+  local function jump_error(direction)
+    return function() vim.diagnostic.jump { count = direction * vim.v.count1, severity = vim.diagnostic.severity.ERROR } end
+  end
+  vim.keymap.set('n', ']e', jump_error(1), { desc = 'Next error' })
+  vim.keymap.set('n', '[e', jump_error(-1), { desc = 'Previous error' })
+
   vim.keymap.set('n', '<leader>tr', function() vim.wo.relativenumber = not vim.wo.relativenumber end, { desc = '[T]oggle [R]elative line numbers' })
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
   vim.keymap.set(
