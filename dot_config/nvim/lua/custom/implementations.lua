@@ -3,6 +3,9 @@
 -- asked for (textDocument/implementation) and their references are merged in. Language-agnostic: any server that
 -- answers implementation requests works (jdtls, kotlin_lsp). Tests: tests/test_implementations.lua.
 --
+-- `gri` (goto_implementation) falls back to the definition when there is no implementation: a concrete class is its
+-- own implementation, and the server answers no implementations for it.
+--
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
 
@@ -70,6 +73,20 @@ function M.collect(callback)
         pending = pending - 1
         if pending == 0 then callback(M.merge(lists)) end
       end)
+    end
+  end)
+end
+
+--- Jumps to the implementations of the word under the cursor (`gri`). A symbol with none, such as a concrete class,
+--- goes to its definition instead, so `gri` always lands somewhere. One result jumps directly; several open a picker.
+function M.goto_implementation()
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  request_all('textDocument/implementation', params, function(implementations)
+    local builtin = require 'telescope.builtin'
+    if #implementations > 0 then
+      builtin.lsp_implementations()
+    else
+      builtin.lsp_definitions()
     end
   end)
 end

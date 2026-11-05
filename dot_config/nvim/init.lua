@@ -619,7 +619,8 @@ do
 
       -- Jump to the implementation of the word under your cursor.
       -- Useful when your language has ways of declaring types without an actual implementation.
-      vim.keymap.set('n', 'gri', builtin.lsp_implementations, { buffer = buf, desc = '[G]oto [I]mplementation' })
+      -- A concrete class has none: then this goes to its definition (see lua/custom/implementations.lua).
+      vim.keymap.set('n', 'gri', require('custom.implementations').goto_implementation, { buffer = buf, desc = '[G]oto [I]mplementation' })
 
       -- Jump to the definition of the word under your cursor.
       -- This is where a variable was first declared, or where a function is defined, etc.
