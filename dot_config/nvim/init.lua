@@ -628,6 +628,10 @@ do
       -- To jump back, press <C-t>.
       vim.keymap.set('n', 'grd', require('custom.implementations').goto_definition, { buffer = buf, desc = '[G]oto [D]efinition' })
 
+      -- Types of the method under your cursor, on its definition or in its body: the return type, then the parameter
+      -- types, then the types the body uses. Opens in a picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
+      vim.keymap.set('n', 'grm', require('custom.method_types').picker, { buffer = buf, desc = '[G]oto [M]ethod types' })
+
       -- Fuzzy find all the symbols in your current document.
       -- Symbols are things like variables, functions, types, etc.
       vim.keymap.set('n', 'gO', builtin.lsp_document_symbols, { buffer = buf, desc = 'Open Document Symbols' })

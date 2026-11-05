@@ -18,6 +18,7 @@ local M = {}
 ---@param loc table
 ---@return {uri: string, range: table}
 local function normalize(loc) return { uri = loc.uri or loc.targetUri, range = loc.range or loc.targetSelectionRange } end
+M.normalize = normalize
 
 --- Merges location lists into one: duplicates (same file and start) dropped, sorted by file, then position.
 ---@param lists table[] lists of Location or LocationLink
@@ -56,6 +57,7 @@ local function request_all(method, params, callback)
     callback(results)
   end)
 end
+M.request_all = request_all
 
 --- Calls `callback` with the references of the symbol under the cursor merged with the references of each of its
 --- implementations, once every server has answered.
@@ -82,6 +84,7 @@ end
 
 local CLASS_KINDS = { [5] = true, [10] = true, [11] = true, [23] = true } -- class, enum, interface, struct
 local METHOD_KINDS = { [6] = true, [12] = true } -- method, function
+M.CLASS_KINDS, M.METHOD_KINDS = CLASS_KINDS, METHOD_KINDS
 
 ---@return boolean
 local function contains(range, pos)
@@ -90,6 +93,7 @@ local function contains(range, pos)
   if pos.line == s.line and pos.character < s.character then return false end
   return not (pos.line == e.line and pos.character > e.character)
 end
+M.contains = contains
 
 --- The innermost class-like symbol around `pos` in a documentSymbol tree.
 local function enclosing_class(symbols, pos)
