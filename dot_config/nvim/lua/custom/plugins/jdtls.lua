@@ -38,6 +38,8 @@ local function start()
     root_dir = root_dir,
     -- vim.lsp.start (used here) does not merge `vim.lsp.config('*')`, so pass completion capabilities explicitly.
     capabilities = require('blink.cmp').get_lsp_capabilities(),
+    -- jdtls leaves out null results, which Neovim rejects (custom/lsp_missing_result.lua).
+    on_init = require('custom.lsp_missing_result').patch,
     init_options = {
       extendedClientCapabilities = jdtls.extendedClientCapabilities,
       bundles = bundles,
