@@ -8,6 +8,30 @@ local function loc(uri, line, character) return { uri = uri, range = range(line,
 
 local T = MiniTest.new_set()
 
+T['supertypes_in_header() reads the Kotlin supertype list, skipping constructor parameters and calls'] = function()
+  local found = implementations.supertypes_in_header { 'class Foo(val a: Int) : Base(a), Iface<Bar> {' }
+  eq(found, {
+    { name = 'Base', line = 0, character = 24 },
+    { name = 'Iface', line = 0, character = 33 },
+    { name = 'Bar', line = 0, character = 39 },
+  })
+end
+
+T['supertypes_in_header() reads the Java extends and implements lists'] = function()
+  local found = implementations.supertypes_in_header { 'class Foo extends Base implements Iface, Other {' }
+  eq(vim.tbl_map(function(s) return s.name end, found), { 'Base', 'Iface', 'Other' })
+end
+
+T['supertypes_in_header() follows a supertype list across lines up to the body'] = function()
+  local found = implementations.supertypes_in_header { 'class Foo :', '  Base,', '  Iface {', 'fun publish() {}' }
+  eq(found, {
+    { name = 'Base', line = 1, character = 2 },
+    { name = 'Iface', line = 2, character = 2 },
+  })
+end
+
+T['supertypes_in_header() finds nothing in a class without supertypes'] = function() eq(implementations.supertypes_in_header { 'class Foo(val a: Int) {' }, {}) end
+
 T['merge() drops duplicate locations and sorts by file, then position'] = function()
   local shared = loc('file:///B.kt', 3, 0)
   local merged = implementations.merge { { loc('file:///A.kt', 9, 2), shared }, { shared, loc('file:///A.kt', 1, 4) } }
@@ -30,16 +54,32 @@ T['collect()'] = MiniTest.new_set {
   hooks = {
     pre_case = function()
       child.start()
-      local file = helpers.tree { ['Foo.kt'] = string.rep('\n', 2) .. 'fun run() {}' .. string.rep('\n', 12) }
+      local file = helpers.tree { ['Foo.kt'] = 'class Foo : Iface {\n\nfun run() {}' .. string.rep('\n', 12), ['Iface.kt'] = '\nfun run()\n' }
       child.cmd('edit ' .. file .. '/Foo.kt')
       child.lua [=[
         -- Fake server: `run` on line 3 is implemented on line 10. References of the interface method are on
-        -- line 6, of the implementation on line 13; implementations answer as LocationLink.
+        -- line 6, of the implementation on line 13; implementations answer as LocationLink. `Foo` (line 1) extends
+        -- `Iface`, whose `run` is on line 2. The header's `Iface` name answers definition only when `overrides` is set.
         local uri = vim.uri_from_bufnr(0)
+        local iface_uri = vim.uri_from_fname(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h') .. '/Iface.kt')
         local function at(l, c) return { uri = uri, range = { start = { line = l, character = c }, ['end'] = { line = l, character = c + 3 } } } end
+        local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+        local foo = { name = 'Foo', kind = 5, range = span(0, 0, 14, 0), selectionRange = span(0, 6, 0, 9), children = {
+          { name = 'run', kind = 6, range = span(2, 0, 2, 12), selectionRange = at(2, 4).range },
+        } }
+        local iface = { name = 'Iface', kind = 11, range = span(0, 0, 2, 0), selectionRange = span(0, 0, 0, 5), children = {
+          { name = 'run', kind = 6, range = span(1, 0, 1, 10), selectionRange = at(1, 4).range },
+        } }
         _G.fake = {
           implementation = function() return { { originSelectionRange = at(2, 4).range, targetUri = uri, targetRange = at(9, 0).range, targetSelectionRange = at(9, 4).range } } end,
-          definition = function() return { { uri = uri, range = at(9, 4).range } } end,
+          definition = function(p)
+            if p.position.line == 0 then
+              return _G.fake.overrides and { { uri = iface_uri, range = iface.selectionRange } } or {}
+            end
+            return { { uri = uri, range = at(9, 4).range } }
+          end,
+          symbols = function(u) return u == uri and { foo } or u == iface_uri and { iface } or {} end,
+          overrides = false,
         }
         vim.lsp.start {
           name = 'impls',
@@ -49,10 +89,11 @@ T['collect()'] = MiniTest.new_set {
             return {
               request = function(method, params, callback)
                 local handlers = {
-                  initialize = function() return { capabilities = { implementationProvider = true, referencesProvider = true, definitionProvider = true } } end,
+                  initialize = function() return { capabilities = { implementationProvider = true, referencesProvider = true, definitionProvider = true, documentSymbolProvider = true } } end,
                   ['textDocument/implementation'] = function() return _G.fake.implementation() end,
-                  ['textDocument/definition'] = function() return _G.fake.definition() end,
+                  ['textDocument/definition'] = function() return _G.fake.definition(params) end,
                   ['textDocument/references'] = function() return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
+                  ['textDocument/documentSymbol'] = function() return _G.fake.symbols(params.textDocument.uri) end,
                 }
                 local result = handlers[method] and handlers[method]()
                 vim.schedule(function() callback(nil, result) end)
@@ -92,6 +133,40 @@ T['collect()']['goto_implementation() goes to the definition when the symbol has
     vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 10 end)
   ]=]
   eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 10)
+end
+
+T['collect()']['goto_definition() on an override goes to the interface method it overrides'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    require('custom.implementations').goto_definition()
+    vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end)
+  ]=]
+  eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Iface.kt')
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 2)
+end
+
+T['collect()']['goto_implementation() on an override opens the implementations of the interface method, even one'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    _G.picked = nil
+    require('custom.implementations').pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+    require('custom.implementations').goto_implementation()
+    vim.wait(2000, function() return _G.picked ~= nil end)
+  ]=]
+  eq(child.lua_get '#_G.picked.locations', 1)
+  eq(child.lua_get '_G.picked.title', 'Implementations of run')
+  eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Foo.kt')
+end
+
+T['collect()']['goto_implementation() on an override without implementations goes to the interface method'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    _G.fake.implementation = function() return {} end
+    require('custom.implementations').goto_implementation()
+    vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end)
+  ]=]
+  eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Iface.kt')
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 2)
 end
 
 T['collect()']['grR is mapped in LSP buffers next to grr, and grr keeps its own mapping'] = function()

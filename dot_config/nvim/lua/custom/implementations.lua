@@ -3,8 +3,11 @@
 -- asked for (textDocument/implementation) and their references are merged in. Language-agnostic: any server that
 -- answers implementation requests works (jdtls, kotlin_lsp). Tests: tests/test_implementations.lua.
 --
--- `gri` (goto_implementation) falls back to the definition when there is no implementation: a concrete class is its
--- own implementation, and the server answers no implementations for it.
+-- `gri` (goto_implementation) on an override lists the implementations of the method it overrides, and `grd`
+-- (goto_definition) goes to that method. The overridden method is found through the class header: the supertypes it
+-- names, resolved by go-to-definition, that declare a method of the same name (type hierarchy is not used: kotlin_lsp
+-- answers it with nothing). `gri` falls back to the overridden method, then to the definition, when there are no
+-- implementations.
 --
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
@@ -77,39 +80,164 @@ function M.collect(callback)
   end)
 end
 
---- Jumps to the implementations of the word under the cursor (`gri`). A symbol with none, such as a concrete class,
---- goes to its definition instead, so `gri` always lands somewhere. One result jumps directly; several open a picker.
-function M.goto_implementation()
-  local params = vim.lsp.util.make_position_params(0, 'utf-16')
-  request_all('textDocument/implementation', params, function(implementations)
-    local builtin = require 'telescope.builtin'
-    if #implementations > 0 then
-      builtin.lsp_implementations()
-    else
-      builtin.lsp_definitions()
+local CLASS_KINDS = { [5] = true, [10] = true, [11] = true, [23] = true } -- class, enum, interface, struct
+local METHOD_KINDS = { [6] = true, [12] = true } -- method, function
+
+---@return boolean
+local function contains(range, pos)
+  local s, e = range.start, range['end']
+  if pos.line < s.line or pos.line > e.line then return false end
+  if pos.line == s.line and pos.character < s.character then return false end
+  return not (pos.line == e.line and pos.character > e.character)
+end
+
+--- The innermost class-like symbol around `pos` in a documentSymbol tree.
+local function enclosing_class(symbols, pos)
+  for _, sym in ipairs(symbols) do
+    if contains(sym.range, pos) then return enclosing_class(sym.children or {}, pos) or (CLASS_KINDS[sym.kind] and sym) or nil end
+  end
+end
+
+--- The method called `name` in a documentSymbol tree.
+local function find_method(symbols, name)
+  for _, sym in ipairs(symbols) do
+    if sym.name == name and METHOD_KINDS[sym.kind] then return sym end
+    local found = find_method(sym.children or {}, name)
+    if found then return found end
+  end
+end
+
+--- The supertype names in a class header, with their positions: the names after `:` (Kotlin) or `extends` and
+--- `implements` (Java), at parenthesis depth 0, up to the `{` that opens the body. `lines` start at the class
+--- declaration; `line` is 0-based from there. Constructor arguments and generic arguments are skipped or not named.
+---@param lines string[]
+---@return {name: string, line: integer, character: integer}[]
+function M.supertypes_in_header(lines)
+  local found, depth, listing = {}, 0, false
+  local keywords = { extends = true, implements = true, where = true }
+  for index, text in ipairs(lines) do
+    local col = 1
+    while col <= #text do
+      local c = text:sub(col, col)
+      if c == '{' then return found end
+      if c == '(' then
+        depth = depth + 1
+      elseif c == ')' then
+        depth = depth - 1
+      elseif depth == 0 and c == ':' then
+        listing = true
+      elseif c:match '[%a_]' then
+        local word = text:match('^[%w_]+', col)
+        if depth == 0 and (word == 'extends' or word == 'implements') then listing = true end
+        if depth == 0 and listing and not keywords[word] then table.insert(found, { name = word, line = index - 1, character = col - 1 }) end
+        col = col + #word - 1
+      end
+      col = col + 1
     end
+  end
+  return found
+end
+
+--- Calls back with the declaration (uri and range) of the method under the cursor in the supertype it overrides, or nil
+--- when it overrides none. The cursor must be on a method its enclosing class declares. Each supertype named in the
+--- class header is looked up with go-to-definition, and the first one declaring a method of the same name wins.
+---@param callback fun(declared: {uri: string, range: table}?)
+function M.overridden(callback)
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  local word = vim.fn.expand '<cword>'
+  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
+    local class = enclosing_class(symbols, params.position)
+    if not class or not find_method(class.children or {}, word) then return callback(nil) end
+    local first, last = class.range.start.line, class.range['end'].line
+    local lines = vim.api.nvim_buf_get_lines(0, first, last + 1, false)
+    local supertypes = M.supertypes_in_header(lines)
+    for _, super in ipairs(supertypes) do
+      super.line = super.line + first
+    end
+    local function try(index)
+      if index > #supertypes then return callback(nil) end
+      local super = supertypes[index]
+      local at = { textDocument = params.textDocument, position = { line = super.line, character = super.character } }
+      request_all('textDocument/definition', at, function(definitions)
+        local locations = {}
+        for _, raw in ipairs(definitions) do
+          table.insert(locations, normalize(raw))
+        end
+        local function search(j)
+          if j > #locations then return try(index + 1) end
+          request_all('textDocument/documentSymbol', { textDocument = { uri = locations[j].uri } }, function(declared_symbols)
+            local method = find_method(declared_symbols, word)
+            if method then return callback { uri = locations[j].uri, range = method.selectionRange } end
+            search(j + 1)
+          end)
+        end
+        search(1)
+      end)
+    end
+    try(1)
   end)
+end
+
+--- Jumps to the implementations of the word under the cursor (`gri`), in a picker even when there is only one. On an
+--- override those of the method it overrides, so `gri` on `Impl.run` lists the implementations of `Iface.run`. With
+--- none, goes to the overridden method, else to the definition, so `gri` always lands somewhere.
+function M.goto_implementation()
+  M.overridden(function(declared)
+    local word = vim.fn.expand '<cword>'
+    local target = declared and { textDocument = { uri = declared.uri }, position = declared.range.start } or vim.lsp.util.make_position_params(0, 'utf-16')
+    request_all('textDocument/implementation', target, function(implementations)
+      if #implementations > 0 then
+        local locations = {}
+        for _, raw in ipairs(implementations) do
+          table.insert(locations, normalize(raw))
+        end
+        return M.pick(locations, ('Implementations of %s'):format(word))
+      end
+      if declared then
+        vim.lsp.util.show_document(declared, 'utf-16', { focus = true })
+        return
+      end
+      require('telescope.builtin').lsp_definitions()
+    end)
+  end)
+end
+
+--- Jumps to the definition of the word under the cursor (`grd`). On an override that is the method it overrides, so
+--- `grd` leaves the class for the interface member; elsewhere the definition.
+function M.goto_definition()
+  M.overridden(function(declared)
+    if declared then
+      vim.lsp.util.show_document(declared, 'utf-16', { focus = true })
+      return
+    end
+    require('telescope.builtin').lsp_definitions()
+  end)
+end
+
+--- Shows `locations` in a Telescope picker titled `title`.
+---@param locations {uri: string, range: table}[]
+---@param title string
+function M.pick(locations, title)
+  local pickers = require 'telescope.pickers'
+  local finders = require 'telescope.finders'
+  local conf = require('telescope.config').values
+  pickers
+    .new({}, {
+      prompt_title = title,
+      finder = finders.new_table {
+        results = vim.lsp.util.locations_to_items(locations, 'utf-16'),
+        entry_maker = require('telescope.make_entry').gen_from_quickfix {},
+      },
+      previewer = conf.qflist_previewer {},
+      sorter = conf.generic_sorter {},
+    })
+    :find()
 end
 
 --- Shows the references of the word under the cursor, with those of its implementations, in a Telescope picker.
 function M.references()
   local word = vim.fn.expand '<cword>'
-  M.collect(function(locations)
-    local pickers = require 'telescope.pickers'
-    local finders = require 'telescope.finders'
-    local conf = require('telescope.config').values
-    pickers
-      .new({}, {
-        prompt_title = ('References of %s, with implementations'):format(word),
-        finder = finders.new_table {
-          results = vim.lsp.util.locations_to_items(locations, 'utf-16'),
-          entry_maker = require('telescope.make_entry').gen_from_quickfix {},
-        },
-        previewer = conf.qflist_previewer {},
-        sorter = conf.generic_sorter {},
-      })
-      :find()
-  end)
+  M.collect(function(locations) M.pick(locations, ('References of %s, with implementations'):format(word)) end)
 end
 
 return M
