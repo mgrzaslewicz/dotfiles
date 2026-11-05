@@ -8,13 +8,20 @@ local function loc(uri, line, character) return { uri = uri, range = range(line,
 
 local T = MiniTest.new_set()
 
-T['supertypes_in_header() reads the Kotlin supertype list, skipping constructor parameters and calls'] = function()
+T['supertypes_in_header() reads the Kotlin supertype list, skipping constructor parameters, calls and type arguments'] = function()
   local found = implementations.supertypes_in_header { 'class Foo(val a: Int) : Base(a), Iface<Bar> {' }
   eq(found, {
     { name = 'Base', line = 0, character = 24 },
     { name = 'Iface', line = 0, character = 33 },
-    { name = 'Bar', line = 0, character = 39 },
   })
+end
+
+T['supertypes_in_header() skips the bounds of type parameters'] = function()
+  local names = function(header)
+    return vim.tbl_map(function(s) return s.name end, implementations.supertypes_in_header { header })
+  end
+  eq(names 'class Foo<T : Bar> : Base {', { 'Base' })
+  eq(names 'class Foo<T extends Bar, U> extends Base<T> implements Iface {', { 'Base', 'Iface' })
 end
 
 T['supertypes_in_header() reads the Java extends and implements lists'] = function()
@@ -74,7 +81,9 @@ T['collect()'] = MiniTest.new_set {
           implementation = function() return { { originSelectionRange = at(2, 4).range, targetUri = uri, targetRange = at(9, 0).range, targetSelectionRange = at(9, 4).range } } end,
           definition = function(p)
             if p.position.line == 0 then
-              return _G.fake.overrides and { { uri = iface_uri, range = iface.selectionRange } } or {}
+              if not _G.fake.overrides then return {} end
+              local super = _G.fake.supers and _G.fake.supers[p.position.character]
+              return super and { super } or { { uri = iface_uri, range = iface.selectionRange } }
             end
             return { { uri = uri, range = at(9, 4).range } }
           end,
@@ -201,6 +210,58 @@ T['collect()']['grc elsewhere is the plain incoming calls picker'] = function()
   child.type_keys 'grc'
   child.lua [=[ vim.wait(2000, function() return _G.builtin end) ]=]
   eq(child.lua_get '_G.builtin', true)
+end
+
+T['collect()']['grs on an override goes to the method it overrides, from its name or its body'] = function()
+  child.lua [=[ _G.fake.overrides = true ]=]
+  local foo = child.lua_get 'vim.api.nvim_get_current_buf()'
+  for _, col in ipairs { 4, 10 } do
+    child.cmd('buffer ' .. foo)
+    child.lua('vim.api.nvim_win_set_cursor(0, { 3, ' .. col .. ' })')
+    child.type_keys 'grs'
+    child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end) ]=]
+    eq(
+      { col, child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]' },
+      { col, 'Iface.kt', 2 }
+    )
+  end
+end
+
+T['collect()']['grs on a method that overrides nothing says so and stays'] = function()
+  child.cmd 'messages clear'
+  child.type_keys 'grs'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('overrides no method') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('run overrides no method') ~= nil", true)
+  eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Foo.kt')
+end
+
+T['collect()']['grs in a class outside its methods goes to its supertype'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    vim.api.nvim_win_set_cursor(0, { 1, 7 })
+  ]=]
+  child.type_keys 'grs'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Iface.kt')
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 1)
+end
+
+T['collect()']['grs in a class with several supertypes opens them in a picker'] = function()
+  child.lua [=[
+    _G.fake.overrides = true
+    local uri = vim.uri_from_bufnr(0)
+    local function at(l, c) return { uri = uri, range = { start = { line = l, character = c }, ['end'] = { line = l, character = c + 3 } } } end
+    _G.fake.supers = { [12] = at(20, 0), [19] = at(30, 0) }
+    vim.api.nvim_buf_set_lines(0, 0, 1, false, { 'class Foo : Iface, Other {' })
+    vim.api.nvim_win_set_cursor(0, { 1, 7 })
+    _G.picked = nil
+    require('custom.implementations').pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+  ]=]
+  child.type_keys 'grs'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri = child.lua_get 'vim.uri_from_bufnr(0)'
+  eq(child.lua_get '_G.picked.locations', { { uri = uri, range = range(20, 0) }, { uri = uri, range = range(30, 0) } })
+  eq(child.lua_get '_G.picked.title', 'Supertypes of Foo')
 end
 
 T['collect()']['grR is mapped in LSP buffers next to grr, and grr keeps its own mapping'] = function()

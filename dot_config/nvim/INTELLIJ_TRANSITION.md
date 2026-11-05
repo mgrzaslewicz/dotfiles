@@ -25,7 +25,7 @@ in the header comment of its Lua file.
 | Python LSP (pyright) enabled and rooted at the project; navigation across packages not yet covered by a layer B fixture | `init.lua`, `lua/custom/tools.lua` | `test_python.lua`, `test_tools.lua` |
 | Rust LSP (rust-analyzer) enabled and rooted at the Cargo workspace; no layer B fixture yet | `init.lua`, `lua/custom/tools.lua` | `test_rust.lua`, `test_tools.lua` |
 | Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
-| Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H) | `lua/custom/implementations.lua` | `test_implementations.lua` |
+| Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H), `grs` go to super method or supertypes (Ctrl+U) | `lua/custom/implementations.lua` | `test_implementations.lua` |
 | Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 
@@ -72,6 +72,7 @@ Proposals, ranked by daily-use value for Java/Kotlin. Each lands test-first (see
 
 ### Code intelligence
 
+- [ ] `grs` go to super (Ctrl+U) instead of `grH` when only the parent is wanted
 - [ ] `grc`/`grC`/`grh`/`grH` instead of grepping for callers and implementors (Ctrl+Alt+H, Ctrl+H)
 - [ ] `gC` go to class (Ctrl+N), with package words: `java.io InputStream`, `util HM`
 - [ ] `<leader>r` refactors (Shift+F6, Ctrl+Alt+O / V / C / M)

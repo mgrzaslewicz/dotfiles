@@ -628,6 +628,9 @@ do
       -- To jump back, press <C-t>.
       vim.keymap.set('n', 'grd', require('custom.implementations').goto_definition, { buffer = buf, desc = '[G]oto [D]efinition' })
 
+      -- Go to super (IntelliJ Ctrl+U): in a method, the method it overrides; elsewhere in a class, its supertypes.
+      vim.keymap.set('n', 'grs', require('custom.implementations').goto_super, { buffer = buf, desc = '[G]oto [S]uper' })
+
       -- Types of the method under your cursor, on its definition or in its body: the return type, then the parameter
       -- types, then the types the body uses. Opens in a picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
       vim.keymap.set('n', 'grm', require('custom.method_types').picker, { buffer = buf, desc = '[G]oto [M]ethod types' })

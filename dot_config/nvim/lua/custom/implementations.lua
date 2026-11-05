@@ -13,6 +13,9 @@
 -- type is a call of the interface member, which the server's incoming calls of the override leave out (IntelliJ's
 -- Ctrl+Alt+H lists both). Elsewhere it is Telescope's incoming calls picker.
 --
+-- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
+-- body; outside methods to the supertypes of the class, a picker when it names several.
+--
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
 
@@ -117,27 +120,32 @@ end
 
 --- The supertype names in a class header, with their positions: the names after `:` (Kotlin) or `extends` and
 --- `implements` (Java), at parenthesis depth 0, up to the `{` that opens the body. `lines` start at the class
---- declaration; `line` is 0-based from there. Constructor arguments and generic arguments are skipped or not named.
+--- declaration; `line` is 0-based from there. Constructor arguments, type arguments and type parameter bounds are skipped.
 ---@param lines string[]
 ---@return {name: string, line: integer, character: integer}[]
 function M.supertypes_in_header(lines)
-  local found, depth, listing = {}, 0, false
+  local found, depth, angle, listing = {}, 0, 0, false
   local keywords = { extends = true, implements = true, where = true }
   for index, text in ipairs(lines) do
     local col = 1
     while col <= #text do
       local c = text:sub(col, col)
       if c == '{' then return found end
+      local top = depth == 0 and angle == 0
       if c == '(' then
         depth = depth + 1
       elseif c == ')' then
         depth = depth - 1
-      elseif depth == 0 and c == ':' then
+      elseif c == '<' then
+        angle = angle + 1
+      elseif c == '>' and text:sub(col - 1, col - 1) ~= '-' then
+        angle = angle - 1
+      elseif top and c == ':' then
         listing = true
       elseif c:match '[%a_]' then
         local word = text:match('^[%w_]+', col)
-        if depth == 0 and (word == 'extends' or word == 'implements') then listing = true end
-        if depth == 0 and listing and not keywords[word] then table.insert(found, { name = word, line = index - 1, character = col - 1 }) end
+        if top and (word == 'extends' or word == 'implements') then listing = true end
+        if top and listing and not keywords[word] then table.insert(found, { name = word, line = index - 1, character = col - 1 }) end
         col = col + #word - 1
       end
       col = col + 1
@@ -150,9 +158,10 @@ end
 --- when it overrides none. The cursor must be on a method its enclosing class declares. Each supertype named in the
 --- class header is looked up with go-to-definition, and the first one declaring a method of the same name wins.
 ---@param callback fun(declared: {uri: string, range: table}?)
-function M.overridden(callback)
+---@param name string? the method's name, by default the word under the cursor
+function M.overridden(callback, name)
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
-  local word = vim.fn.expand '<cword>'
+  local word = name or vim.fn.expand '<cword>'
   request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
     local class = enclosing_class(symbols, params.position)
     if not class or not find_method(class.children or {}, word) then return callback(nil) end
@@ -254,6 +263,63 @@ function M.incoming_calls()
     call_sites(here, function(own)
       call_sites(super, function(inherited) M.pick(M.merge { own, inherited }, ('Incoming calls of %s, with the overridden method'):format(word)) end)
     end)
+  end)
+end
+
+--- The innermost symbol around `pos` in a documentSymbol tree.
+local function innermost(symbols, pos)
+  for _, sym in ipairs(symbols) do
+    if contains(sym.range, pos) then return innermost(sym.children or {}, pos) or sym end
+  end
+end
+
+--- Goes to the supertypes named in the header of `class` (a documentSymbol of the current buffer): one is jumped to,
+--- several open in a picker.
+local function goto_supertypes(class, params)
+  local first = class.range.start.line
+  local supertypes = M.supertypes_in_header(vim.api.nvim_buf_get_lines(0, first, class.range['end'].line + 1, false))
+  local pending, lists = #supertypes, {}
+  if pending == 0 then return vim.notify(('%s names no supertype'):format(class.name)) end
+  for index, super in ipairs(supertypes) do
+    local at = { textDocument = params.textDocument, position = { line = super.line + first, character = super.character } }
+    request_all('textDocument/definition', at, function(definitions)
+      lists[index] = definitions
+      pending = pending - 1
+      if pending > 0 then return end
+      local locations = {}
+      for _, list in ipairs(lists) do
+        for _, raw in ipairs(list) do
+          table.insert(locations, normalize(raw))
+        end
+      end
+      if #locations == 0 then return vim.notify(('No supertype of %s found'):format(class.name)) end
+      if #locations == 1 then
+        vim.lsp.util.show_document(locations[1], 'utf-16', { focus = true })
+        return
+      end
+      M.pick(locations, ('Supertypes of %s'):format(class.name))
+    end)
+  end
+end
+
+--- Goes to super (`grs`, IntelliJ Ctrl+U). In a method, from its name or its body, the method it overrides; elsewhere
+--- in a class, its supertypes.
+function M.goto_super()
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
+    local sym = innermost(symbols, params.position)
+    if sym and METHOD_KINDS[sym.kind] then
+      -- The name as written: jdtls names a method with its signature, `run(String)`.
+      local name = vim.api.nvim_buf_get_text(0, sym.selectionRange.start.line, 0, sym.selectionRange.start.line, -1, {})[1]
+      name = name:sub(vim.str_byteindex(name, 'utf-16', sym.selectionRange.start.character) + 1):match '^[%w_]+' or sym.name
+      return M.overridden(function(declared)
+        if not declared then return vim.notify(('%s overrides no method'):format(name)) end
+        vim.lsp.util.show_document(declared, 'utf-16', { focus = true })
+      end, name)
+    end
+    local class = enclosing_class(symbols, params.position)
+    if not class then return vim.notify 'Not in a class' end
+    goto_supertypes(class, params)
   end)
 end
 
