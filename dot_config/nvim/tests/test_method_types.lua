@@ -123,7 +123,7 @@ T['picker()'] = MiniTest.new_set {
 T['picker()']['lists the return type, then the parameter types, in a picker titled after the method'] = function()
   child.lua [=[
     _G.picked = nil
-    require('custom.implementations').pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+    require('custom.implementations').pick = function(locations, title, keep_order) _G.picked = { locations = locations, title = title, keep_order = keep_order } end
     require('custom.method_types').picker()
     vim.wait(2000, function() return _G.picked ~= nil end)
   ]=]
@@ -132,6 +132,7 @@ T['picker()']['lists the return type, then the parameter types, in a picker titl
   eq(child.lua_get "vim.fn.fnamemodify(_G.picked.locations[1].uri, ':t')", 'Types.kt')
   eq(child.lua_get '_G.picked.locations[1].range.start.line', 1)
   eq(child.lua_get '_G.picked.locations[2].range.start.line', 0)
+  eq(child.lua_get '_G.picked.keep_order', true)
 end
 
 T['picker()']['works with the cursor in the method body too'] = function()

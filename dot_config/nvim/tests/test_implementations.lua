@@ -271,4 +271,13 @@ T['collect()']['grR is mapped in LSP buffers next to grr, and grr keeps its own 
   eq(child.lua_get "vim.fn.maparg('grr', 'n', false, true).desc", '[G]oto [R]eferences')
 end
 
+T['items() sorts by file and line, unless asked to keep the given order'] = function()
+  local locations = { loc('file:///A.kt', 5, 2), loc('file:///A.kt', 0, 9) }
+  local lines = function(items)
+    return vim.tbl_map(function(item) return item.lnum end, items)
+  end
+  eq(lines(implementations.items(locations)), { 1, 6 })
+  eq(lines(implementations.items(locations, true)), { 6, 1 })
+end
+
 return T

@@ -323,10 +323,23 @@ function M.goto_super()
   end)
 end
 
---- Shows `locations` in a Telescope picker titled `title`.
+--- Quickfix items of `locations`. Neovim sorts them by file and line; `keep_order` keeps the given order instead.
+---@param locations {uri: string, range: table}[]
+---@param keep_order? boolean
+function M.items(locations, keep_order)
+  if not keep_order then return vim.lsp.util.locations_to_items(locations, 'utf-16') end
+  local items = {}
+  for _, location in ipairs(locations) do
+    vim.list_extend(items, vim.lsp.util.locations_to_items({ location }, 'utf-16'))
+  end
+  return items
+end
+
+--- Shows `locations` in a Telescope picker titled `title`, in the given order when `keep_order`.
 ---@param locations {uri: string, range: table}[]
 ---@param title string
-function M.pick(locations, title)
+---@param keep_order? boolean
+function M.pick(locations, title, keep_order)
   local pickers = require 'telescope.pickers'
   local finders = require 'telescope.finders'
   local conf = require('telescope.config').values
@@ -334,7 +347,7 @@ function M.pick(locations, title)
     .new({}, {
       prompt_title = title,
       finder = finders.new_table {
-        results = vim.lsp.util.locations_to_items(locations, 'utf-16'),
+        results = M.items(locations, keep_order),
         entry_maker = require('telescope.make_entry').gen_from_quickfix {},
       },
       previewer = conf.qflist_previewer {},

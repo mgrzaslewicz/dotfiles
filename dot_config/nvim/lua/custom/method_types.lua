@@ -206,7 +206,7 @@ function M.picker()
   M.collect(function(types)
     if not types then return vim.notify('No method around the cursor', vim.log.levels.INFO) end
     if #types == 0 then return vim.notify('No types related to ' .. word, vim.log.levels.INFO) end
-    implementations.pick(types, ('Types of %s'):format(word))
+    implementations.pick(types, ('Types of %s'):format(word), true)
   end)
 end
 
