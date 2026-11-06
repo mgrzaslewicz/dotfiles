@@ -16,6 +16,10 @@
 -- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
 -- body; outside methods to the supertypes of the class, a picker when it names several.
 --
+-- `grf` (goto_enclosing_method) goes to the name of the method around the cursor, from anywhere in its body, the
+-- innermost one when methods nest. It uses the documentSymbol tree of the attached server; in a buffer with none it
+-- uses the enclosing function node of the tree-sitter parse, which needs the buffer's parser installed.
+--
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
 
@@ -266,11 +270,37 @@ function M.incoming_calls()
   end)
 end
 
---- The innermost symbol around `pos` in a documentSymbol tree.
-local function innermost(symbols, pos)
+--- The innermost symbol around `pos` in a documentSymbol tree that `accept` takes (every symbol by default).
+---@param accept? fun(sym: table): boolean
+local function innermost(symbols, pos, accept)
+  accept = accept or function() return true end
   for _, sym in ipairs(symbols) do
-    if contains(sym.range, pos) then return innermost(sym.children or {}, pos) or sym end
+    if contains(sym.range, pos) then return innermost(sym.children or {}, pos, accept) or (accept(sym) and sym) or nil end
   end
+end
+
+--- Tree-sitter node types of a function or method declaration, across the grammars the config uses.
+local FUNCTION_NODES = { function_declaration = true, function_definition = true, method_declaration = true, constructor_declaration = true }
+
+--- Goes to the name of the method around the cursor (`grf`), from anywhere in its body. The LSP's documentSymbol tree
+--- answers when a server is attached to the buffer; without one, the enclosing function node of the tree-sitter parse.
+function M.goto_enclosing_method()
+  if #vim.lsp.get_clients { bufnr = 0, method = 'textDocument/documentSymbol' } == 0 then
+    local ok, node = pcall(vim.treesitter.get_node)
+    while ok and node and not FUNCTION_NODES[node:type()] do
+      node = node:parent()
+    end
+    if not ok or not node then return vim.notify('Not in a method', vim.log.levels.WARN) end
+    local row, col = (node:field('name')[1] or node):start()
+    vim.cmd "normal! m'"
+    return vim.api.nvim_win_set_cursor(0, { row + 1, col })
+  end
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
+    local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
+    if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
+    vim.lsp.util.show_document({ uri = params.textDocument.uri, range = method.selectionRange }, 'utf-16', { focus = true })
+  end)
 end
 
 --- Goes to the supertypes named in the header of `class` (a documentSymbol of the current buffer): one is jumped to,

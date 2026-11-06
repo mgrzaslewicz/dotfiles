@@ -235,6 +235,67 @@ T['collect()']['grs on a method that overrides nothing says so and stays'] = fun
   eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Foo.kt')
 end
 
+T['collect()']['grf anywhere in a method body goes to the method name'] = function()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    _G.fake.symbols = function(u)
+      return u == vim.uri_from_bufnr(0) and { { name = 'Foo', kind = 5, range = span(0, 0, 14, 0), selectionRange = span(0, 6, 0, 9), children = {
+        { name = 'run', kind = 6, range = span(2, 0, 8, 1), selectionRange = span(2, 4, 2, 7) },
+      } } } or {}
+    end
+    vim.api.nvim_win_set_cursor(0, { 6, 2 })
+  ]=]
+  child.type_keys 'grf'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 3 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 3, 4 })
+end
+
+T['collect()']['grf on a variable in a method body goes to the method name'] = function()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    _G.fake.symbols = function(u)
+      return u == vim.uri_from_bufnr(0) and { { name = 'Foo', kind = 5, range = span(0, 0, 14, 0), selectionRange = span(0, 6, 0, 9), children = {
+        { name = 'run', kind = 6, range = span(2, 0, 8, 1), selectionRange = span(2, 4, 2, 7), children = {
+          { name = 'count', kind = 13, range = span(5, 2, 5, 12), selectionRange = span(5, 6, 5, 11) },
+        } },
+      } } } or {}
+    end
+    vim.api.nvim_win_set_cursor(0, { 6, 4 })
+  ]=]
+  child.type_keys 'grf'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 3 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 3, 4 })
+end
+
+T['collect()']['grf outside any method says so and stays'] = function()
+  child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
+  child.cmd 'messages clear'
+  child.type_keys 'grf'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('Not in a method') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('Not in a method') ~= nil", true)
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 1, 0 })
+end
+
+T['collect()']['grf without a language server goes to the method name by tree-sitter'] = function()
+  child.lua [=[
+    vim.cmd 'enew'
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, { '', '', 'fun run() {}', '', '  body' })
+    local name = { start = function() return 2, 4, 0 end }
+    local fn = { type = function() return 'function_declaration' end, field = function(_, f) return f == 'name' and { name } or {} end }
+    local body = { type = function() return 'block' end, parent = function() return fn end }
+    vim.treesitter.get_node = function() return body end
+    vim.api.nvim_win_set_cursor(0, { 5, 2 })
+  ]=]
+  child.type_keys 'grf'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 3 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 3, 4 })
+end
+
+T['collect()']['grf is mapped globally, so it works where no server is attached, with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('grf', 'n', false, true).desc", '[G]oto enclosing [F]unction')
+  eq(child.lua_get "vim.fn.maparg('grf', 'n', false, true).buffer", 0)
+end
+
 T['collect()']['grs in a class outside its methods goes to its supertype'] = function()
   child.lua [=[
     _G.fake.overrides = true

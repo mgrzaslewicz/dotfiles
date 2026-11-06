@@ -221,6 +221,10 @@ do
   vim.keymap.set('n', '[e', jump_error(-1), { desc = 'Previous error' })
 
   vim.keymap.set('n', '<leader>tr', function() vim.wo.relativenumber = not vim.wo.relativenumber end, { desc = '[T]oggle [R]elative line numbers' })
+  -- Method around your cursor: jumps to its name, from anywhere in its body. Global, not per LSP buffer, because without
+  -- a language server in the buffer it falls back to the enclosing function of the tree-sitter parse
+  -- (see lua/custom/implementations.lua).
+  vim.keymap.set('n', 'grf', function() require('custom.implementations').goto_enclosing_method() end, { desc = '[G]oto enclosing [F]unction' })
   vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagnostic [Q]uickfix list' })
   vim.keymap.set(
     'n',
