@@ -280,4 +280,28 @@ T['items() sorts by file and line, unless asked to keep the given order'] = func
   eq(lines(implementations.items(locations, true)), { 6, 1 })
 end
 
+T['items() keeps the name and group of each location'] = function()
+  local named = loc('file:///A.kt', 5, 2)
+  named.name, named.group = 'Receipt', 'returns'
+  local item = implementations.items({ named }, true)[1]
+  eq({ item.name, item.group }, { 'Receipt', 'returns' })
+end
+
+T['column_entry_maker()'] = MiniTest.new_set {
+  hooks = {
+    pre_case = function() child.start() end,
+    post_case = function() child.stop() end,
+  },
+}
+
+T['column_entry_maker()']['shows the name, the group, then the file and line, in columns'] = function()
+  local display = child.lua_get [=[(function()
+    local maker = require('custom.implementations').column_entry_maker(10)
+    local entry = maker { name = 'Receipt', group = 'returns', filename = '/src/Types.kt', lnum = 2, col = 1, text = 'class Receipt' }
+    return (entry.display(entry))
+  end)()]=]
+  local at = function(text) return display:find(text, 1, true) end
+  eq(at 'Receipt' < at 'returns' and at 'returns' < at 'Types.kt:2', true)
+end
+
 return T

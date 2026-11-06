@@ -323,32 +323,64 @@ function M.goto_super()
   end)
 end
 
---- Quickfix items of `locations`. Neovim sorts them by file and line; `keep_order` keeps the given order instead.
----@param locations {uri: string, range: table}[]
+--- Quickfix items of `locations`, each keeping the `name` and `group` of its location. Neovim sorts such items by file
+--- and line; `keep_order` keeps the given order instead.
+---@param locations {uri: string, range: table, name?: string, group?: string}[]
 ---@param keep_order? boolean
 function M.items(locations, keep_order)
-  if not keep_order then return vim.lsp.util.locations_to_items(locations, 'utf-16') end
   local items = {}
   for _, location in ipairs(locations) do
-    vim.list_extend(items, vim.lsp.util.locations_to_items({ location }, 'utf-16'))
+    local item = vim.lsp.util.locations_to_items({ location }, 'utf-16')[1] ---@cast item table
+    item.name, item.group = location.name, location.group
+    table.insert(items, item)
+  end
+  if not keep_order then
+    table.sort(items, function(a, b)
+      if a.filename ~= b.filename then return a.filename < b.filename end
+      if a.lnum ~= b.lnum then return a.lnum < b.lnum end
+      return a.col < b.col
+    end)
   end
   return items
 end
 
---- Shows `locations` in a Telescope picker titled `title`, in the given order when `keep_order`.
----@param locations {uri: string, range: table}[]
+--- Entry maker for `pick` with columns: the name, the group, then the file and line.
+---@param width integer width of the name column
+function M.column_entry_maker(width)
+  local base = require('telescope.make_entry').gen_from_quickfix {}
+  local row = ('%%-%ds  %%-8s  %%s:%%d'):format(width)
+  return function(item)
+    local entry = base(item)
+    entry.ordinal = ('%s %s %s'):format(item.name or '', item.group or '', entry.ordinal)
+    entry.display = function(_) return row:format(item.name or '', item.group or '', vim.fn.fnamemodify(item.filename, ':t'), item.lnum) end
+    return entry
+  end
+end
+
+--- Shows `locations` in a Telescope picker titled `title`. Options: `keep_order` shows them in the given order, and
+--- `columns` shows each with its name and group in columns (see `column_entry_maker`).
+---@param locations {uri: string, range: table, name?: string, group?: string}[]
 ---@param title string
----@param keep_order? boolean
-function M.pick(locations, title, keep_order)
+---@param opts? {keep_order?: boolean, columns?: boolean}
+function M.pick(locations, title, opts)
+  opts = opts or {}
   local pickers = require 'telescope.pickers'
   local finders = require 'telescope.finders'
   local conf = require('telescope.config').values
+  local entry_maker = require('telescope.make_entry').gen_from_quickfix {}
+  if opts.columns then
+    local width = 1
+    for _, location in ipairs(locations) do
+      width = math.max(width, #(location.name or ''))
+    end
+    entry_maker = M.column_entry_maker(width)
+  end
   pickers
     .new({}, {
       prompt_title = title,
       finder = finders.new_table {
-        results = M.items(locations, keep_order),
-        entry_maker = require('telescope.make_entry').gen_from_quickfix {},
+        results = M.items(locations, opts.keep_order),
+        entry_maker = entry_maker,
       },
       previewer = conf.qflist_previewer {},
       sorter = conf.generic_sorter {},

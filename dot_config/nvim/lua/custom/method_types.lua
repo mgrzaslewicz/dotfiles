@@ -153,10 +153,39 @@ local function classes_among(locations, callback)
   end
 end
 
---- Calls back with the types an identifier stands for: the class it names, then the type of what it refers to.
+--- The name of the symbol declared at `pos` in a documentSymbol tree.
+local function name_at(symbols, pos)
+  for _, sym in ipairs(symbols) do
+    local start = sym.selectionRange.start
+    if start.line == pos.line and start.character == pos.character then return sym.name end
+    local found = name_at(sym.children or {}, pos)
+    if found then return found end
+  end
+end
+
+--- Sets the `name` of each type to the name it is declared with; `fallback` when the server knows none. Calls back with
+--- `types`, once all are named.
+---@param types {uri: string, range: table}[]
+---@param fallback string
+---@param callback fun(types: {uri: string, range: table, name: string}[])
+local function name_all(types, fallback, callback)
+  if #types == 0 then return callback(types) end
+  local pending = #types
+  for _, found in ipairs(types) do
+    implementations.request_all('textDocument/documentSymbol', { textDocument = { uri = found.uri } }, function(symbols)
+      ---@cast found table
+      found.name = name_at(symbols, found.range.start) or fallback
+      pending = pending - 1
+      if pending == 0 then callback(types) end
+    end)
+  end
+end
+
+--- Calls back with the types an identifier stands for: the class it names, then the type of what it refers to. Each is
+--- named by its declaration, or by the identifier when the server does not know the declaration.
 ---@param uri string
----@param id {line: integer, character: integer}
----@param callback fun(types: {uri: string, range: table}[])
+---@param id {name: string, line: integer, character: integer}
+---@param callback fun(types: {uri: string, range: table, name: string}[])
 local function types_of(uri, id, callback)
   local at = { textDocument = { uri = uri }, position = { line = id.line, character = id.character } }
   implementations.request_all('textDocument/definition', at, function(definitions)
@@ -164,15 +193,16 @@ local function types_of(uri, id, callback)
       implementations.request_all(
         'textDocument/typeDefinition',
         at,
-        function(type_definitions) callback(vim.list_extend(named, vim.tbl_map(implementations.normalize, type_definitions))) end
+        function(type_definitions) name_all(vim.list_extend(named, vim.tbl_map(implementations.normalize, type_definitions)), id.name, callback) end
       )
     end)
   end)
 end
 
 --- Calls back with the types related to the method under the cursor, in order: return types, parameter types, then the
---- types the body uses; duplicates dropped. Calls back with nil when the cursor is in no method.
----@param callback fun(types: {uri: string, range: table}[]?)
+--- types the body uses; duplicates dropped. Each type carries its `name` and the `group` it comes from. Calls back with
+--- nil when the cursor is in no method.
+---@param callback fun(types: {uri: string, range: table, name: string, group: string}[]?)
 function M.collect(callback)
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
   implementations.request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
@@ -186,6 +216,10 @@ function M.collect(callback)
     local per_id, pending = {}, #ids
     for index, id in ipairs(ids) do
       types_of(params.textDocument.uri, id, function(found)
+        for _, entry in ipairs(found) do
+          ---@cast entry table
+          entry.group = id.group
+        end
         per_id[index] = found
         pending = pending - 1
         if pending == 0 then
@@ -206,7 +240,7 @@ function M.picker()
   M.collect(function(types)
     if not types then return vim.notify('No method around the cursor', vim.log.levels.INFO) end
     if #types == 0 then return vim.notify('No types related to ' .. word, vim.log.levels.INFO) end
-    implementations.pick(types, ('Types of %s'):format(word), true)
+    implementations.pick(types, ('Types of %s'):format(word), { keep_order = true, columns = true })
   end)
 end
 
