@@ -54,6 +54,28 @@ T['gradle-kotlin | LSP | document symbols of a JDK source list its declarations 
   )
 end
 
+-- Pasting a line with an unimported type imports it: kotlin_lsp offers one import per package of the class, here
+-- kotlin.time.Duration, java.time.Duration and javax.xml.datatype.Duration; the picker answers the first.
+T['gradle-kotlin | paste | a pasted line with an unimported type gets its import'] = function()
+  ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
+  e2e.wait(ctx.child, 'attach', 'kotlin_lsp attached', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
+  -- Autosave writes the buffer to the fixture 1 s after a change, so the case restores the file at the end: later
+  -- cases compile it.
+  ctx.child.lua [=[
+    _G.paste_original = vim.api.nvim_buf_get_lines(0, 0, -1, false)
+    vim.fn.setreg('a', { 'val probeDuration: Duration? = null' }, 'l')
+    _G.select_before_paste = vim.ui.select
+    vim.ui.select = function(items, _, on_choice) on_choice(items[1]) end
+  ]=]
+  ctx.child.type_keys 'G"ap'
+  e2e.wait(ctx.child, 'index', 'import of Duration added', "vim.tbl_contains(vim.api.nvim_buf_get_lines(0, 0, -1, false), 'import kotlin.time.Duration')")
+  ctx.child.lua [=[
+    vim.ui.select = _G.select_before_paste
+    vim.api.nvim_buf_set_lines(0, 0, -1, false, _G.paste_original)
+  ]=]
+  ctx.child.cmd 'silent! write'
+end
+
 T['gradle-kotlin | tasks | kotlinc errors from `gradle classes` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,
