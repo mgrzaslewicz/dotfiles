@@ -642,6 +642,9 @@ do
       -- types, then the types the body uses. Opens in a picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
       vim.keymap.set('n', 'grm', require('custom.method_types').picker, { buffer = buf, desc = '[G]oto [M]ethod types' })
 
+      -- Return type of the method under your cursor: jumps to it when there is one, else a picker of the return types.
+      vim.keymap.set('n', 'grM', require('custom.method_types').returns_picker, { buffer = buf, desc = '[G]oto return types' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })

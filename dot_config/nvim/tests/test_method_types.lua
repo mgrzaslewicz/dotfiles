@@ -186,6 +186,47 @@ T['picker()']['outside any method tells so and opens no picker'] = function()
   eq(child.lua_get '_G.picked', vim.NIL)
 end
 
+-- Stubs `collect` with `types` (Lua source of a list in Types.kt), and the jump and picker so their calls are recorded.
+local function stub_returns(types)
+  child.lua(([=[
+    _G.shown, _G.picked, _G.notified = nil, nil, nil
+    local types_uri = vim.uri_from_fname(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h') .. '/Types.kt')
+    local function span(line) return { start = { line = line, character = 6 }, ['end'] = { line = line, character = 11 } } end
+    local t = %s
+    require('custom.method_types').collect = function(callback) callback(t) end
+    vim.lsp.util.show_document = function(location) _G.shown = location; return true end
+    require('custom.implementations').pick = function(locations, title, opts) _G.picked = { locations = locations, title = title, opts = opts } end
+    vim.notify = function(message) _G.notified = message end
+    require('custom.method_types').returns_picker()
+  ]=]):format(types))
+end
+
+T['picker()']['grM jumps straight to the only return type'] = function()
+  stub_returns "{ { uri = types_uri, range = span(1), name = 'Receipt', group = 'returns' }, { uri = types_uri, range = span(0), name = 'Order', group = 'params' } }"
+  eq(child.lua_get '_G.shown.range.start.line', 1)
+  eq(child.lua_get '_G.picked == nil', true)
+end
+
+T['picker()']['grM opens a picker of the return types when there are several, leaving out the others'] = function()
+  stub_returns "{ { uri = types_uri, range = span(1), name = 'Receipt', group = 'returns' }, { uri = types_uri, range = span(0), name = 'Order', group = 'params' }, { uri = types_uri, range = span(2), name = 'Item', group = 'returns' } }"
+  eq(child.lua_get '_G.shown == nil', true)
+  eq(child.lua_get '_G.picked.title', 'Return types of publish')
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.name end, _G.picked.locations)', { 'Receipt', 'Item' })
+  eq(child.lua_get '_G.picked.opts.keep_order', true)
+  eq(child.lua_get '_G.picked.opts.columns', true)
+end
+
+T['picker()']['grM says so when the method has no return type'] = function()
+  stub_returns "{ { uri = types_uri, range = span(0), name = 'Order', group = 'params' } }"
+  eq(child.lua_get '_G.shown == nil and _G.picked == nil', true)
+  eq(child.lua_get '_G.notified', 'No return type of publish')
+end
+
+T['picker()']['grM is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('grM', 'n', false, true).desc", '[G]oto return types')
+  eq(child.lua_get "vim.fn.maparg('grM', 'n', false, true).buffer", 1)
+end
+
 T['picker()']['grm is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('grm', 'n', false, true).desc", '[G]oto [M]ethod types')
   eq(child.lua_get "vim.fn.maparg('grm', 'n', false, true).buffer", 1)

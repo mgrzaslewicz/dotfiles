@@ -255,4 +255,20 @@ function M.picker()
   end)
 end
 
+--- Goes to the return type of the method under the cursor (`grM`): straight there when it has one, else a picker of
+--- them when it has several.
+function M.returns_picker()
+  local word = vim.fn.expand '<cword>'
+  M.collect(function(types)
+    if not types then return vim.notify('No method around the cursor', vim.log.levels.INFO) end
+    local returns = vim.tbl_filter(function(entry) return entry.group == 'returns' end, types)
+    if #returns == 0 then return vim.notify('No return type of ' .. word, vim.log.levels.INFO) end
+    if #returns == 1 then
+      vim.lsp.util.show_document(returns[1], 'utf-16', { focus = true })
+    else
+      implementations.pick(returns, ('Return types of %s'):format(word), { keep_order = true, columns = true })
+    end
+  end)
+end
+
 return M
