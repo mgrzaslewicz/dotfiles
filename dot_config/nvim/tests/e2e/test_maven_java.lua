@@ -11,7 +11,7 @@ T['maven-java | LSP | jdtls attaches at the build root, resolves Lombok getters,
   eq(e2e.errors(ctx.child), {})
 end
 
-T['maven-java | LSP | grm answers on a method calling one without a result type, without an error message'] = function()
+T['maven-java | LSP | grM answers on a method calling one without a result type, without an error message'] = function()
   ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
   e2e.expect_jdtls(ctx.child, ctx.project)
   e2e.definition_reaches(ctx.child, 'getName', 'model/src/main/java/com/example/model/Person.java')

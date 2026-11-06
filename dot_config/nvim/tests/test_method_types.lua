@@ -201,13 +201,13 @@ local function stub_returns(types)
   ]=]):format(types))
 end
 
-T['picker()']['grM jumps straight to the only return type'] = function()
+T['picker()']['grm jumps straight to the only return type'] = function()
   stub_returns "{ { uri = types_uri, range = span(1), name = 'Receipt', group = 'returns' }, { uri = types_uri, range = span(0), name = 'Order', group = 'params' } }"
   eq(child.lua_get '_G.shown.range.start.line', 1)
   eq(child.lua_get '_G.picked == nil', true)
 end
 
-T['picker()']['grM opens a picker of the return types when there are several, leaving out the others'] = function()
+T['picker()']['grm opens a picker of the return types when there are several, leaving out the others'] = function()
   stub_returns "{ { uri = types_uri, range = span(1), name = 'Receipt', group = 'returns' }, { uri = types_uri, range = span(0), name = 'Order', group = 'params' }, { uri = types_uri, range = span(2), name = 'Item', group = 'returns' } }"
   eq(child.lua_get '_G.shown == nil', true)
   eq(child.lua_get '_G.picked.title', 'Return types of publish')
@@ -216,19 +216,19 @@ T['picker()']['grM opens a picker of the return types when there are several, le
   eq(child.lua_get '_G.picked.opts.columns', true)
 end
 
-T['picker()']['grM says so when the method has no return type'] = function()
+T['picker()']['grm says so when the method has no return type'] = function()
   stub_returns "{ { uri = types_uri, range = span(0), name = 'Order', group = 'params' } }"
   eq(child.lua_get '_G.shown == nil and _G.picked == nil', true)
   eq(child.lua_get '_G.notified', 'No return type of publish')
 end
 
 T['picker()']['grM is mapped in LSP buffers with its desc'] = function()
-  eq(child.lua_get "vim.fn.maparg('grM', 'n', false, true).desc", '[G]oto return types')
+  eq(child.lua_get "vim.fn.maparg('grM', 'n', false, true).desc", '[G]oto [M]ethod types')
   eq(child.lua_get "vim.fn.maparg('grM', 'n', false, true).buffer", 1)
 end
 
 T['picker()']['grm is mapped in LSP buffers with its desc'] = function()
-  eq(child.lua_get "vim.fn.maparg('grm', 'n', false, true).desc", '[G]oto [M]ethod types')
+  eq(child.lua_get "vim.fn.maparg('grm', 'n', false, true).desc", '[G]oto return types')
   eq(child.lua_get "vim.fn.maparg('grm', 'n', false, true).buffer", 1)
 end
 

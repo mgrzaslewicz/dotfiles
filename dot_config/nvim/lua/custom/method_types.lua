@@ -1,4 +1,4 @@
--- Types related to the method under the cursor (`grm`), in one picker: the return type first, then the parameter types,
+-- Types related to the method under the cursor (`grM`), in one picker: the return type first, then the parameter types,
 -- then the types the body uses. Works on the method's definition and in its body. Composed types count with their
 -- parts (`List<Item>` gives List and Item); duplicates are dropped. Tests: tests/test_method_types.lua.
 --
@@ -245,7 +245,7 @@ function M.collect(callback)
   end)
 end
 
---- Opens the types related to the method under the cursor (`grm`) in a Telescope picker.
+--- Opens the types related to the method under the cursor (`grM`) in a Telescope picker.
 function M.picker()
   local word = vim.fn.expand '<cword>'
   M.collect(function(types)
@@ -255,7 +255,7 @@ function M.picker()
   end)
 end
 
---- Goes to the return type of the method under the cursor (`grM`): straight there when it has one, else a picker of
+--- Goes to the return type of the method under the cursor (`grm`): straight there when it has one, else a picker of
 --- them when it has several.
 function M.returns_picker()
   local word = vim.fn.expand '<cword>'

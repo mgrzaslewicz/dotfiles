@@ -1,7 +1,7 @@
 -- Treats a response with neither `result` nor `error` as a null result, for servers that leave out a null result.
--- jdtls does so, e.g. on go-to-type-definition of a call that returns a primitive (`grm` on
+-- jdtls does so, e.g. on go-to-type-definition of a call that returns a primitive (`grM` on
 -- `counter.incrementAndGet()`). Neovim rejects such a response as INVALID_SERVER_MESSAGE: it shows the error and
--- drops the response, so the request's callback never runs and whatever waits for it (buf_request_all, `grm`) hangs.
+-- drops the response, so the request's callback never runs and whatever waits for it (buf_request_all, `grM`) hangs.
 -- Tests: tests/test_lsp_missing_result.lua.
 --
 -- `patch` is an `on_init`: it wraps the client's rpc.request to keep each pending request's callbacks, and its
