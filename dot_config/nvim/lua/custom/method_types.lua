@@ -43,7 +43,7 @@ local KEYWORDS = {
 ---@return {name: string, line: integer, character: integer, group: 'returns'|'params'|'body'}[]
 function M.identifiers(lines, origin, name)
   local buckets = { returns = {}, params = {}, body = {} }
-  local depth, in_body = 0, false
+  local depth, in_body, in_comment = 0, false, false
   for index, text in ipairs(lines) do
     local line = origin.line + index - 1
     local base = index == 1 and origin.character or 0
@@ -51,7 +51,18 @@ function M.identifiers(lines, origin, name)
     while col <= #text do
       local c = text:sub(col, col)
       local word = text:match('^[%a_][%w_]*', col)
-      if text:sub(col, col + 1) == '//' then
+      if in_comment then
+        local close = text:find('*/', col, true)
+        if close then
+          in_comment = false
+          col = close + 2
+        else
+          break
+        end
+      elseif text:sub(col, col + 1) == '/*' then
+        in_comment = true
+        col = col + 2
+      elseif text:sub(col, col + 1) == '//' then
         break
       elseif c == '"' then
         col = (text:find('"', col + 1, true) or #text) + 1

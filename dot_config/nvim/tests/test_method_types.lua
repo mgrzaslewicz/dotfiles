@@ -42,6 +42,18 @@ T['identifiers() reads a Java header: annotations and modifiers skipped, generic
   eq(names(ids), { 'List:returns', 'Foo:returns', 'Bar:params', 'bar:params', 'Baz:body' })
 end
 
+T['identifiers() skips block comments above the header, even across lines, and inside the body'] = function()
+  local ids = method_types.identifiers({
+    '/**',
+    ' * The photo of the first ad of [scouts].',
+    ' */',
+    'fun firstPhoto(scouts: Collection<Scout>): Map<ScoutId, String> {',
+    '  return x /* Foo note */ + y',
+    '}',
+  }, { line = 0, character = 0 }, { line = 3, character = 4 })
+  eq(names(ids), { 'Map:returns', 'ScoutId:returns', 'String:returns', 'Collection:params', 'Scout:params', 'x:body', 'y:body' })
+end
+
 T['identifiers() takes the text after `=` of an expression body as the body'] = function()
   local ids = method_types.identifiers({ 'fun trimmed(text: String): String = text.trim()' }, { line = 0, character = 0 }, { line = 0, character = 4 })
   eq(names(ids), { 'String:returns', 'text:body', 'trim:body' })
