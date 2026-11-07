@@ -11,6 +11,7 @@ local child = ctx.child
 local MAIN = 'app/src/main/java/com/example/app/Main.java'
 local GREETING = 'model/src/main/java/com/example/model/Greeting.java'
 local FORMAL = 'model/src/main/java/com/example/model/Formal.java'
+local CALLERS = 'app/src/main/java/com/example/app/Callers.java'
 
 T['gradle-java | gry | copies the reference of the method around the cursor'] = function()
   ctx.edit(MAIN)
@@ -28,17 +29,58 @@ T['gradle-java | ]r | goes to the next usage of a local variable'] = function()
   eq(ctx.position(), { MAIN, 9, 36 })
 end
 
--- Known limit: jdtls names a method with its signature (`greet(String)`), which the overridden method lookup compares
--- with the bare name, so `grs` (and `grd`, `gri`) on a Java override find no overridden method. Turns red when fixed.
--- See custom/implementations.lua.
-T['gradle-java | grs | known limit: from an override says it overrides no method'] = function()
+-- The override cases below cover jdtls's method names, which carry the signature (`greet(String)`) where kotlin-lsp's
+-- are bare.
+T['gradle-java | grs | from an override goes to the interface method'] = function()
   ctx.edit(FORMAL)
-  child.cmd 'messages clear'
   ctx.cursor('String greet', 7)
   child.lua "require('custom.implementations').goto_super()"
+  ctx.wait('Greeting.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Greeting.java')")
+  eq(ctx.position(), { GREETING, 6, 11 })
+end
+
+T['gradle-java | grs | from the body of an override goes to the interface method'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor 'return "Good day, "'
+  child.lua "require('custom.implementations').goto_super()"
+  ctx.wait('Greeting.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Greeting.java')")
+  eq(ctx.position(), { GREETING, 6, 11 })
+end
+
+T['gradle-java | grs | on a method that overrides nothing says so'] = function()
+  ctx.edit(MAIN)
+  child.cmd 'messages clear'
+  ctx.cursor('String greeting', 7)
+  child.lua "require('custom.implementations').goto_super()"
   ctx.wait('a message', "vim.api.nvim_exec2('messages', { output = true }).output ~= ''")
-  eq(child.lua_get "vim.api.nvim_exec2('messages', { output = true }).output", 'greet overrides no method')
-  eq(ctx.position(), { FORMAL, 7, 18 })
+  eq(child.lua_get "vim.api.nvim_exec2('messages', { output = true }).output", 'greeting overrides no method')
+  eq(ctx.position(), { MAIN, 12, 18 })
+end
+
+T['gradle-java | grd | on an override goes to the interface method'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('String greet', 7)
+  child.lua "require('custom.implementations').goto_definition()"
+  ctx.wait('Greeting.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Greeting.java')")
+  eq(ctx.position(), { GREETING, 6, 11 })
+end
+
+T['gradle-java | gri | on an override lists the implementations of the interface method'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('String greet', 7)
+  child.lua "require('custom.implementations').goto_implementation()"
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':7' } })
+end
+
+T['gradle-java | grc | on an override lists its callers and those of the interface method'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('String greet', 7)
+  child.lua "require('custom.implementations').incoming_calls()"
+  ctx.wait('incoming calls picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with the overridden method', { CALLERS .. ':9', CALLERS .. ':13' } })
 end
 
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
@@ -60,7 +102,7 @@ T['gradle-java | grR | references of the interface method include its implementa
     end)
   ]]
   ctx.wait('references collected', '_G.references ~= nil')
-  eq(child.lua_get '_G.references', { FORMAL .. ':7', GREETING .. ':6' })
+  eq(child.lua_get '_G.references', { CALLERS .. ':9', CALLERS .. ':13', FORMAL .. ':7', GREETING .. ':6' })
 end
 
 T['gradle-java | gW | lists the workspace symbols matching the query'] = function()

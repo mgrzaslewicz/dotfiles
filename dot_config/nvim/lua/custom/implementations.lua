@@ -24,9 +24,8 @@
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
 --
--- Known limit: jdtls names a method in its documentSymbol tree with its signature (`greet(String)`), and the overridden
--- method is looked up by its bare name, so in Java `grd`, `gri`, `grc` and `grs` on an override find no overridden
--- method (tests/test_replay_gradle_java.lua).
+-- Known limit: methods are matched by name without their signature (jdtls names them `greet(String)`, kotlin_lsp
+-- `greet`), so of overloads in a supertype the first one declared wins; parameter types are not compared.
 
 local M = {}
 
@@ -130,10 +129,15 @@ local function enclosing_class(symbols, pos)
   end
 end
 
---- The method called `name` in a documentSymbol tree.
+--- The identifier of a documentSymbol name: jdtls names a method with its signature (`run(String)`), kotlin_lsp bare.
+---@param name string
+---@return string
+local function identifier(name) return name:match '^[^(%s]+' or name end
+
+--- The method called `name` in a documentSymbol tree, its signature ignored: the first of several overloads.
 local function find_method(symbols, name)
   for _, sym in ipairs(symbols) do
-    if sym.name == name and METHOD_KINDS[sym.kind] then return sym end
+    if METHOD_KINDS[sym.kind] and identifier(sym.name) == name then return sym end
     local found = find_method(sym.children or {}, name)
     if found then return found end
   end
