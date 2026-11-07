@@ -21,7 +21,7 @@ description = "End-to-end tests with real servers, builds and DAP (dot_config/nv
 run = "dot_config/nvim/tests/run.sh --e2e"
 
 [tasks."test:smoke"]
-description = "Smoke suite: the replayed LSP-behavior tests (dot_config/nvim/tests/test_replay_*.lua) against real servers; outside the PR gate, nightly"
+description = "Smoke suite: the replayed LSP-behavior tests (dot_config/nvim/tests/test_replay_*.lua) against real servers, on demand"
 run = "dot_config/nvim/tests/run.sh --smoke"
 
 [tasks."test:record"]

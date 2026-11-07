@@ -13,7 +13,7 @@ Tests in `tests/e2e/test_*.lua` that run real servers, real Gradle and Maven bui
 _Avoid_: integration tests, slow tests
 
 **Smoke suite**:
-The replayed tests (`tests/test_replay_*.lua`) run against real servers on the fixtures instead of their contracts, outside the PR gate, usually nightly (`tests/run.sh --smoke`). It catches server and protocol drift that contracts cannot see. Not the smoke tests of layer A, which start the full config in a child Neovim.
+The replayed tests (`tests/test_replay_*.lua`) run against real servers on the fixtures instead of their contracts, on demand (`tests/run.sh --smoke`), and as part of every recording refresh. It catches server and protocol drift that contracts cannot see. Not the smoke tests of layer A, which start the full config in a child Neovim.
 
 ## Recorded responses
 

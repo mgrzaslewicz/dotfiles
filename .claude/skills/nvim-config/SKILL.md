@@ -15,7 +15,7 @@ skill list: `dot_config/nvim/INTELLIJ_TRANSITION.md`.
 | `mise run test` | layer A, all tests (~30 s); `mise run test -- tests/test_x.lua` for one file (path relative to `dot_config/nvim`) |
 | `mise run check` | everything a commit must pass: `stylua --check`, tests, lua-language-server diagnostics (~20 s) |
 | `mise run test:e2e` | layer B, real servers/builds/DAP (`tests/e2e/`); on demand, see below. `-- tests/e2e/test_x.lua` for one file |
-| `mise run test:smoke` | smoke suite: the replayed tests (`tests/test_replay_*.lua`) against real servers; nightly, outside the PR gate. `-- tests/test_replay_x.lua` for one file |
+| `mise run test:smoke` | smoke suite: the replayed tests (`tests/test_replay_*.lua`) against real servers, on demand (writing a replayed case). `-- tests/test_replay_x.lua` for one file |
 | `mise run test:record` | re-record the contracts (`tests/contracts/`) from real servers; by hand, or from `nvim:update` |
 | `mise run nvim:update` | bump plugins (lockfile) and Mason pins to latest; if a Mason pin moved, `test:record` first; `check` (+ e2e if a Mason pin moved), commit pins and contracts on the current branch; no push. Refuses on unrelated dirty files |
 | `mise run nvim:sync` | make this host match the dotfiles: `chezmoi apply ~/.config/nvim`, then lockfile revisions and Mason pins |
