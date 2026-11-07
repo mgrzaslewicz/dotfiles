@@ -1,7 +1,8 @@
 -- References of the symbol under the cursor together with the references of its implementations (`grR`).
 -- An LSP's references of an interface member do not include the overriding methods, so the implementations are
 -- asked for (textDocument/implementation) and their references are merged in. Language-agnostic: any server that
--- answers implementation requests works (jdtls, kotlin_lsp). Tests: tests/test_implementations.lua.
+-- answers implementation requests works (jdtls, kotlin_lsp). Tests: tests/test_implementations.lua;
+-- replayed on jdtls and kotlin-lsp in tests/test_replay_gradle_java.lua and tests/test_replay_gradle_kotlin.lua.
 --
 -- `gri` (goto_implementation) on an override lists the implementations of the method it overrides, and `grd`
 -- (goto_definition) goes to that method. The overridden method is found through the class header: the supertypes it
@@ -22,6 +23,10 @@
 --
 -- Known limit: the overrides are found only where the server reports them as implementations; a call through a
 -- variable of the interface type is a reference of the interface member, as before.
+--
+-- Known limit: jdtls names a method in its documentSymbol tree with its signature (`greet(String)`), and the overridden
+-- method is looked up by its bare name, so in Java `grd`, `gri`, `grc` and `grs` on an override find no overridden
+-- method (tests/test_replay_gradle_java.lua).
 
 local M = {}
 
@@ -55,20 +60,32 @@ function M.merge(lists)
   return merged
 end
 
---- Sends `method` to every client of the current buffer and calls back once with all their results, flattened.
+--- The results of `buf_request_all` responses, flattened into one list: a list result is spliced in, a single one added.
+---@param responses table<integer, table> `{ err?, result? }` per client id
+---@return table[]
+function M.results(responses)
+  local results = {}
+  for _, response in pairs(responses) do
+    if response.result then vim.list_extend(results, vim.islist(response.result) and response.result or { response.result }) end
+  end
+  return results
+end
+
+--- Sends `method` to every client of `bufnr` (the current buffer by default) and calls back once with all their
+--- results, flattened. Returns a function cancelling the requests.
+---
+--- The LSP request seam of the config's own features: replayed tests (tests/replay.lua) replace it to answer from
+--- recorded contracts, so every feature asks the servers through `M.request_all`, never a local copy of it.
 ---@param method string
 ---@param params table
 ---@param callback fun(results: table[])
-local function request_all(method, params, callback)
-  vim.lsp.buf_request_all(0, method, params, function(responses)
-    local results = {}
-    for _, response in pairs(responses) do
-      if response.result then vim.list_extend(results, vim.islist(response.result) and response.result or { response.result }) end
-    end
-    callback(results)
-  end)
+---@param bufnr? integer
+---@return fun()
+function M.request_all(method, params, callback, bufnr)
+  return vim.lsp.buf_request_all(bufnr or 0, method, params, function(responses) callback(M.results(responses)) end)
 end
-M.request_all = request_all
+-- Looked up on every call, so a replaced `M.request_all` reaches the calls inside this module too.
+local function request_all(...) return M.request_all(...) end
 
 --- Calls `callback` with the references of the symbol under the cursor merged with the references of each of its
 --- implementations, once every server has answered.

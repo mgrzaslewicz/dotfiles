@@ -1,0 +1,70 @@
+{
+  "fixture": "maven-mixed",
+  "fixture_hash": "f4bd1063d50fa90feac72bb5ee9ec2425e50448d69f7d804dac11639d46c3faa",
+  "recordings": [
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/core/src/main/kotlin/com/example/mixed/KotlinFormatter.kt"
+        }
+      },
+      "result": [
+        {
+          "children": [
+            {
+              "deprecated": false,
+              "kind": 6,
+              "name": "shout",
+              "range": {
+                "end": {
+                  "character": 60,
+                  "line": 3
+                },
+                "start": {
+                  "character": 4,
+                  "line": 3
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 13,
+                  "line": 3
+                },
+                "start": {
+                  "character": 8,
+                  "line": 3
+                }
+              }
+            }
+          ],
+          "deprecated": false,
+          "kind": 5,
+          "name": "KotlinFormatter",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 21,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "server": "kotlin_lsp",
+  "server_version": "kotlin-lsp/v263.7084.0"
+}

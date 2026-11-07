@@ -1,0 +1,95 @@
+{
+  "fixture": "maven-mixed",
+  "fixture_hash": "f4bd1063d50fa90feac72bb5ee9ec2425e50448d69f7d804dac11639d46c3faa",
+  "recordings": [
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/core/src/main/java/com/example/mixed/JavaGreeter.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.mixed",
+          "range": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "greet(String)",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 7
+                },
+                "start": {
+                  "character": 4,
+                  "line": 5
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 23,
+                  "line": 5
+                },
+                "start": {
+                  "character": 18,
+                  "line": 5
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 5,
+          "name": "JavaGreeter",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 8
+            },
+            "start": {
+              "character": 0,
+              "line": 4
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 24,
+              "line": 4
+            },
+            "start": {
+              "character": 13,
+              "line": 4
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "server": "jdtls",
+  "server_version": "v1.63.0"
+}

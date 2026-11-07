@@ -1,6 +1,7 @@
 -- Copy Reference (`gry`, IntelliJ Ctrl+Alt+Shift+C): the fully qualified name of the declaration around the cursor to
 -- the clipboard, for test filters (`--tests`), logs and review comments. Language-agnostic: built from the server's
--- document symbols and the file's `package` line. Tests: tests/test_copy_reference.lua.
+-- document symbols and the file's `package` line. Tests: tests/test_copy_reference.lua;
+-- replayed on jdtls and kotlin-lsp in tests/test_replay_*.lua.
 --
 -- Format as IntelliJ's: classes (and Kotlin objects) joined by `.`, a member after `#` (`com.x.Outer.Inner#run`), a
 -- top-level function after `.` (`com.x.main`). Method names lose their signature (jdtls names them `run(String)`).

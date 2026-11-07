@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 # Neovim packages, the dotfiles side and the host side.
 #   nvim-packages update  bumps plugins (nvim-pack-lock.json) and Mason pins (lua/custom/tools.lua) to latest in the
-#                         dotfiles repo, runs `mise run check` (and `test:e2e` when a Mason pin moved), commits on the
-#                         current branch. No push. Repo: $NVIM_PACKAGES_REPO, else `chezmoi source-path`.
+#                         dotfiles repo, runs `mise run check` (and when a Mason pin moved first re-records the LSP
+#                         contracts in tests/contracts, then runs `test:e2e`), commits all of it on the current branch.
+#                         Any failure stops it with nothing committed. No push. Repo: $NVIM_PACKAGES_REPO, else
+#                         `chezmoi source-path`.
 #   nvim-packages sync    chezmoi apply ~/.config/nvim, then makes host plugins match the lockfile and Mason match the pins.
 # Driver: dot_config/nvim/lua/custom/packages.lua.
 set -euo pipefail
@@ -25,8 +27,10 @@ cd "$repo"
 config=dot_config/nvim
 lock=$config/nvim-pack-lock.json
 tools=$config/lua/custom/tools.lua
+contracts=$config/tests/contracts
 
-# Refuse when anything outside the two files update writes is dirty: the commit would sweep it in.
+# Refuse when anything outside the two files update writes is dirty: the commit would sweep it in. Contracts count as
+# dirty too: they are rewritten only below, and a leftover one would land in the commit unreviewed.
 dirty=$(git status --porcelain -- . ":!$lock" ":!$tools")
 if [ -n "$dirty" ]; then
   echo 'nvim-packages: uncommitted changes outside the lock and pin files, commit or stash them first:' >&2
@@ -52,13 +56,21 @@ tests=$config/tests/.tests
 if [ -e "$tests" ]; then
   rm -rf "$(cd "$tests" && pwd -P)" "$tests"
 fi
+# A moved Mason pin may change what the servers answer: re-record the contracts the replayed tests use, before `check`
+# (which fails on a contract of another server version). A failed recording stops here, nothing committed.
+pin_moved=
+if ! git diff --quiet -- "$tools"; then
+  pin_moved=1
+  mise run test:record
+fi
+
 mise run check
 
-if ! git diff --quiet -- "$tools"; then
+if [ -n "$pin_moved" ]; then
   mise run test:e2e
 fi
 
-git add -- "$lock" "$tools"
+git add -- "$lock" "$tools" "$contracts"
 msg=$(mktemp)
 {
   echo 'chore(nvim): update packages'

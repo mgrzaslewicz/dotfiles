@@ -1,0 +1,43 @@
+{
+  "fixture": "gradle-mixed",
+  "fixture_hash": "f690dd03ba0deb3153bfc9cd2c8ef97d705c1fbdf6dbcad3aa9b8e38d2fbe4fa",
+  "recordings": [
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/src/main/kotlin/com/example/mixed/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "deprecated": false,
+          "kind": 12,
+          "name": "main",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 6
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 8,
+              "line": 3
+            },
+            "start": {
+              "character": 4,
+              "line": 3
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "server": "kotlin_lsp",
+  "server_version": "kotlin-lsp/v263.7084.0"
+}

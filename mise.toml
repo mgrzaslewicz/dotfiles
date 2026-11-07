@@ -20,6 +20,14 @@ run = "dot_config/nvim/tests/run.sh"
 description = "End-to-end tests with real servers, builds and DAP (dot_config/nvim/tests/e2e); on demand, see the nvim-config skill"
 run = "dot_config/nvim/tests/run.sh --e2e"
 
+[tasks."test:smoke"]
+description = "Smoke suite: the replayed LSP-behavior tests (dot_config/nvim/tests/test_replay_*.lua) against real servers; outside the PR gate, nightly"
+run = "dot_config/nvim/tests/run.sh --smoke"
+
+[tasks."test:record"]
+description = "Re-record the LSP contracts (dot_config/nvim/tests/contracts) from real servers on the fixtures; by hand or from nvim:update"
+run = "dot_config/nvim/tests/run.sh --record"
+
 [tasks."check:format"]
 description = "stylua formatting check for dot_config/nvim"
 dir = "dot_config/nvim"
@@ -42,7 +50,7 @@ description = "Everything a commit to dot_config/nvim must pass: format, tests, 
 run = ["mise run check:format", "mise run test", "mise run check:types"]
 
 [tasks."nvim:update"]
-description = "Bump Neovim plugins and Mason pins to latest, check (e2e if a Mason pin moved), commit on this branch; no push"
+description = "Bump Neovim plugins and Mason pins to latest, check (re-record LSP contracts and e2e if a Mason pin moved), commit on this branch; no push"
 run = 'NVIM_PACKAGES_REPO="$MISE_PROJECT_ROOT" dot_local/bin/executable_nvim-packages update'
 
 [tasks."nvim:sync"]

@@ -1,6 +1,7 @@
 -- Types related to the method under the cursor (`grM`), in one picker: the return type first, then the parameter types,
 -- then the types the body uses. Works on the method's definition and in its body. Composed types count with their
--- parts (`List<Item>` gives List and Item); duplicates are dropped. Tests: tests/test_method_types.lua.
+-- parts (`List<Item>` gives List and Item); duplicates are dropped. Tests: tests/test_method_types.lua;
+-- replayed on real server answers in tests/test_replay_gradle_kotlin.lua and tests/test_replay_maven_java.lua.
 --
 -- The method is the innermost method symbol around the cursor. Its text is scanned for identifiers (see `identifiers`),
 -- each name once. Every identifier is resolved twice: go-to-definition, kept when it lands on a class-like symbol, and

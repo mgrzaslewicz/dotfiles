@@ -1,0 +1,635 @@
+{
+  "fixture": "gradle-kotlin",
+  "fixture_hash": "e44a9ac144399ce01208d20835aa3e4967846fbc2697999969d7a84ef2576cf1",
+  "recordings": [
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 15,
+          "line": 2
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Formal.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 18,
+              "line": 2
+            },
+            "start": {
+              "character": 10,
+              "line": 2
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 22,
+          "line": 10
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 20,
+              "line": 16
+            },
+            "start": {
+              "character": 11,
+              "line": 16
+            }
+          },
+          "uri": "jrt://${state}/data/nvim/mason/packages/kotlin-lsp/kotlin-server-263.7084.0/jbr!/java.base/java/util/ArrayList.class"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 28,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 25,
+              "line": 1487
+            },
+            "start": {
+              "character": 19,
+              "line": 1487
+            }
+          },
+          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 37,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 54,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 3
+            },
+            "start": {
+              "character": 8,
+              "line": 3
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/definition",
+      "params": {
+        "position": {
+          "character": 60,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 17,
+              "line": 4
+            },
+            "start": {
+              "character": 13,
+              "line": 4
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "deprecated": false,
+          "kind": 12,
+          "name": "greeting",
+          "range": {
+            "end": {
+              "character": 65,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 4
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 12,
+              "line": 4
+            },
+            "start": {
+              "character": 4,
+              "line": 4
+            }
+          }
+        },
+        {
+          "deprecated": false,
+          "kind": 12,
+          "name": "main",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 9
+            },
+            "start": {
+              "character": 0,
+              "line": 6
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 8,
+              "line": 6
+            },
+            "start": {
+              "character": 4,
+              "line": 6
+            }
+          }
+        },
+        {
+          "deprecated": false,
+          "kind": 7,
+          "name": "probe",
+          "range": {
+            "end": {
+              "character": 41,
+              "line": 10
+            },
+            "start": {
+              "character": 0,
+              "line": 10
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 9,
+              "line": 10
+            },
+            "start": {
+              "character": 4,
+              "line": 10
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Formal.kt"
+        }
+      },
+      "result": [
+        {
+          "children": [
+            {
+              "deprecated": false,
+              "kind": 6,
+              "name": "greet",
+              "range": {
+                "end": {
+                  "character": 66,
+                  "line": 4
+                },
+                "start": {
+                  "character": 4,
+                  "line": 3
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 22,
+                  "line": 4
+                },
+                "start": {
+                  "character": 17,
+                  "line": 4
+                }
+              }
+            }
+          ],
+          "deprecated": false,
+          "kind": 5,
+          "name": "Formal",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 5
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 12,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+        }
+      },
+      "result": [
+        {
+          "children": [
+            {
+              "deprecated": false,
+              "kind": 13,
+              "name": "greeting",
+              "range": {
+                "end": {
+                  "character": 42,
+                  "line": 2
+                },
+                "start": {
+                  "character": 14,
+                  "line": 2
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 34,
+                  "line": 2
+                },
+                "start": {
+                  "character": 26,
+                  "line": 2
+                }
+              }
+            },
+            {
+              "deprecated": false,
+              "kind": 9,
+              "name": "Greeter",
+              "range": {
+                "end": {
+                  "character": 43,
+                  "line": 2
+                },
+                "start": {
+                  "character": 13,
+                  "line": 2
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 43,
+                  "line": 2
+                },
+                "start": {
+                  "character": 13,
+                  "line": 2
+                }
+              }
+            },
+            {
+              "deprecated": false,
+              "kind": 6,
+              "name": "greet",
+              "range": {
+                "end": {
+                  "character": 56,
+                  "line": 3
+                },
+                "start": {
+                  "character": 4,
+                  "line": 3
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 13,
+                  "line": 3
+                },
+                "start": {
+                  "character": 8,
+                  "line": 3
+                }
+              }
+            }
+          ],
+          "deprecated": false,
+          "kind": 5,
+          "name": "Greeter",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 13,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
+        }
+      },
+      "result": [
+        {
+          "children": [
+            {
+              "deprecated": false,
+              "kind": 6,
+              "name": "greet",
+              "range": {
+                "end": {
+                  "character": 35,
+                  "line": 3
+                },
+                "start": {
+                  "character": 4,
+                  "line": 3
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 13,
+                  "line": 3
+                },
+                "start": {
+                  "character": 8,
+                  "line": 3
+                }
+              }
+            }
+          ],
+          "deprecated": false,
+          "kind": 11,
+          "name": "Greeting",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 4
+            },
+            "start": {
+              "character": 0,
+              "line": 2
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 18,
+              "line": 2
+            },
+            "start": {
+              "character": 10,
+              "line": 2
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+        }
+      },
+      "result": []
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
+          "character": 8,
+          "line": 3
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 22,
+              "line": 4
+            },
+            "start": {
+              "character": 17,
+              "line": 4
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Formal.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/typeDefinition",
+      "params": {
+        "position": {
+          "character": 28,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 25,
+              "line": 1487
+            },
+            "start": {
+              "character": 19,
+              "line": 1487
+            }
+          },
+          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/typeDefinition",
+      "params": {
+        "position": {
+          "character": 37,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 13,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/typeDefinition",
+      "params": {
+        "position": {
+          "character": 54,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 25,
+              "line": 1487
+            },
+            "start": {
+              "character": 19,
+              "line": 1487
+            }
+          },
+          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/typeDefinition",
+      "params": {
+        "position": {
+          "character": 60,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 25,
+              "line": 1487
+            },
+            "start": {
+              "character": 19,
+              "line": 1487
+            }
+          },
+          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+        }
+      ]
+    }
+  ],
+  "server": "kotlin_lsp",
+  "server_version": "kotlin-lsp/v263.7084.0"
+}

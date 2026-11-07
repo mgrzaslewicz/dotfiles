@@ -25,9 +25,13 @@ in the header comment of its Lua file.
 | Python LSP (pyright) enabled and rooted at the project; navigation across packages not yet covered by a layer B fixture | `init.lua`, `lua/custom/tools.lua` | `test_python.lua`, `test_tools.lua` |
 | Rust LSP (rust-analyzer) enabled and rooted at the Cargo workspace; no layer B fixture yet | `init.lua`, `lua/custom/tools.lua` | `test_rust.lua`, `test_tools.lua` |
 | Rust debug: launch the crate's binary (codelldb), `<leader>dc` | `lua/custom/plugins/debug.lua`, `lua/custom/rust.lua` | `test_rust.lua` |
-| Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H), `grs` go to super method or supertypes (Ctrl+U) | `lua/custom/implementations.lua` | `test_implementations.lua` |
-| Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua` |
-| Next/previous usage in the buffer `]r`/`[r` (F3 on highlighted usages) | `lua/custom/usages.lua` | `test_usages.lua` |
+| Navigation across overrides: `grR` references with implementations, `gri`/`grd` resolve an override to the interface method, `grc` callers include those of the overridden method (Ctrl+Alt+H), `grs` go to super method or supertypes (Ctrl+U) | `lua/custom/implementations.lua` | `test_implementations.lua`, `test_replay_gradle_java.lua`, `test_replay_gradle_kotlin.lua` |
+| Copy Reference `gry` (Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around the cursor to the clipboard | `lua/custom/copy_reference.lua` | `test_copy_reference.lua`, `test_replay_*.lua` |
+| Next/previous usage in the buffer `]r`/`[r` (F3 on highlighted usages) | `lua/custom/usages.lua` | `test_usages.lua`, `test_replay_gradle_java.lua` |
+| Types of a method `grM` (return, parameter and body types) | `lua/custom/method_types.lua` | `test_method_types.lua`, `test_replay_gradle_kotlin.lua`, `test_replay_maven_java.lua` |
+| Workspace symbols `gW`, Go to Class `gC` | `lua/custom/workspace_symbols.lua` | `test_workspace_symbols.lua`, `test_replay_gradle_java.lua` |
+| JDK and library sources from Kotlin go-to-definition (`jrt:`/`jar:` URIs) | `lua/custom/jvm/jdk_source.lua` | `test_jdk_source.lua`, `test_replay_gradle_kotlin.lua`, `e2e/test_gradle_kotlin.lua` |
+| Replayed LSP contracts: LSP-behavior tests on recorded jdtls/kotlin-lsp answers, smoke suite, recording | `tests/replay.lua`, `tests/contracts/` | `test_replay.lua`, `e2e/test_record.lua` |
 | Next/previous error `]e`/`[e`, skipping warnings (F2 / Shift+F2) | `init.lua` | `test_diagnostics.lua` |
 | Run tests (JUnit 5, Java and Kotlin on Gradle and Maven), results in the gutter | `lua/custom/plugins/neotest.lua` | `test_neotest.lua`, `e2e/test_gradle_*.lua`, `e2e/test_maven_mixed.lua` |
 

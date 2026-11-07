@@ -6,16 +6,27 @@
 #   tests/run.sh tests/test_x.lua        one file
 #   tests/run.sh --e2e                   layer B (real servers, builds, DAP): tests/e2e/test_*.lua, state in tests/.tests-e2e
 #   tests/run.sh --e2e tests/e2e/test_x.lua
+#   tests/run.sh --smoke                 smoke suite: the replayed tests (tests/test_replay_*.lua) against real servers,
+#                                        state shared with layer B
+#   tests/run.sh --record                smoke, then rewrites the contracts in tests/contracts (see tests/replay.lua)
+#   tests/run.sh --smoke|--record tests/test_replay_x.lua
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 root=$PWD
 
-layer=tests name=.tests
-if [ "${1:-}" = --e2e ]; then
-  shift
-  layer=tests/e2e name=.tests-e2e
-fi
+layer=tests name=.tests live=
+case "${1:-}" in
+  --e2e)
+    shift
+    layer=tests/e2e name=.tests-e2e
+    ;;
+  --smoke | --record)
+    live=${1#--}
+    shift
+    layer=tests/e2e name=.tests-e2e
+    ;;
+esac
 
 # Real state lives in a short per-checkout dir; tests/$name is a symlink to it. Neovim's luac cache file
 # names are the escaped plugin paths, which overflow ENAMETOOLONG (255 bytes) under long checkout paths.
@@ -46,10 +57,18 @@ else
   nvim --headless -c 'luafile tests/e2e/bootstrap.lua'
 fi
 
+# replay (layer A, layer B), smoke or record: how the replayed tests get their LSP answers (tests/replay.lua).
+export CONTRACT_MODE=${live:-replay}
+if [ -n "$live" ]; then
+  run="require('tests.replay').run_live('${1:-}')"
+else
+  run="require('tests.helpers').run('$layer', '${1:-}')"
+fi
+
 # Any error outside a test case would leave headless nvim running; turn it into a failed run.
 # Headless nvim treats SIGINT as an interrupt, not a reason to exit, so Ctrl-C is forwarded as SIGTERM.
 nvim --headless --noplugin -u tests/minimal_init.lua \
-  -c "lua local ok, err = pcall(function() require('tests.helpers').run('$layer', '${1:-}') end) if not ok then io.stderr:write(err, '\\n') vim.cmd 'cquit 1' end" &
+  -c "lua local ok, err = pcall(function() $run end) if not ok then io.stderr:write(err, '\\n') vim.cmd 'cquit 1' end" &
 runner=$!
 trap 'kill -TERM "$runner" 2>/dev/null; exit 130' INT TERM
 wait "$runner"

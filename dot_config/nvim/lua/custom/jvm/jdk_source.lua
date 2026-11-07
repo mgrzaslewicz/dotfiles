@@ -2,7 +2,8 @@
 --  - `jar:file:///…/src.zip!/java.base/…/X.java`: JDK sources (or `jrt:` class files when no src.zip is known)
 --  - `jar:file:///…-sources.jar!/…/X.kt`: library sources from Gradle's cache
 -- The text is read from the zip with `unzip -p`, and the buffer is read-only. Class files inside jars have no source
--- here and show a one-line note. Tests: tests/test_jdk_source.lua; e2e in tests/e2e/test_gradle_kotlin.lua.
+-- here and show a one-line note. Tests: tests/test_jdk_source.lua; replayed on kotlin-lsp in
+-- tests/test_replay_gradle_kotlin.lua; the buffer's source and attach in tests/e2e/test_gradle_kotlin.lua.
 -- Known limit: the JDK source is the one on this machine ($JAVA_HOME, else `java` on PATH), not kotlin_lsp's JDK.
 
 local M = {}
@@ -113,10 +114,8 @@ end
 --- buffer, so when the server has no symbols the declarations are listed from the buffer's Java text instead.
 function M.document_symbols()
   local buf = vim.api.nvim_get_current_buf()
-  vim.lsp.buf_request_all(buf, 'textDocument/documentSymbol', { textDocument = vim.lsp.util.make_text_document_params(buf) }, function(results)
-    for _, r in pairs(results) do
-      if r.result and not vim.tbl_isempty(r.result) then return require('telescope.builtin').lsp_document_symbols() end
-    end
+  require('custom.implementations').request_all('textDocument/documentSymbol', { textDocument = vim.lsp.util.make_text_document_params(buf) }, function(symbols)
+    if #symbols > 0 then return require('telescope.builtin').lsp_document_symbols() end
     local items = M.declarations(table.concat(vim.api.nvim_buf_get_lines(buf, 0, -1, false), '\n'))
     if #items == 0 then return vim.notify('No declarations found in the JDK source', vim.log.levels.WARN) end
     vim.ui.select(items, {
@@ -125,7 +124,7 @@ function M.document_symbols()
     }, function(item)
       if item then vim.api.nvim_win_set_cursor(0, { item.lnum, item.col }) end
     end)
-  end)
+  end, buf)
 end
 
 --- Attaches the running kotlin_lsp to a source buffer, so go-to-definition works inside it. kotlin_lsp's root_dir cannot
@@ -207,18 +206,22 @@ function M.goto_definition()
   local buf = vim.api.nvim_get_current_buf()
   local word = vim.fn.expand '<cword>'
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
-  vim.lsp.buf_request_all(buf, 'textDocument/definition', { textDocument = params.textDocument, position = params.position }, function(results)
-    for _, r in pairs(results) do
-      -- An empty list is truthy in Lua, so take the first location explicitly.
-      local loc = vim.islist(r.result) and r.result[1] or (not vim.islist(r.result) and r.result) or nil
-      if loc then return vim.lsp.util.show_document(loc, 'utf-16', { reuse_win = true }) end
-    end
-    local zip = zip_of(vim.api.nvim_buf_get_name(buf))
-    local path = M.class_path(word, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
-    local entry = zip and path and M.find_entry(list_zip(zip), path)
-    if not entry then return vim.notify(('No definition of %s in the JDK sources'):format(word), vim.log.levels.WARN) end
-    vim.cmd.edit(vim.fn.fnameescape(('jar://%s!/%s'):format(zip, entry)))
-  end)
+  require('custom.implementations').request_all(
+    'textDocument/definition',
+    { textDocument = params.textDocument, position = params.position },
+    function(locations)
+      if locations[1] then
+        vim.lsp.util.show_document(locations[1], 'utf-16', { reuse_win = true })
+        return
+      end
+      local zip = zip_of(vim.api.nvim_buf_get_name(buf))
+      local path = M.class_path(word, vim.api.nvim_buf_get_lines(buf, 0, -1, false))
+      local entry = zip and path and M.find_entry(list_zip(zip), path)
+      if not entry then return vim.notify(('No definition of %s in the JDK sources'):format(word), vim.log.levels.WARN) end
+      vim.cmd.edit(vim.fn.fnameescape(('jar://%s!/%s'):format(zip, entry)))
+    end,
+    buf
+  )
 end
 
 --- References of the word under the cursor in a dependency source buffer. kotlin-lsp answers a Java declaration inside a
@@ -228,10 +231,8 @@ function M.references()
   local buf = vim.api.nvim_get_current_buf()
   local word = vim.fn.expand '<cword>'
   local params = vim.tbl_extend('force', vim.lsp.util.make_position_params(0, 'utf-16'), { context = { includeDeclaration = true } })
-  vim.lsp.buf_request_all(buf, 'textDocument/references', params, function(results)
-    for _, r in pairs(results) do
-      if r.result and not vim.tbl_isempty(r.result) then return require('telescope.builtin').lsp_references() end
-    end
+  require('custom.implementations').request_all('textDocument/references', params, function(references)
+    if #references > 0 then return require('telescope.builtin').lsp_references() end
     -- An annotation's usages are written `@Word`, so that is searched instead of the bare word.
     local line = vim.api.nvim_get_current_line()
     local annotation = line:find('@interface%s+' .. word .. '%f[^%w_]') or line:find('@' .. word .. '%f[^%w_]')
@@ -242,7 +243,7 @@ function M.references()
       cwd = build and build.root or vim.fn.getcwd(),
       prompt_title = ('No LSP references to %s; word search'):format(word),
     }
-  end)
+  end, buf)
 end
 
 --- Reads `jrt:` and `jar:` buffers from their source zip, and fixes nvim-jdtls's `*.class` reader for them (below).

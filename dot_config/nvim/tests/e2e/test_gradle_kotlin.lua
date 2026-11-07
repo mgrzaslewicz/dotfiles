@@ -12,30 +12,14 @@ T['gradle-kotlin | LSP | kotlin_lsp attaches at the build root, resolves across 
   eq(e2e.errors(ctx.child), {})
 end
 
--- kotlin_lsp answers a JDK class with a `jrt:` URI into its own bundled JDK; the source comes from the project's JDK.
-T['gradle-kotlin | LSP | go to definition of a JDK class opens its source (jrt: URI)'] = function()
+-- kotlin_lsp answers go to definition of a JDK class with a `jrt:` URI into its own bundled JDK (replayed in
+-- tests/test_replay_gradle_kotlin.lua). Such a buffer reads its source from this machine's JDK, and gets the running
+-- kotlin_lsp attached for navigation inside it.
+T['gradle-kotlin | LSP | a jrt: JDK class buffer shows the local JDK source, with kotlin_lsp attached'] = function()
   ctx.child.cmd 'edit app/src/main/kotlin/com/example/app/Main.kt'
   e2e.wait(ctx.child, 'attach', 'kotlin_lsp attached', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
-  e2e.definition_reaches(ctx.child, 'greet', 'lib/src/main/kotlin/com/example/lib/Greeter.kt')
-  ctx.child.lua [=[
-    vim.api.nvim_buf_set_lines(0, -1, -1, false, { 'val probe = java.util.ArrayList<String>()' })
-    _G.e2e = _G.e2e or {}
-    local pos = vim.fn.searchpos('\\<ArrayList\\>', 'nw')
-    local params = { textDocument = vim.lsp.util.make_text_document_params(0), position = { line = pos[1] - 1, character = pos[2] - 1 } }
-    _G.e2e.jdk = { ok = false }
-    vim.lsp.buf_request_all(0, 'textDocument/definition', params, function(results)
-      for _, r in pairs(results) do
-        local loc = vim.islist(r.result) and r.result[1] or r.result
-        if loc and loc.uri and vim.startswith(loc.uri, 'jrt:') then
-          vim.lsp.util.show_document(loc, 'utf-16', { reuse_win = true })
-          local text = table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\n')
-          _G.e2e.jdk.ok = vim.startswith(vim.api.nvim_buf_get_name(0), 'jrt:') and text:find('public class ArrayList', 1, true) ~= nil
-        end
-      end
-    end)
-  ]=]
-  e2e.wait(ctx.child, 'index', 'JDK source of ArrayList opened', '_G.e2e.jdk.ok')
-  -- Navigation from inside the JDK source needs the server attached to that buffer too.
+  ctx.child.cmd 'edit jrt:///kotlin-lsp/jbr!/java.base/java/util/ArrayList.class'
+  eq(ctx.child.lua_get "table.concat(vim.api.nvim_buf_get_lines(0, 0, -1, false), '\\n'):find('public class ArrayList', 1, true) ~= nil", true)
   e2e.wait(ctx.child, 'attach', 'kotlin_lsp attached to JDK source', "#vim.lsp.get_clients { bufnr = 0, name = 'kotlin_lsp' } > 0")
 end
 

@@ -12,10 +12,12 @@ skill list: `dot_config/nvim/INTELLIJ_TRANSITION.md`.
 
 | Command | What |
 |---|---|
-| `mise run test` | all tests (~5 s); `mise run test -- tests/test_x.lua` for one file (path relative to `dot_config/nvim`) |
+| `mise run test` | layer A, all tests (~30 s); `mise run test -- tests/test_x.lua` for one file (path relative to `dot_config/nvim`) |
 | `mise run check` | everything a commit must pass: `stylua --check`, tests, lua-language-server diagnostics (~20 s) |
 | `mise run test:e2e` | layer B, real servers/builds/DAP (`tests/e2e/`); on demand, see below. `-- tests/e2e/test_x.lua` for one file |
-| `mise run nvim:update` | bump plugins (lockfile) and Mason pins to latest, `check` (+ e2e if a Mason pin moved), commit on the current branch; no push. Refuses on unrelated dirty files |
+| `mise run test:smoke` | smoke suite: the replayed tests (`tests/test_replay_*.lua`) against real servers; nightly, outside the PR gate. `-- tests/test_replay_x.lua` for one file |
+| `mise run test:record` | re-record the contracts (`tests/contracts/`) from real servers; by hand, or from `nvim:update` |
+| `mise run nvim:update` | bump plugins (lockfile) and Mason pins to latest; if a Mason pin moved, `test:record` first; `check` (+ e2e if a Mason pin moved), commit pins and contracts on the current branch; no push. Refuses on unrelated dirty files |
 | `mise run nvim:sync` | make this host match the dotfiles: `chezmoi apply ~/.config/nvim`, then lockfile revisions and Mason pins |
 | `mise run setup` | once per clone: repo-local `core.hooksPath=.githooks` |
 
@@ -52,9 +54,31 @@ never committed as-is; kept work is rebuilt test-first. Features without tests y
 - In a `child.lua [[ … ]]` chunk, `]]` inside the code ends the string early — use `[=[ … ]=]`. A syntax error
   in a test file is not a red test: check that the failure message is the one you expect.
 
+## Replayed LSP behavior (`tests/test_replay_<fixture>.lua`, `tests/contracts/`)
+
+Terms in `GLOSSARY.md`, decision in `docs/adr/0001-…`. A feature's behavior on real server answers (implementations,
+usages, method types, JDK source, copy reference, workspace symbols) is tested in layer A by replaying a contract:
+the answers jdtls / kotlin-lsp gave on a fixture, recorded once and committed. `tests/replay.lua` has the format and
+the session.
+
+- Seam: features ask the servers only through `require('custom.implementations').request_all(method, params,
+  callback, bufnr?)`; replay replaces it in the child. A new feature that talks LSP goes through it too.
+- One file per fixture: `replay.session(fixture, { server = { file, symbol, target } })` → `T, ctx`, one child for
+  the file; the server table says how a live run knows the server has indexed (go-to-definition of `symbol` in
+  `file` reaches `target`). `ctx.edit(path)`, `ctx.cursor(text, offset?)`, `ctx.wait(what, condition)`. Call the
+  feature's function, wait for its callback or its effect, assert what the user gets.
+- Add a case: write it, `mise run test:smoke -- tests/test_replay_x.lua` until it is green on the real server (the
+  expectations are the server's real answers), then `mise run test:record`, then `mise run test` green with no
+  server. A request without a recording fails the test, naming it; a fixture changed since the recording fails the
+  file, saying to re-record.
+- Contracts carry the Mason pin of their server (`test_replay.lua` checks it) and a hash of the fixture; review a
+  re-recording's diff like code. The recording is all-or-nothing per contract: a failed request or case keeps it.
+
 ## Layer B: end-to-end (`tests/e2e/`)
 
-Real jdtls, kotlin-lsp, Gradle, Maven, neotest and DAP on fixture projects. Not part of `check` or the hook.
+Real jdtls, kotlin-lsp, Gradle, Maven, neotest and DAP on fixture projects: build, lifecycle (attach, root,
+indexing, diagnostics), refactorings, neotest and DAP. Behavior over LSP answers is replayed in layer A instead (see
+above). Not part of `check` or the hook.
 
 - **Run it** after `vim.pack.update()`, after bumping a Mason pin (`lua/custom/tools.lua`) or the JDK, and when
   changing LSP, DAP, test or task wiring. First run downloads ~1.7 GB into `tests/.tests-e2e/` (about a minute

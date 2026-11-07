@@ -1,0 +1,460 @@
+{
+  "fixture": "gradle-java",
+  "fixture_hash": "f5b2e59b431b491861af338c313a1110d23901fa49cdde9f920e706b2a9bdbf4",
+  "recordings": [
+    {
+      "method": "textDocument/documentHighlight",
+      "params": {
+        "position": {
+          "character": 15,
+          "line": 7
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": [
+        {
+          "kind": 3,
+          "range": {
+            "end": {
+              "character": 21,
+              "line": 7
+            },
+            "start": {
+              "character": 15,
+              "line": 7
+            }
+          }
+        },
+        {
+          "kind": 2,
+          "range": {
+            "end": {
+              "character": 42,
+              "line": 8
+            },
+            "start": {
+              "character": 36,
+              "line": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.app",
+          "range": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : void",
+              "kind": 6,
+              "name": "main(String[])",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 9
+                },
+                "start": {
+                  "character": 4,
+                  "line": 6
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 27,
+                  "line": 6
+                },
+                "start": {
+                  "character": 23,
+                  "line": 6
+                }
+              }
+            },
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "greeting(String)",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 13
+                },
+                "start": {
+                  "character": 4,
+                  "line": 11
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 26,
+                  "line": 11
+                },
+                "start": {
+                  "character": 18,
+                  "line": 11
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 5,
+          "name": "Main",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 14
+            },
+            "start": {
+              "character": 0,
+              "line": 5
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 17,
+              "line": 5
+            },
+            "start": {
+              "character": 13,
+              "line": 5
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.model",
+          "range": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "greet(String)",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 8
+                },
+                "start": {
+                  "character": 4,
+                  "line": 5
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 23,
+                  "line": 6
+                },
+                "start": {
+                  "character": 18,
+                  "line": 6
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 5,
+          "name": "Formal",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 9
+            },
+            "start": {
+              "character": 0,
+              "line": 4
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 19,
+              "line": 4
+            },
+            "start": {
+              "character": 13,
+              "line": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.model",
+          "range": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 26,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "greet(String)",
+              "range": {
+                "end": {
+                  "character": 30,
+                  "line": 5
+                },
+                "start": {
+                  "character": 4,
+                  "line": 5
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 16,
+                  "line": 5
+                },
+                "start": {
+                  "character": 11,
+                  "line": 5
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 11,
+          "name": "Greeting",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 6
+            },
+            "start": {
+              "character": 0,
+              "line": 4
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 25,
+              "line": 4
+            },
+            "start": {
+              "character": 17,
+              "line": 4
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
+          "character": 11,
+          "line": 5
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 6
+            },
+            "start": {
+              "character": 18,
+              "line": 6
+            }
+          },
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/references",
+      "params": {
+        "context": {
+          "includeDeclaration": true
+        },
+        "position": {
+          "character": 11,
+          "line": 5
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 6
+            },
+            "start": {
+              "character": 18,
+              "line": 6
+            }
+          },
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        },
+        {
+          "range": {
+            "end": {
+              "character": 16,
+              "line": 5
+            },
+            "start": {
+              "character": 11,
+              "line": 5
+            }
+          },
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/references",
+      "params": {
+        "context": {
+          "includeDeclaration": true
+        },
+        "position": {
+          "character": 18,
+          "line": 6
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 23,
+              "line": 6
+            },
+            "start": {
+              "character": 18,
+              "line": 6
+            }
+          },
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      ]
+    },
+    {
+      "method": "workspace/symbol",
+      "params": {
+        "query": "Greeting"
+      },
+      "result": [
+        {
+          "containerName": "com.example.model",
+          "kind": 11,
+          "location": {
+            "range": {
+              "end": {
+                "character": 25,
+                "line": 4
+              },
+              "start": {
+                "character": 17,
+                "line": 4
+              }
+            },
+            "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+          },
+          "name": "Greeting"
+        }
+      ]
+    }
+  ],
+  "server": "jdtls",
+  "server_version": "v1.63.0"
+}

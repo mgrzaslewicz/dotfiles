@@ -11,23 +11,6 @@ T['maven-java | LSP | jdtls attaches at the build root, resolves Lombok getters,
   eq(e2e.errors(ctx.child), {})
 end
 
-T['maven-java | LSP | grM answers on a method calling one without a result type, without an error message'] = function()
-  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
-  e2e.expect_jdtls(ctx.child, ctx.project)
-  e2e.definition_reaches(ctx.child, 'getName', 'model/src/main/java/com/example/model/Person.java')
-  ctx.child.cmd 'messages clear'
-  ctx.child.lua [[
-    vim.fn.cursor(vim.fn.search 'println', 1)
-    _G.e2e.method_types = nil
-    require('custom.method_types').collect(function(types)
-      _G.e2e.method_types = vim.tbl_map(function(t) return vim.fs.basename(vim.uri_to_fname(t.uri)) end, types or {})
-    end)
-  ]]
-  e2e.wait(ctx.child, 'edit', 'method types collected', '_G.e2e.method_types ~= nil')
-  eq(vim.tbl_contains(ctx.child.lua_get '_G.e2e.method_types', 'Person.java'), true)
-  eq(ctx.child.lua_get "vim.api.nvim_exec2('messages', { output = true }).output", '')
-end
-
 T['maven-java | tasks | javac errors from `mvn compile` land in quickfix, once each'] = function()
   local items = e2e.compile_errors(
     ctx.child,

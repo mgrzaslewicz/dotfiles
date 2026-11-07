@@ -5,7 +5,8 @@
 -- of the JDK and libraries: seconds of server time and Lua work each time the picker opens. Here an empty prompt
 -- sends nothing, and only one word goes to the server (see `query`); the whole prompt then fuzzy-filters the
 -- results, whose ordinal includes the file path / jdt:// URI and so the package.
--- Tests: tests/test_workspace_symbols.lua.
+-- Tests: tests/test_workspace_symbols.lua; replayed on jdtls in tests/test_replay_gradle_java.lua. Items use utf-16
+-- positions, like every feature of the config (jdtls and kotlin-lsp both use it).
 --
 -- Queries under 3 characters are not sent either: kotlin-lsp answers `S` with 10,687 symbols in 13.6s and `Sc`
 -- with 4,602 in 5.1s (measured on agentic-marketplace-api; `Sco` takes 0.5s, `Scout` 15ms). The picker sends one
@@ -40,6 +41,21 @@ end
 ---@return string
 function M.title(name) return ('%s (type %d+ characters)'):format(name, MIN_QUERY) end
 
+--- Asks the servers of `bufnr` for the workspace symbols matching `query` and calls back with them as quickfix items
+--- (text `[Kind] name`, filename, lnum, col). Returns a function cancelling the request.
+---@param bufnr integer
+---@param query string
+---@param callback fun(items: table[])
+---@return fun()
+function M.symbols(bufnr, query, callback)
+  return require('custom.implementations').request_all(
+    'workspace/symbol',
+    { query = query },
+    function(symbols) callback(vim.lsp.util.symbols_to_items(symbols, bufnr, 'utf-16')) end,
+    bufnr
+  )
+end
+
 ---@param opts? table telescope picker options, plus `symbols` (kinds to keep, as for builtin.lsp_*_symbols)
 ---@param prompt_title string
 function M.picker(opts, prompt_title)
@@ -58,13 +74,8 @@ function M.picker(opts, prompt_title)
           if not query then return {} end
           local tx, rx = channel.oneshot()
           cancel()
-          cancel = vim.lsp.buf_request_all(bufnr, 'workspace/symbol', { query = query }, tx)
-          local items = {}
-          for client_id, res in pairs(rx()) do
-            local client = vim.lsp.get_client_by_id(client_id)
-            if res.result and client then vim.list_extend(items, vim.lsp.util.symbols_to_items(res.result, bufnr, client.offset_encoding)) end
-          end
-          return require('telescope.utils').filter_symbols(items, opts) or {}
+          cancel = M.symbols(bufnr, query, tx)
+          return require('telescope.utils').filter_symbols(rx(), opts) or {}
         end,
       },
       sorter = conf.generic_sorter(opts),

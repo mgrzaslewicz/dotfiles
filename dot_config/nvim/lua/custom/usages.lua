@@ -1,7 +1,7 @@
 -- `]r` / `[r`: next / previous usage, in the buffer, of the symbol under the cursor (IntelliJ highlight usages, then
 -- F3 / Shift+F3). The usages are the server's document highlights (textDocument/documentHighlight), the ones shown on
 -- CursorHold; the jump wraps around the ends of the buffer and takes a count. Language-agnostic.
--- Tests: tests/test_usages.lua.
+-- Tests: tests/test_usages.lua; replayed on jdtls in tests/test_replay_gradle_java.lua.
 
 local M = {}
 
