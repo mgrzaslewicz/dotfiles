@@ -60,6 +60,7 @@ RUN mise use --global npm@latest
 RUN mise use --global python@latest
 RUN mise use --global aqua:colbymchenry/codegraph
 RUN mise use --global claude@latest
+RUN mise use --global gh@latest
 RUN mise install
 RUN node --version
 RUN npm --version
@@ -67,7 +68,8 @@ RUN python3 --version
 RUN mise reshim \
     && command -v claude \
     && claude --version \
-    && command -v codegraph
+    && command -v codegraph \
+    && gh --version
 RUN rm -rf /tmp/* /var/tmp/* "${MISE_CACHE_DIR}"
 
 # Create a non-root claude-user user

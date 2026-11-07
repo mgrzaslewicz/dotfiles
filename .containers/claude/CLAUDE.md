@@ -16,6 +16,8 @@ Running in containerized environment.
   - Public registries only (docker.io, ghcr.io, quay.io, etc.) — no private registry credentials are configured
   - Single-identity mapping only (no subuid range, no newuidmap): once running containers work again, a container you run here won't get its own separate root user — its "root" is just this same claude-user identity. Fine for a normal build/run/test cycle; a Dockerfile that relies on `USER` switching to a genuinely different uid, or that needs many distinct uids, won't work as expected.
 
+- **gh**: GitHub CLI, authenticated via `GH_TOKEN`, loaded from the host's `~/.claude-toolbox.env`. Also wired as git's credential helper, so `git` over `https://github.com/...` works too. If `GH_TOKEN` is unset, the host file is missing it — don't try `gh auth login` here; tell the user to add `GH_TOKEN=...` to `~/.claude-toolbox.env` on the host and restart the container.
+
 ## Missing tools in the container
 
 - Don't just accept a tool is missing

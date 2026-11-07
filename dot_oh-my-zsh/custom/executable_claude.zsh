@@ -105,6 +105,21 @@ claude-toolbox() {
   fi
   SSH_MOUNT_ARGS+=(--env "GIT_SSH_COMMAND=ssh -o UserKnownHostsFile=/home/claude-user/.ssh/known_hosts:/home/claude-user/.ssh/known_hosts.local -o StrictHostKeyChecking=accept-new")
 
+  # Container env (secrets and anything else) from a host-side file, one
+  # KEY=value per line, `#` comments -- e.g. GH_TOKEN=<fine-grained PAT> for
+  # `gh` (and git over HTTPS, via gh's credential helper set up in
+  # setup-and-run-claude.sh). A file rather than host env vars so the values
+  # live in one place outside the dotfiles repo, and podman reads them
+  # itself, so secrets never show up in podman's argv / `ps`. Values are
+  # taken literally (no quote stripping, no shell expansion). Keep it
+  # chmod 600. Absent file: skipped, same "degrade, don't fail" precedent as
+  # the SSH agent.
+  ENV_FILE_ARGS=()
+  CLAUDE_TOOLBOX_ENV_FILE="${HOME}/.claude-toolbox.env"
+  if [ -f "$CLAUDE_TOOLBOX_ENV_FILE" ]; then
+    ENV_FILE_ARGS+=(--env-file "$CLAUDE_TOOLBOX_ENV_FILE")
+  fi
+
   # Nested rootless podman inside the toolbox (build/run/test containers)
   # needs /dev/fuse for fuse-overlayfs-backed storage. Guarded like the SSH
   # mounts above: skip rather than fail container start on a host that
@@ -181,6 +196,7 @@ claude-toolbox() {
     "${WORKTREE_MOUNT_ARGS[@]}" \
     "${GIT_ENV_ARGS[@]}" \
     "${SSH_MOUNT_ARGS[@]}" \
+    "${ENV_FILE_ARGS[@]}" \
     "${FUSE_DEVICE_ARGS[@]}" \
     "${WORKMUX_RELAY_ARGS[@]}" \
     --workdir "$PWD" \

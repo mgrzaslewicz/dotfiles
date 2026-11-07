@@ -41,6 +41,16 @@ done
 
 mise reshim
 
+# GH_TOKEN comes from the host's ~/.claude-toolbox.env (see ENV_FILE_ARGS in
+# dot_local/bin/executable_claude); gh itself picks it up directly. This also
+# lets plain `git push/pull` over https://github.com use it, via gh as git's
+# credential helper. ~/.gitconfig is in the container's own ephemeral layer
+# (not a volume), so this is rewritten fresh each start and never reaches the
+# host's gitconfig. Best-effort under `set -e`.
+if [ -n "${GH_TOKEN:-}" ]; then
+    gh auth setup-git >/dev/null 2>&1 || true
+fi
+
 # ~/.claude.json lives directly under $HOME, not under ~/.claude, so it needs
 # its own volume-backed directory; symlink the expected path into it.
 if [ ! -L "${HOME}/.claude.json" ]; then
