@@ -1,0 +1,3 @@
+# Replay recorded LSP responses in layer A instead of running real servers for LSP-behavior tests
+
+LSP-behavior tests move from layer B (real jdtls and kotlin-lsp, with index waits up to 180s) to layer A, which replays responses recorded from those servers on the fixtures under `tests/contracts/`. This trades some fidelity for speed and determinism: recordings can go stale when a server changes, so `mise run nvim:update` re-records them whenever a Mason pin moves, and a nightly smoke suite still runs real servers to catch drift. Build, lifecycle and DAP tests stay on real servers because replay cannot cover them.
