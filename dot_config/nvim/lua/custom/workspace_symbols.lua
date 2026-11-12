@@ -56,6 +56,19 @@ function M.symbols(bufnr, query, callback)
   )
 end
 
+--- Width of the symbol name column for `items` (quickfix items, text `[Kind] name`): the longest name, between 25
+--- columns and 40% of `columns`, as for `gO` (lua/custom/document_symbols.lua).
+---@param items table[]
+---@param columns? integer width of the editor in columns, vim.o.columns by default
+---@return integer
+function M.symbol_width(items, columns)
+  local names = {}
+  for _, item in ipairs(items) do
+    table.insert(names, item.text:match '%[.-%]%s+(.*)' or item.text)
+  end
+  return require('custom.document_symbols').symbol_width(names, columns or vim.o.columns)
+end
+
 ---@param opts? table telescope picker options, plus `symbols` (kinds to keep, as for builtin.lsp_*_symbols)
 ---@param prompt_title string
 function M.picker(opts, prompt_title)
@@ -64,18 +77,24 @@ function M.picker(opts, prompt_title)
   local channel = require('plenary.async.control').channel
   local conf = require('telescope.config').values
   local cancel = function() end
+  local entry_maker
+  local make_entry = function(entry) return entry_maker(entry) end
   require('telescope.pickers')
     .new(opts, {
       prompt_title = prompt_title,
       finder = require('telescope.finders').new_dynamic {
-        entry_maker = require('telescope.make_entry').gen_from_lsp_symbols(opts),
+        entry_maker = make_entry,
         fn = function(prompt)
           local query = M.query(prompt)
           if not query then return {} end
           local tx, rx = channel.oneshot()
           cancel()
           cancel = M.symbols(bufnr, query, tx)
-          return require('telescope.utils').filter_symbols(rx(), opts) or {}
+          local results = require('telescope.utils').filter_symbols(rx(), opts) or {}
+          -- The name column is sized to these results, so the entry maker is rebuilt for each query before its entries are made.
+          local sized = vim.tbl_extend('force', opts, { symbol_width = M.symbol_width(results) })
+          entry_maker = require('telescope.make_entry').gen_from_lsp_symbols(sized)
+          return results
         end,
       },
       sorter = conf.generic_sorter(opts),

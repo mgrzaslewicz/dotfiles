@@ -28,4 +28,20 @@ end
 
 T['query: without an uppercase word, the last word'] = function() eq(workspace_symbols.query 'java ios', 'ios') end
 
+T['symbol_width: the default 25 columns when the names are short'] = function()
+  eq(workspace_symbols.symbol_width({ { text = '[Class] Foo' } }, 200), 25)
+  eq(workspace_symbols.symbol_width({}, 200), 25)
+end
+
+T['symbol_width: the longest name in the results, without its kind'] = function()
+  local long = ('a'):rep(60)
+  eq(workspace_symbols.symbol_width({ { text = '[Method] run' }, { text = '[Class] ' .. long } }, 200), 60)
+  eq(workspace_symbols.symbol_width({ { text = '[Method] ' .. long } }, 200), 60)
+end
+
+T['symbol_width: capped at 40% of the window so the path and type stay visible'] = function()
+  local long = ('a'):rep(60)
+  eq(workspace_symbols.symbol_width({ { text = '[Class] ' .. long } }, 100), 40)
+end
+
 return T
