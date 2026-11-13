@@ -4,7 +4,7 @@ local replay = require 'tests.replay'
 local eq = MiniTest.expect.equality
 
 local T, ctx = replay.session('gradle-kotlin', {
-  kotlin_lsp = { file = 'app/src/main/kotlin/com/example/app/Main.kt', symbol = 'greet', target = 'lib/src/main/kotlin/com/example/lib/Greeter.kt' },
+  kotlin_lsp = { file = 'app/src/main/kotlin/com/example/app/Main.kt', symbol = 'greet', target = 'lib/src/main/kotlin/com/example/lib/Greeter.kt', jdk = true },
 })
 local child = ctx.child
 

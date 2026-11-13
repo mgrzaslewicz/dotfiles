@@ -15,7 +15,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 23,
+              "line": 2
+            },
+            "start": {
+              "character": 15,
+              "line": 2
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 18,
               "line": 2
@@ -25,7 +35,17 @@
               "line": 2
             }
           },
-          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
+          "targetSelectionRange": {
+            "end": {
+              "character": 18,
+              "line": 2
+            },
+            "start": {
+              "character": 10,
+              "line": 2
+            }
+          },
+          "targetUri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
         }
       ]
     },
@@ -42,7 +62,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 31,
+              "line": 10
+            },
+            "start": {
+              "character": 22,
+              "line": 10
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 20,
               "line": 16
@@ -52,7 +82,17 @@
               "line": 16
             }
           },
-          "uri": "jrt://${state}/data/nvim/mason/packages/kotlin-lsp/kotlin-server-263.7084.0/jbr!/java.base/java/util/ArrayList.class"
+          "targetSelectionRange": {
+            "end": {
+              "character": 20,
+              "line": 16
+            },
+            "start": {
+              "character": 11,
+              "line": 16
+            }
+          },
+          "targetUri": "jrt://${home}/.local/share/mise/installs/java/temurin-25.0.5+8.0.LTS!/java.base/java/util/ArrayList.class"
         }
       ]
     },
@@ -69,7 +109,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 34,
+              "line": 4
+            },
+            "start": {
+              "character": 28,
+              "line": 4
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 25,
               "line": 1487
@@ -79,7 +129,17 @@
               "line": 1487
             }
           },
-          "uri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
+          "targetSelectionRange": {
+            "end": {
+              "character": 25,
+              "line": 1487
+            },
+            "start": {
+              "character": 19,
+              "line": 1487
+            }
+          },
+          "targetUri": "jar://${state}/gradle/caches/modules-2/files-2.1/org.jetbrains.kotlin/kotlin-stdlib/2.4.21/c343e135bd1e7dd94b7ed76b4159068d888d09db/kotlin-stdlib-2.4.21.jar!/kotlin/kotlin.kotlin_builtins"
         }
       ]
     },
@@ -96,7 +156,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 44,
+              "line": 4
+            },
+            "start": {
+              "character": 37,
+              "line": 4
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 13,
               "line": 2
@@ -106,7 +176,17 @@
               "line": 2
             }
           },
-          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+          "targetSelectionRange": {
+            "end": {
+              "character": 13,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          },
+          "targetUri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
         }
       ]
     },
@@ -123,7 +203,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 59,
+              "line": 4
+            },
+            "start": {
+              "character": 54,
+              "line": 4
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 13,
               "line": 3
@@ -133,7 +223,17 @@
               "line": 3
             }
           },
-          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
+          "targetSelectionRange": {
+            "end": {
+              "character": 13,
+              "line": 3
+            },
+            "start": {
+              "character": 8,
+              "line": 3
+            }
+          },
+          "targetUri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeter.kt"
         }
       ]
     },
@@ -150,7 +250,17 @@
       },
       "result": [
         {
-          "range": {
+          "originSelectionRange": {
+            "end": {
+              "character": 64,
+              "line": 4
+            },
+            "start": {
+              "character": 60,
+              "line": 4
+            }
+          },
+          "targetRange": {
             "end": {
               "character": 17,
               "line": 4
@@ -160,7 +270,17 @@
               "line": 4
             }
           },
-          "uri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
+          "targetSelectionRange": {
+            "end": {
+              "character": 17,
+              "line": 4
+            },
+            "start": {
+              "character": 13,
+              "line": 4
+            }
+          },
+          "targetUri": "file://${fixture}/app/src/main/kotlin/com/example/app/Main.kt"
         }
       ]
     },
@@ -174,6 +294,7 @@
       "result": [
         {
           "deprecated": false,
+          "detail": "(String): String",
           "kind": 12,
           "name": "greeting",
           "range": {
@@ -199,6 +320,7 @@
         },
         {
           "deprecated": false,
+          "detail": "(): Unit",
           "kind": 12,
           "name": "main",
           "range": {
@@ -261,6 +383,7 @@
           "children": [
             {
               "deprecated": false,
+              "detail": "(String): String",
               "kind": 6,
               "name": "greet",
               "range": {
@@ -323,6 +446,7 @@
           "children": [
             {
               "deprecated": false,
+              "detail": ": String",
               "kind": 13,
               "name": "greeting",
               "range": {
@@ -348,6 +472,7 @@
             },
             {
               "deprecated": false,
+              "detail": "(String)",
               "kind": 9,
               "name": "Greeter",
               "range": {
@@ -373,6 +498,7 @@
             },
             {
               "deprecated": false,
+              "detail": "(String): String",
               "kind": 6,
               "name": "greet",
               "range": {
@@ -435,6 +561,7 @@
           "children": [
             {
               "deprecated": false,
+              "detail": "(String): String",
               "kind": 6,
               "name": "greet",
               "range": {
@@ -631,5 +758,5 @@
     }
   ],
   "server": "kotlin_lsp",
-  "server_version": "kotlin-lsp/v263.7084.0"
+  "server_version": "kotlin-lsp/v271.2085.0"
 }

@@ -357,7 +357,8 @@ end
 
 --- MiniTest set of replayed tests on one fixture, one child for the whole file, like layer B's `fixture_set`.
 --- `servers` names the session's servers, each with how to tell it has indexed the project, which only live modes
---- use: go-to-definition on `symbol` in `file` reaches a file ending in `target`.
+--- use: go-to-definition on `symbol` in `file` reaches a file ending in `target`. `jdk = true` also waits for a JDK class
+--- (java.util.ArrayList) to resolve, for the fixtures whose JDK tests run against the live server.
 ---
 --- `ctx.child`; `ctx.project` (the fixture copy); `ctx.edit(path)` opens a file of it (live: waits for a server);
 --- `ctx.cursor(text, offset?)` puts the cursor on a text of the current buffer, `ctx.position()` says where it is;
@@ -366,7 +367,7 @@ end
 --- `ctx.wait(what, condition)` waits for a Lua condition in the child (replay: a few seconds, failing at once on a
 --- request without recording; live: the `index` timeout of layer B). `ctx.hooks` are the set's hooks.
 ---@param fixture string
----@param servers table<string, {file: string, symbol: string, target: string}>
+---@param servers table<string, {file: string, symbol: string, target: string, jdk: boolean?}>
 ---@param opts? replay.Opts
 function M.session(fixture, servers, opts)
   local helpers = require 'tests.helpers'
@@ -460,6 +461,11 @@ function M.session(fixture, servers, opts)
           child.cmd('edit ' .. probe.file)
           e2e.wait(child, 'attach', server .. ' attached', ('#vim.lsp.get_clients { bufnr = 0, name = %q } > 0'):format(server))
           e2e.definition_reaches(child, probe.symbol, probe.target)
+          if probe.jdk then
+            -- The project resolves before the JDK index is ready: a JDK class answered empty until ~30 s in (v271).
+            child.lua "vim.api.nvim_buf_set_lines(0, -1, -1, false, { 'val probe = java.util.ArrayList<String>()' })"
+            e2e.definition_reaches(child, 'ArrayList', 'ArrayList.class')
+          end
         end
         child.cmd 'silent! %bdelete!'
       end

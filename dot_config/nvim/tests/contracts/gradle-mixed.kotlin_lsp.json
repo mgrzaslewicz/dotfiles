@@ -12,6 +12,7 @@
       "result": [
         {
           "deprecated": false,
+          "detail": "(): Unit",
           "kind": 12,
           "name": "main",
           "range": {
@@ -39,5 +40,5 @@
     }
   ],
   "server": "kotlin_lsp",
-  "server_version": "kotlin-lsp/v263.7084.0"
+  "server_version": "kotlin-lsp/v271.2085.0"
 }
