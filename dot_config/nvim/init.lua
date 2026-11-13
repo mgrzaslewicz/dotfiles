@@ -1066,8 +1066,8 @@ do
   -- NOTE: You can also specify a branch or a specific commit
   vim.pack.add { { src = gh 'nvim-treesitter/nvim-treesitter', version = 'main' } }
 
-  -- Ensure basic parsers are installed
-  if not vim.g.test_mode then require('nvim-treesitter').install(require('custom.tools').parsers) end
+  -- Ensure basic parsers are built (custom/parsers.lua explains why not plain install).
+  if not vim.g.test_mode then require('custom.parsers').ensure(require('custom.tools').parsers) end
 
   ---@param buf integer
   ---@param language string

@@ -11,7 +11,8 @@ end
 
 local ok, err = pcall(function()
   require('mason-tool-installer').check_install(false, true)
-  require('nvim-treesitter').install(tools.parsers):wait(10 * 60 * 1000)
+  local task = require('custom.parsers').ensure(tools.parsers)
+  if task then task:wait(10 * 60 * 1000) end
   vim.ui.select = function(choices, _, on_choice) on_choice(choices[1]) end
   vim.cmd 'NeotestJava setup'
   io.stdout:write '\n'
