@@ -116,7 +116,55 @@ local function refresh_registry()
   if not done or failure then error('mason registry refresh failed: ' .. tostring(failure or 'timed out')) end
 end
 
+-- Packages whose registry entry is ours (lua/custom/mason-registry): their latest version is the pin in that spec, so
+-- it is read from the upstream project's releases instead. Upstream's own spec is renovate-bumped and lags behind.
+M.github_latest = {
+  ['kotlin-lsp'] = { repo = 'Kotlin/kotlin-lsp', prefix = 'kotlin-lsp/v' },
+}
+
+--- Newest tag of the form `<prefix><major>.<minor>.<patch>`, compared by number so `v271.0.0` beats `v263.9.0`.
+---@param tags string[]
+---@param prefix string
+---@return string|nil
+function M.newest_tag(tags, prefix)
+  local best, best_nums
+  for _, tag in ipairs(tags) do
+    local major, minor, patch = tag:match('^' .. (prefix:gsub('%p', '%%%0')) .. '(%d+)%.(%d+)%.(%d+)$')
+    if major then
+      local nums = { tonumber(major), tonumber(minor), tonumber(patch) }
+      local newer = not best_nums
+      if best_nums then
+        for i = 1, 3 do
+          if nums[i] ~= best_nums[i] then
+            newer = nums[i] > best_nums[i]
+            break
+          end
+        end
+      end
+      if newer then
+        best, best_nums = tag, nums
+      end
+    end
+  end
+  return best
+end
+
+local function latest_from_github(source)
+  local result = vim
+    .system({ 'curl', '-fsSL', '--max-time', '60', ('https://api.github.com/repos/%s/releases?per_page=100'):format(source.repo) }, { text = true })
+    :wait()
+  if result.code ~= 0 then error(('GitHub releases of %s: curl exit %d'):format(source.repo, result.code)) end
+  local tags = {}
+  for _, release in ipairs(vim.json.decode(result.stdout)) do
+    table.insert(tags, release.tag_name)
+  end
+  local newest = M.newest_tag(tags, source.prefix)
+  if not newest then error(('no %s release tag found in %s'):format(source.prefix, source.repo)) end
+  return newest
+end
+
 local function latest_version(name)
+  if M.github_latest[name] then return latest_from_github(M.github_latest[name]) end
   local registry = require 'mason-registry'
   local ok, pkg = pcall(registry.get_package, name)
   if not ok then return nil end

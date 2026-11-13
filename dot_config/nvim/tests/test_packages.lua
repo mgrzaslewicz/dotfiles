@@ -47,6 +47,22 @@ T['plugin_changes lists moved and new revisions, sorted by name'] = function()
   })
 end
 
+T['newest_tag picks the highest version by number, not by text'] = function()
+  local tags = {
+    'kotlin-lsp/v263.7084.0',
+    'kotlin-lsp/v9.1.0',
+    'kotlin-lsp/v271.2085.0',
+    'kotlin-lsp/v0.253.10629',
+    'kotlin-lsp/v262.7569.0-copy',
+    'pycharm/999.1.1',
+  }
+  eq(packages.newest_tag(tags, 'kotlin-lsp/v'), 'kotlin-lsp/v271.2085.0')
+end
+
+T['newest_tag ignores tags that do not match the prefix and pattern'] = function()
+  eq(packages.newest_tag({ 'other/v1.0.0', 'kotlin-lsp/v1.0.0-rc1' }, 'kotlin-lsp/v'), nil)
+end
+
 T['report writes one line per change, short revisions, major flagged'] = function()
   local body = packages.report(
     { { name = 'jdtls', from = 'v1.63.0', to = 'v2.0.0', major = true } },
