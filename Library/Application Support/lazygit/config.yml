@@ -1,0 +1,30 @@
+# Tokyo Night (night) palette, the same one nvim's tokyonight-night colorscheme uses.
+# Lazygit merges this over its defaults, so only the theme is set here.
+gui:
+  theme:
+    activeBorderColor:
+      - "#7aa2f7"
+      - bold
+    inactiveBorderColor:
+      - "#3b4261"
+    searchingActiveBorderColor:
+      - "#7dcfff"
+      - bold
+    optionsTextColor:
+      - "#7aa2f7"
+    selectedLineBgColor:
+      - "#292e42"
+    inactiveViewSelectedLineBgColor:
+      - "#16161e"
+    cherryPickedCommitFgColor:
+      - "#c0caf5"
+    cherryPickedCommitBgColor:
+      - "#394b70"
+    markedBaseCommitFgColor:
+      - "#1a1b26"
+    markedBaseCommitBgColor:
+      - "#e0af68"
+    unstagedChangesColor:
+      - "#f7768e"
+    defaultFgColor:
+      - "#c0caf5"
