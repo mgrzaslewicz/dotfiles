@@ -92,7 +92,7 @@
       "src": "https://github.com/mfussenegger/nvim-jdtls"
     },
     "nvim-lspconfig": {
-      "rev": "443d92c6bea761ab54cdde46fb197a2b4d614bdd",
+      "rev": "4c8101727d9338b128624c45977fc2fe526115a1",
       "src": "https://github.com/neovim/nvim-lspconfig"
     },
     "nvim-nio": {
