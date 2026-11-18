@@ -15,7 +15,11 @@ vim.pack.add {
 }
 
 -- A broken native diff library should not abort the rest of the config; Neogit works without it.
-local codediff_ok, codediff_err = pcall(function() require('codediff').setup {} end)
+-- codediff loads its native library lazily (ffi.load in core.diff, not in setup), so require it here to catch a failure.
+local codediff_ok, codediff_err = pcall(function()
+  require 'codediff.core.diff'
+  require('codediff').setup {}
+end)
 if not codediff_ok then vim.notify('codediff.nvim disabled: ' .. codediff_err, vim.log.levels.WARN) end
 
 local neogit = require 'neogit'
