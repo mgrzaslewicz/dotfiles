@@ -15,12 +15,14 @@ M.timeouts = {
 
 local fixtures = vim.fs.joinpath(vim.fn.getcwd(), 'tests', 'e2e', 'fixtures')
 
---- Copy of a fixture project in a fresh temp dir; tests build and edit only the copy.
+--- Copy of a fixture project in a fresh temp dir; tests build and edit only the copy. The path is resolved (macOS:
+--- /var is /private/var), since nvim reports resolved paths and tests compare against them.
 ---@param name string directory under tests/e2e/fixtures
 ---@return string path of the copy
 function M.copy_fixture(name)
   local dir = vim.fn.tempname()
   vim.fn.mkdir(dir, 'p')
+  dir = vim.uv.fs_realpath(dir) or dir
   local result = vim.system({ 'cp', '-R', vim.fs.joinpath(fixtures, name), dir }):wait()
   assert(result.code == 0, result.stderr)
   return vim.fs.joinpath(dir, name)

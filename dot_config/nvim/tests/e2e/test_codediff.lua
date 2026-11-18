@@ -13,8 +13,10 @@ end
 T['codediff | git | downloads its library on first use, <leader>gd shows HEAD next to the working file'] = function()
   -- First use: no library yet. The plugin keeps it in its own directory.
   local plugin = vim.fs.joinpath(vim.env.XDG_DATA_HOME, 'nvim', 'site', 'pack', 'core', 'opt', 'codediff.nvim')
-  for _, lib in ipairs(vim.fn.glob(plugin .. '/libvscode_diff_*.so', false, true)) do
-    vim.fn.delete(lib)
+  -- The library's extension is per OS: .dylib on macOS, .so elsewhere (codediff's installer).
+  local lib = plugin .. '/libvscode_diff_*.' .. (vim.fn.has 'mac' == 1 and 'dylib' or 'so')
+  for _, path in ipairs(vim.fn.glob(lib, false, true)) do
+    vim.fn.delete(path)
   end
 
   local repo = helpers.tree { ['hello.txt'] = 'one\ntwo\nthree' }
@@ -24,12 +26,22 @@ T['codediff | git | downloads its library on first use, <leader>gd shows HEAD ne
   vim.fn.writefile({ 'one', 'TWO', 'three' }, repo .. '/hello.txt')
 
   child.start { '--cmd', 'cd ' .. repo }
-  e2e.wait(child, 'build', 'codediff library downloaded', ('#vim.fn.glob(%q, false, true) == 1'):format(plugin .. '/libvscode_diff_*.so'))
+  e2e.wait(child, 'build', 'codediff library downloaded', ('#vim.fn.glob(%q, false, true) == 1'):format(lib))
   eq(child.lua_get "require('neogit.config').values.diff_viewer", 'codediff')
 
   child.cmd 'edit hello.txt'
   child.type_keys ' gd'
   e2e.wait(child, 'edit', 'codediff tab with three windows', '#vim.api.nvim_list_tabpages() == 2 and #vim.api.nvim_tabpage_list_wins(0) == 3')
+  -- The diff is computed asynchronously: the two file windows open empty, then fill in.
+  e2e.wait(
+    child,
+    'edit',
+    'codediff file windows filled',
+    [[#vim.tbl_filter(function(win)
+    local buf = vim.api.nvim_win_get_buf(win)
+    return vim.bo[buf].filetype ~= 'codediff-explorer' and #vim.api.nvim_buf_get_lines(buf, 0, -1, false) == 3
+  end, vim.api.nvim_tabpage_list_wins(0)) == 2]]
+  )
   local view = child.lua [[
     return vim.tbl_map(function(win)
       local buf = vim.api.nvim_win_get_buf(win)
