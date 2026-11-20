@@ -49,8 +49,14 @@ local function wait_results(count)
   eq(results(), count)
 end
 
-T['<leader>sG: the glob is empty by default, Tab moves to the glob input and narrows the search by it'] = function()
-  local dir = helpers.tree { ['a.json'] = 'needle', ['b.txt'] = 'needle' }
+-- Clears the glob input (its default is `*.*`, three characters) and types `glob` in its place.
+local function set_glob(glob)
+  child.type_keys('<BS>', '<BS>', '<BS>')
+  child.type_keys(glob)
+end
+
+T['<leader>sG: the glob defaults to *.* so files without an extension are left out, Tab moves to the glob input'] = function()
+  local dir = helpers.tree { ['a.json'] = 'needle', ['b.txt'] = 'needle', Makefile = 'needle' }
   child.start()
   child.cmd('cd ' .. dir)
   child.type_keys(' ', 's', 'G')
@@ -58,18 +64,31 @@ T['<leader>sG: the glob is empty by default, Tab moves to the glob input and nar
   wait_results(2)
 
   child.type_keys '<Tab>'
-  child.type_keys '*.json'
-  wait_results(1)
+  local line =
+    child.lua_get "vim.api.nvim_buf_get_lines(require('telescope.actions.state').get_current_picker(vim.api.nvim_get_current_buf()).prompt_bufnr, 0, -1, false)[1]"
+  eq(line, 'glob> *.*')
+  wait_results(2)
 end
 
-T['<leader>sG: Tab back restores the pattern input, the glob stays'] = function()
-  local dir = helpers.tree { ['a.json'] = 'needle', ['b.txt'] = 'needle' }
+T['<leader>sG: a typed glob replaces the default and narrows the search by it'] = function()
+  local dir = helpers.tree { ['a.json'] = 'needle', ['b.txt'] = 'needle', Makefile = 'needle' }
   child.start()
   child.cmd('cd ' .. dir)
   child.type_keys(' ', 's', 'G')
   child.type_keys 'needle'
   child.type_keys '<Tab>'
-  child.type_keys '*.json'
+  set_glob '*.json'
+  wait_results(1)
+end
+
+T['<leader>sG: Tab back restores the pattern input, the glob stays'] = function()
+  local dir = helpers.tree { ['a.json'] = 'needle', ['b.txt'] = 'needle', Makefile = 'needle' }
+  child.start()
+  child.cmd('cd ' .. dir)
+  child.type_keys(' ', 's', 'G')
+  child.type_keys 'needle'
+  child.type_keys '<Tab>'
+  set_glob '*.json'
   wait_results(1)
 
   child.type_keys '<Tab>'

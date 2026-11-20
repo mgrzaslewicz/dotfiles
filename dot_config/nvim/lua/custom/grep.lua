@@ -1,6 +1,7 @@
 -- Live grep with a file-glob input: `<leader>sG` opens a grep picker whose prompt holds one of two inputs, the search
 -- pattern or a file glob such as `*.json`. <Tab> switches between them; the prompt prefix says which one is active.
--- The glob is empty by default and narrows the search only when non-empty. Tests: tests/test_grep.lua.
+-- The glob starts as `*.*`, so files without an extension are left out; change it to the extension you want. An empty
+-- glob searches every file. Tests: tests/test_grep.lua.
 --
 -- Known limit: the glob input is a single glob (rg `--glob`), not a list.
 
@@ -42,7 +43,7 @@ function M.open(opts)
   local conf = require('telescope.config').values
   local action_state = require 'telescope.actions.state'
 
-  local state = { focus = 'pattern', pattern = '', glob = '' }
+  local state = { focus = 'pattern', pattern = '', glob = '*.*' }
 
   -- The prompt holds the focused input, so its text is the field being typed. The other one is in `state`.
   local finder = finders.new_job(function(prompt)
@@ -50,9 +51,15 @@ function M.open(opts)
     return M.command(state.pattern, state.glob)
   end, make_entry.gen_from_vimgrep(opts), nil, opts.cwd)
 
+  -- The text typed in the prompt, read from its buffer: telescope's current line can lag behind fast typing.
+  local function prompt_text(picker)
+    local line = vim.api.nvim_buf_get_lines(picker.prompt_bufnr, 0, 1, false)[1]
+    return line:sub(#picker.prompt_prefix + 1)
+  end
+
   local function switch(prompt_bufnr)
     local picker = action_state.get_current_picker(prompt_bufnr)
-    state[state.focus] = action_state.get_current_line()
+    state[state.focus] = prompt_text(picker)
     state.focus = M.other(state.focus)
     picker:change_prompt_prefix(labels[state.focus], nil)
     picker:reset_prompt(state[state.focus])
