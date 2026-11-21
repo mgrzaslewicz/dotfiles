@@ -385,6 +385,57 @@ T['collect()']['<M-m>r is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('<M-m>r', 'n', false, true).desc", 'Method: usages ([R]eferences)')
 end
 
+-- `<M-m>H` (method_supers) and `<M-m>h` (method_overrides): the method hierarchy of the family above, up and down.
+T['collect()']['<M-m>H lists the methods the method overrides, up the hierarchy, nearest first'] = function()
+  family()
+  child.type_keys '<M-m>H'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(
+    child.lua_get "vim.tbl_map(function(l) return vim.fn.fnamemodify(vim.uri_to_fname(l.uri), ':t') .. ':' .. l.range.start.line end, _G.picked.locations)",
+    { 'Iface.kt:1', 'Base.kt:1' }
+  )
+  eq(child.lua_get '{ _G.picked.title, _G.picked.keep_order }', { 'Supers of run', true })
+end
+
+T['collect()']['<M-m>H on a method that overrides nothing says so'] = function()
+  in_method_body()
+  child.cmd 'messages clear'
+  child.type_keys '<M-m>H'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('overrides no method') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('run overrides no method') ~= nil", true)
+end
+
+T['collect()']['<M-m>h lists the methods overriding the method, in a picker even for one'] = function()
+  family()
+  child.type_keys '<M-m>h'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 11 })
+  eq(child.lua_get '_G.picked.title', 'Overrides of run')
+end
+
+T['collect()']['<M-m>h on a method nothing overrides says so'] = function()
+  in_method_body()
+  child.cmd 'messages clear'
+  child.type_keys '<M-m>h'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('No method overrides') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('No method overrides run') ~= nil", true)
+end
+
+T['collect()']['<M-m>s in the body of an override goes to the method it overrides, like grs'] = function()
+  in_method_body()
+  child.lua [=[ _G.fake.overrides = true ]=]
+  child.type_keys '<M-m>s'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end) ]=]
+  eq({ child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]' }, { 'Iface.kt', 2 })
+end
+
+T['collect()']['<M-m>s, <M-m>h and <M-m>H are mapped in LSP buffers with their descs'] = function()
+  eq(
+    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-m>%s', 'n', false, true).desc"):format(k)) end, { 's', 'h', 'H' }),
+    { 'Method: [S]uper method', 'Method: [h]ierarchy down (overrides)', 'Method: [H]ierarchy up (supers)' }
+  )
+end
+
 -- `<M-m>C` (method_outgoing_calls): the methods the one around the cursor calls, at their declarations, in the order
 -- they are first called. `run` calls Foo.helper (line 10) on line 5 and Iface.run (line 2) on line 4, then helper again.
 T['collect()']['<M-m>C in a method body lists the methods it calls, in call order'] = function()

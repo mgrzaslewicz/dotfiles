@@ -27,6 +27,10 @@
 --
 -- `<M-m>i` (method_implementations) is `gri` on the name of the method around the cursor, from anywhere in its body.
 --
+-- `<M-m>H` (method_supers) and `<M-m>h` (method_overrides) are the method's hierarchy: up, the methods it overrides,
+-- walked up through the class headers (type hierarchy is not used: kotlin_lsp answers it with nothing), nearest first;
+-- down, its implementations. `<M-m>s` is `grs`, which already works from anywhere in a method body.
+--
 -- `<M-m>v` (select_method) selects the method around the cursor linewise, with the annotations and comment lines
 -- right above it (whether the server's range has them or not).
 --
@@ -581,6 +585,29 @@ function M.select_method()
     vim.api.nvim_win_set_cursor(0, { first + 1, 0 })
     vim.cmd 'normal! V'
     vim.api.nvim_win_set_cursor(0, { method.range['end'].line + 1, 0 })
+  end)
+end
+
+--- The methods the one around the cursor overrides (`<M-m>H`, the method's hierarchy up), walked up through the class
+--- headers, the nearest first, so at the bottom of the picker by the prompt.
+function M.method_supers()
+  M.method_around_cursor(function(here, name)
+    supers_of(here, name, function(supers)
+      if #supers == 0 then return vim.notify(('%s overrides no method'):format(name), vim.log.levels.INFO) end
+      M.pick(supers, ('Supers of %s'):format(name), { keep_order = true })
+    end)
+  end)
+end
+
+--- The methods overriding the one around the cursor (`<M-m>h`, the method's hierarchy down): its implementations,
+--- not those of a method it overrides (which `<M-m>i` lists, as `gri`). Always a picker.
+function M.method_overrides()
+  M.method_around_cursor(function(here, name)
+    request_all('textDocument/implementation', { textDocument = { uri = here.uri }, position = here.range.start }, function(found)
+      local overrides = M.merge { found }
+      if #overrides == 0 then return vim.notify(('No method overrides %s'):format(name), vim.log.levels.INFO) end
+      M.pick(overrides, ('Overrides of %s'):format(name))
+    end)
   end)
 end
 

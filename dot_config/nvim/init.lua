@@ -662,6 +662,11 @@ do
       -- Implementations of the method (IntelliJ Ctrl+Alt+B on a method): gri on its name, from anywhere in its body.
       vim.keymap.set('n', '<M-m>i', require('custom.implementations').method_implementations, { buffer = buf, desc = 'Method: [I]mplementations' })
 
+      -- Method hierarchy: the method it overrides (grs), all its supers up the chain, the methods overriding it.
+      vim.keymap.set('n', '<M-m>s', require('custom.implementations').goto_super, { buffer = buf, desc = 'Method: [S]uper method' })
+      vim.keymap.set('n', '<M-m>H', require('custom.implementations').method_supers, { buffer = buf, desc = 'Method: [H]ierarchy up (supers)' })
+      vim.keymap.set('n', '<M-m>h', require('custom.implementations').method_overrides, { buffer = buf, desc = 'Method: [h]ierarchy down (overrides)' })
+
       -- Usages of the method, its supers and its implementations (IntelliJ Alt+F7), in the order of <M-m>c.
       vim.keymap.set('n', '<M-m>r', require('custom.implementations').method_usages, { buffer = buf, desc = 'Method: usages ([R]eferences)' })
 

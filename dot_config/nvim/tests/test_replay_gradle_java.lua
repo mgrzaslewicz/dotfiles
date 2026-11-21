@@ -130,6 +130,32 @@ T['gradle-java | <M-m>i | in the body of an override lists the implementations o
   eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':7' } })
 end
 
+T['gradle-java | <M-m>H | in the body of an override lists the interface method'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.implementations').method_supers()"
+  ctx.wait('supers picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Supers of greet', { GREETING .. ':6' } })
+end
+
+T['gradle-java | <M-m>h | in the interface method lists its override'] = function()
+  ctx.capture_pick()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.implementations').method_overrides()"
+  ctx.wait('overrides picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Overrides of greet', { FORMAL .. ':7' } })
+end
+
+T['gradle-java | <M-m>s | in the body of an override goes to the interface method'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.implementations').goto_super()"
+  ctx.wait('Greeting.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Greeting.java')")
+  eq(ctx.position()[2], 6)
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
