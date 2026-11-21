@@ -89,7 +89,17 @@ T['gradle-java | <M-m>c | in the body of an override lists its callers and those
   ctx.cursor('return "Good day', 0)
   child.lua "require('custom.implementations').method_incoming_calls()"
   ctx.wait('incoming calls picked', '_G.picked ~= nil')
-  eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with the overridden method', { CALLERS .. ':9', CALLERS .. ':13' } })
+  eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with its supers and implementations', { CALLERS .. ':9', CALLERS .. ':13' } })
+end
+
+-- `formal.greet(...)` calls Formal.greet, which the interface method's incoming calls leave out.
+T['gradle-java | <M-m>c | on the interface method lists the callers of its implementation too'] = function()
+  ctx.capture_pick()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.implementations').method_incoming_calls()"
+  ctx.wait('incoming calls picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with its supers and implementations', { CALLERS .. ':9', CALLERS .. ':13' } })
 end
 
 T['gradle-java | gri | on the interface method lists its implementation'] = function()

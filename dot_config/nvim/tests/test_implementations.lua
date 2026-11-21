@@ -107,10 +107,11 @@ T['collect()'] = MiniTest.new_set {
                     return { { name = 'run', kind = 6, uri = params.textDocument.uri, range = at(p.line, 0).range, selectionRange = at(p.line, p.character).range } }
                   end,
                   ['callHierarchy/incomingCalls'] = function()
+                    if _G.fake.incoming then return _G.fake.incoming(params.item) end
                     local line = params.item.uri == uri and 7 or 10
                     return { { from = { name = 'caller', kind = 6, uri = uri, range = at(line, 0).range, selectionRange = at(line, 0).range }, fromRanges = { at(line, 2).range } } }
                   end,
-                  ['textDocument/implementation'] = function() return _G.fake.implementation() end,
+                  ['textDocument/implementation'] = function() return _G.fake.implementation(params) end,
                   ['textDocument/definition'] = function() return _G.fake.definition(params) end,
                   ['textDocument/references'] = function() return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
                   ['textDocument/documentSymbol'] = function() return _G.fake.symbols(params.textDocument.uri) end,
@@ -251,6 +252,7 @@ local function in_method_body()
         { name = 'run', kind = 6, range = span(2, 0, 8, 1), selectionRange = span(2, 4, 2, 7) },
       } } } or {}
     end
+    _G.fake.implementation = function() return {} end
     _G.prepared, _G.picked = {}, nil
     local impls = require 'custom.implementations'
     local request_all = impls.request_all
@@ -281,7 +283,59 @@ T['collect()']['<M-m>c in the body of an override lists the callers of the overr
   child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
   local uri = child.lua_get 'vim.uri_from_bufnr(0)'
   eq(child.lua_get '_G.picked.locations', { { uri = uri, range = range(7, 2) }, { uri = uri, range = range(10, 2) } })
-  eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with the overridden method')
+  eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with its supers and implementations')
+end
+
+-- The whole family of the method: Foo.run overrides Iface.run, which overrides Base.run (Iface.kt's header names
+-- Base); Bar.run is another implementation of Iface.run. Each is called once: Foo.run on line 8, Iface.run on line 11,
+-- Bar.run on line 14, Base.run on line 15.
+T['collect()']['<M-m>c lists the callers of the supers, transitively, and of every implementation'] = function()
+  in_method_body()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local uri = vim.uri_from_bufnr(0)
+    local dir = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h')
+    local iface_uri, base_uri = vim.uri_from_fname(dir .. '/Iface.kt'), vim.uri_from_fname(dir .. '/Base.kt')
+    vim.fn.writefile({ 'interface Iface : Base {', 'fun run()', '}' }, dir .. '/Iface.kt')
+    vim.fn.writefile({ 'interface Base {', 'fun run()', '}' }, dir .. '/Base.kt')
+    local function at(u, l) return { uri = u, range = span(l, 4, l, 7) } end
+    local foo_symbols = _G.fake.symbols(uri)
+    local function class(name, kind, u) return { { name = name, kind = kind, range = span(0, 0, 2, 1), selectionRange = span(0, 10, 0, 15), children = {
+      { name = 'run', kind = 6, range = span(1, 0, 1, 9), selectionRange = span(1, 4, 1, 7) },
+    } } } end
+    _G.fake.overrides = true
+    _G.fake.symbols = function(u)
+      if u == iface_uri then return class('Iface', 11) end
+      if u == base_uri then return class('Base', 11) end
+      return u == uri and foo_symbols or {}
+    end
+    _G.fake.definition = function(p)
+      if p.textDocument.uri == iface_uri then return { at(base_uri, 0) } end
+      return { at(iface_uri, 0) }
+    end
+    local siblings = { at(uri, 2), at(uri, 12) } -- Foo.run, Bar.run
+    _G.fake.implementation = function(p)
+      if p.textDocument.uri == iface_uri then return siblings end
+      if p.textDocument.uri == base_uri then return vim.list_extend({ at(iface_uri, 1) }, siblings) end
+      return {}
+    end
+    local callers = { [uri .. ':2'] = 7, [iface_uri .. ':1'] = 10, [uri .. ':12'] = 13, [base_uri .. ':1'] = 14 }
+    _G.fake.incoming = function(item)
+      local line = callers[item.uri .. ':' .. item.selectionRange.start.line]
+      if not line then return {} end
+      return { { from = { name = 'caller', kind = 6, uri = uri, range = span(line, 0, line, 3), selectionRange = span(line, 0, line, 3) }, fromRanges = { span(line, 2, line, 5) } } }
+    end
+  ]=]
+  child.type_keys '<M-m>c'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri = child.lua_get 'vim.uri_from_bufnr(0)'
+  eq(child.lua_get '_G.picked.locations', {
+    { uri = uri, range = range(7, 2) },
+    { uri = uri, range = range(10, 2) },
+    { uri = uri, range = range(13, 2) },
+    { uri = uri, range = range(14, 2) },
+  })
+  eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with its supers and implementations')
 end
 
 T['collect()']['<M-m>c outside any method says so'] = function()

@@ -14,8 +14,11 @@
 -- type is a call of the interface member, which the server's incoming calls of the override leave out (IntelliJ's
 -- Ctrl+Alt+H lists both). Elsewhere it is Telescope's incoming calls picker.
 --
--- `<M-m>c` (method_incoming_calls) is `grc` for the method around the cursor, from anywhere in its body: the method is
--- the innermost method symbol of the documentSymbol tree, and its callers always open in a picker.
+-- `<M-m>c` (method_incoming_calls) lists the callers of the method around the cursor, from anywhere in its body (the
+-- innermost method symbol of the documentSymbol tree), and of its whole family: the methods it overrides, walked up
+-- through the class headers like `grd`, and the implementations of each (textDocument/implementation), so a call
+-- through the interface, through the class or through another implementation is listed, as IntelliJ's Ctrl+Alt+H
+-- with the hierarchy does. Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
 --
 -- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
 -- body; outside methods to the supertypes of the class, a picker when it names several.
@@ -182,27 +185,36 @@ function M.supertypes_in_header(lines)
   return found
 end
 
---- Calls back with the declaration (uri and range) of the method under the cursor in the supertype it overrides, or nil
---- when it overrides none. The cursor must be on a method its enclosing class declares. Each supertype named in the
---- class header is looked up with go-to-definition, and the first one declaring a method of the same name wins.
+--- The lines `first`..`last` (0-based) of the file at `uri`: from its buffer when it is loaded, else from disk.
+---@return string[]
+local function lines_of(uri, first, last)
+  local bufnr = vim.uri_to_bufnr(uri)
+  if vim.api.nvim_buf_is_loaded(bufnr) then return vim.api.nvim_buf_get_lines(bufnr, first, last + 1, false) end
+  if not vim.startswith(uri, 'file:') then return {} end
+  local ok, lines = pcall(vim.fn.readfile, vim.uri_to_fname(uri), '', last + 1)
+  return ok and vim.list_slice(lines, first + 1, last + 1) or {}
+end
+
+--- Calls back with the declaration (uri and range) of the method called `name` at `target` (a uri and a position in
+--- the method) in the supertype it overrides, or nil when it overrides none. Each supertype named in the header of
+--- the enclosing class is looked up with go-to-definition, and the first one declaring a method of the same name wins.
+---@param target {uri: string, position: table}
+---@param name string
 ---@param callback fun(declared: {uri: string, range: table}?)
----@param name string? the method's name, by default the word under the cursor
-function M.overridden(callback, name)
-  local params = vim.lsp.util.make_position_params(0, 'utf-16')
-  local word = name or vim.fn.expand '<cword>'
-  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
-    local class = enclosing_class(symbols, params.position)
-    if not class or not find_method(class.children or {}, word) then return callback(nil) end
+local function overridden_at(target, name, callback)
+  local document = { uri = target.uri }
+  request_all('textDocument/documentSymbol', { textDocument = document }, function(symbols)
+    local class = enclosing_class(symbols, target.position)
+    if not class or not find_method(class.children or {}, name) then return callback(nil) end
     local first, last = class.range.start.line, class.range['end'].line
-    local lines = vim.api.nvim_buf_get_lines(0, first, last + 1, false)
-    local supertypes = M.supertypes_in_header(lines)
+    local supertypes = M.supertypes_in_header(lines_of(target.uri, first, last))
     for _, super in ipairs(supertypes) do
       super.line = super.line + first
     end
     local function try(index)
       if index > #supertypes then return callback(nil) end
       local super = supertypes[index]
-      local at = { textDocument = params.textDocument, position = { line = super.line, character = super.character } }
+      local at = { textDocument = document, position = { line = super.line, character = super.character } }
       request_all('textDocument/definition', at, function(definitions)
         local locations = {}
         for _, raw in ipairs(definitions) do
@@ -211,7 +223,7 @@ function M.overridden(callback, name)
         local function search(j)
           if j > #locations then return try(index + 1) end
           request_all('textDocument/documentSymbol', { textDocument = { uri = locations[j].uri } }, function(declared_symbols)
-            local method = find_method(declared_symbols, word)
+            local method = find_method(declared_symbols, name)
             if method then return callback { uri = locations[j].uri, range = method.selectionRange } end
             search(j + 1)
           end)
@@ -221,6 +233,15 @@ function M.overridden(callback, name)
     end
     try(1)
   end)
+end
+
+--- Calls back with the declaration (uri and range) of the method under the cursor in the supertype it overrides, or nil
+--- when it overrides none. The cursor must be on a method its enclosing class declares (see `overridden_at`).
+---@param callback fun(declared: {uri: string, range: table}?)
+---@param name string? the method's name, by default the word under the cursor
+function M.overridden(callback, name)
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  overridden_at({ uri = params.textDocument.uri, position = params.position }, name or vim.fn.expand '<cword>', callback)
 end
 
 --- Jumps to the implementations of the word under the cursor (`gri`), in a picker even when there is only one. On an
@@ -327,23 +348,59 @@ function M.goto_enclosing_method()
   end)
 end
 
---- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the call
---- hierarchy is asked at the method name. On an override merged with the calls of the method it overrides, like `grc`.
---- Always a picker, so the cursor stays where it is.
+--- The supers of the method `name` declared at `decl`, transitively: the method it overrides, the one that overrides,
+--- and so on up. Calls back with them, nearest first; a cycle or a depth of 20 ends the walk.
+---@param decl {uri: string, range: table}
+---@param name string
+---@param callback fun(supers: {uri: string, range: table}[])
+local function supers_of(decl, name, callback)
+  local supers, seen = {}, { [decl.uri .. ':' .. decl.range.start.line] = true }
+  local function up(from)
+    overridden_at({ uri = from.uri, position = from.range.start }, name, function(declared)
+      local key = declared and declared.uri .. ':' .. declared.range.start.line
+      if not declared or seen[key] or #supers >= 20 then return callback(supers) end
+      seen[key] = true
+      table.insert(supers, declared)
+      up(declared)
+    end)
+  end
+  up(decl)
+end
+
+--- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
+--- its whole family, the method itself, the methods it overrides (transitively) and every implementation of each,
+--- merged in one picker. The cursor stays where it is.
 function M.method_incoming_calls()
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
   request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
     local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
     if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
     local name = identifier(method.name)
-    local here = { textDocument = params.textDocument, position = method.selectionRange.start }
-    M.overridden(function(declared)
-      call_sites(here, function(own)
-        if not declared then return M.pick(M.merge { own }, ('Incoming calls of %s'):format(name)) end
-        local super = { textDocument = { uri = declared.uri }, position = declared.range.start }
-        call_sites(super, function(inherited) M.pick(M.merge { own, inherited }, ('Incoming calls of %s, with the overridden method'):format(name)) end)
-      end)
-    end, name)
+    local here = { uri = params.textDocument.uri, range = method.selectionRange }
+    supers_of(here, name, function(supers)
+      -- The declarations so far, then the implementations of each, every one once.
+      local family = M.merge { { here }, supers }
+      local pending = #family
+      local implementations = {}
+      for index, decl in ipairs(family) do
+        request_all('textDocument/implementation', { textDocument = { uri = decl.uri }, position = decl.range.start }, function(found)
+          implementations[index] = found
+          pending = pending - 1
+          if pending > 0 then return end
+          local all = M.merge(vim.list_extend({ family }, implementations))
+          local sites, left = {}, #all
+          for i, decl_or_impl in ipairs(all) do
+            call_sites({ textDocument = { uri = decl_or_impl.uri }, position = decl_or_impl.range.start }, function(calls)
+              sites[i] = calls
+              left = left - 1
+              if left > 0 then return end
+              local title = #all > 1 and 'Incoming calls of %s, with its supers and implementations' or 'Incoming calls of %s'
+              M.pick(M.merge(sites), title:format(name))
+            end)
+          end
+        end)
+      end
+    end)
   end)
 end
 

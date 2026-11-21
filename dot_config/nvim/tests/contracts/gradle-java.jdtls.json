@@ -609,6 +609,19 @@
       ]
     },
     {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
+          "character": 18,
+          "line": 6
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      },
+      "result": []
+    },
+    {
       "method": "textDocument/prepareCallHierarchy",
       "params": {
         "position": {
