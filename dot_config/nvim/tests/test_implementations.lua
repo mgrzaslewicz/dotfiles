@@ -55,6 +55,21 @@ T['merge() reads LocationLink results as locations'] = function()
   eq(implementations.merge { { link } }, { loc('file:///A.kt', 2, 4) })
 end
 
+T['method_start()'] = MiniTest.new_set()
+
+T['method_start()']['takes in the annotations and the doc comment right above a method'] = function()
+  local lines = { 'class Foo {', '', '    /**', '     * Runs.', '     */', '    @Override', '    @Deprecated(since = "1")', '    public void run() {', '    }' }
+  eq(implementations.method_start(lines, 7), 2)
+end
+
+T['method_start()']['takes in line comments and Kotlin annotations, not a blank line or code above them'] = function()
+  local lines = { 'val x = 1', '// Runs.', '@JvmStatic', 'fun run() {}', '', '@Test', 'fun other() {}' }
+  eq(implementations.method_start(lines, 3), 1)
+  eq(implementations.method_start(lines, 6), 5)
+end
+
+T['method_start()']['stays when nothing is above the method'] = function() eq(implementations.method_start({ 'class Foo {', '    void run() {}' }, 1), 1) end
+
 local child = helpers.new_child()
 
 T['collect()'] = MiniTest.new_set {
@@ -472,6 +487,19 @@ end
 
 T['collect()']['<M-m>n is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('<M-m>n', 'n', false, true).desc", 'Method: re[n]ame')
+end
+
+-- `<M-m>v` (select_method): the method around the cursor in linewise visual mode, its doc comment included.
+T['collect()']['<M-m>v selects the method around the cursor, with the comment above it'] = function()
+  in_method_body()
+  child.lua [=[ vim.api.nvim_buf_set_lines(0, 1, 2, false, { '// Runs.' }) ]=]
+  child.type_keys '<M-m>v'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.mode() == 'V' end) ]=]
+  eq({ child.lua_get 'vim.fn.mode()', child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 'V', 2, 9 })
+end
+
+T['collect()']['<M-m>v is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('<M-m>v', 'n', false, true).desc", 'Method: select ([V]isual)')
 end
 
 T['collect()']['<M-m>c outside any method says so'] = function()

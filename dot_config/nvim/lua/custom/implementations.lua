@@ -28,6 +28,9 @@
 -- `<M-m>i` (method_implementations) goes to the overrides of the method around the cursor: one is jumped to, several
 -- open a picker.
 --
+-- `<M-m>v` (select_method) selects the method around the cursor linewise, with the annotations and comment lines
+-- right above it (whether the server's range has them or not).
+--
 -- `<M-m>C` (method_outgoing_calls) lists the methods the one around the cursor calls, at their declarations, in the
 -- order it first calls them.
 --
@@ -543,6 +546,32 @@ local function pick_for_family(what, ask)
         end)
       end
     end)
+  end)
+end
+
+--- The first line of a method with what belongs to it above its declaration: the annotations and the comment lines
+--- (`//`, `/** … */`) right above it, up to a blank line or code. 0-based, `lines` from the top of the buffer.
+---@param lines string[]
+---@param first integer the 0-based line the method's range starts on
+---@return integer
+function M.method_start(lines, first)
+  local start = first
+  while start > 0 do
+    local above = vim.trim(lines[start])
+    if not (above:match '^@' or above:match '^/[/*]' or above:match '^%*') then break end
+    start = start - 1
+  end
+  return start
+end
+
+--- Selects the method around the cursor (`<M-m>v`) linewise, its annotations and doc comment included.
+function M.select_method()
+  M.method_around_cursor(function(_, _, method)
+    local lines = vim.api.nvim_buf_get_lines(0, 0, method.range.start.line, false)
+    local first = M.method_start(lines, method.range.start.line)
+    vim.api.nvim_win_set_cursor(0, { first + 1, 0 })
+    vim.cmd 'normal! V'
+    vim.api.nvim_win_set_cursor(0, { method.range['end'].line + 1, 0 })
   end)
 end
 

@@ -671,6 +671,9 @@ do
       -- Tests of the method: the test methods calling it or its family; one is jumped to (see lua/custom/method_tests.lua).
       vim.keymap.set('n', '<M-m>t', function() require('custom.method_tests').goto_tests() end, { buffer = buf, desc = 'Method: [T]ests' })
 
+      -- Select the method linewise, with its annotations and doc comment, to yank, move or delete it.
+      vim.keymap.set('n', '<M-m>v', require('custom.implementations').select_method, { buffer = buf, desc = 'Method: select ([V]isual)' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })

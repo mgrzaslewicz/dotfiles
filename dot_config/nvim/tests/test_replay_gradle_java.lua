@@ -142,6 +142,14 @@ T['gradle-java | <M-m>t | in a method body lists the test methods calling it'] =
   eq(child.lua_get '_G.picked', { 'Tests of greeting', { test .. ':9', test .. ':14' } })
 end
 
+T['gradle-java | <M-m>v | in a method body selects the method with its annotation'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.implementations').select_method()"
+  ctx.wait('method selected', "vim.fn.mode() == 'V'")
+  eq({ child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 6, 9 })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
