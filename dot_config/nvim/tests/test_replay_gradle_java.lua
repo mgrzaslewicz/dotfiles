@@ -156,6 +156,32 @@ T['gradle-java | <M-m>s | in the body of an override goes to the interface metho
   eq(ctx.position()[2], 6)
 end
 
+T['gradle-java | <M-t>s | in a method of a class goes to the interface the class implements'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.types').goto_supertypes()"
+  ctx.wait('Greeting.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Greeting.java')")
+  eq(ctx.position()[2], 5)
+end
+
+T['gradle-java | <M-t>H | in a method of a class lists its supertypes'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.types').supertypes()"
+  ctx.wait('supertypes picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Supertypes of Formal, up the hierarchy', { GREETING .. ':5' } })
+end
+
+T['gradle-java | <M-t>h | in an interface lists the class implementing it'] = function()
+  ctx.capture_pick()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.types').subtypes()"
+  ctx.wait('subtypes picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Subtypes of Greeting', { FORMAL .. ':5' } })
+end
+
 T['gradle-java | <M-m>r | in the body of an override lists the usages of it and of the interface method'] = function()
   ctx.capture_pick()
   ctx.edit(FORMAL)

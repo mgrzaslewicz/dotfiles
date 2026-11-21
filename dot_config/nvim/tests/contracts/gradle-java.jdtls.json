@@ -1062,6 +1062,33 @@
       "method": "textDocument/implementation",
       "params": {
         "position": {
+          "character": 17,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 19,
+              "line": 4
+            },
+            "start": {
+              "character": 13,
+              "line": 4
+            }
+          },
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
           "character": 18,
           "line": 11
         },

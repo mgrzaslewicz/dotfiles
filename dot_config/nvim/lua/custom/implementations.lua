@@ -152,6 +152,8 @@ local function enclosing_class(symbols, pos)
   end
 end
 
+M.enclosing_class = enclosing_class
+
 --- The identifier of a documentSymbol name: jdtls names a method with its signature (`run(String)`), kotlin_lsp bare.
 ---@param name string
 ---@return string
@@ -211,6 +213,8 @@ local function lines_of(uri, first, last)
   local ok, lines = pcall(vim.fn.readfile, vim.uri_to_fname(uri), '', last + 1)
   return ok and vim.list_slice(lines, first + 1, last + 1) or {}
 end
+
+M.lines_of = lines_of
 
 --- Calls back with the declaration (uri and range) of the method called `name` at `target` (a uri and a position in
 --- the method) in the supertype it overrides, or nil when it overrides none. Each supertype named in the header of
@@ -661,6 +665,7 @@ local function goto_supertypes(class, params)
     end)
   end
 end
+M.goto_supertypes = goto_supertypes
 
 --- Goes to super (`grs`, IntelliJ Ctrl+U). In a method, from its name or its body, the method it overrides; elsewhere
 --- in a class, its supertypes.

@@ -452,6 +452,7 @@ do
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
       { '<M-m>', group = '[M]ethod actions', mode = { 'n' } }, -- act on the method around the cursor, anywhere in it
+      { '<M-t>', group = '[T]ype actions', mode = { 'n' } }, -- act on the type around the cursor, anywhere in it
     },
   }
 
@@ -684,6 +685,12 @@ do
 
       -- Select the method linewise, with its annotations and doc comment, to yank, move or delete it.
       vim.keymap.set('n', '<M-m>v', require('custom.implementations').select_method, { buffer = buf, desc = 'Method: select ([V]isual)' })
+
+      -- Type actions (<M-t> group): act on the type around your cursor, from anywhere in it (see lua/custom/types.lua).
+      local types = require 'custom.types'
+      vim.keymap.set('n', '<M-t>s', types.goto_supertypes, { buffer = buf, desc = 'Type: [S]upertypes' })
+      vim.keymap.set('n', '<M-t>H', types.supertypes, { buffer = buf, desc = 'Type: [H]ierarchy up (supertypes)' })
+      vim.keymap.set('n', '<M-t>h', types.subtypes, { buffer = buf, desc = 'Type: [h]ierarchy down (subtypes)' })
 
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
