@@ -291,6 +291,7 @@ local function goto_implementation_at(target, name, otherwise)
     end)
   end)
 end
+M.goto_implementation_at = goto_implementation_at
 
 --- Jumps to the implementations of the word under the cursor (`gri`), in a picker even when there is only one. On an
 --- override those of the method it overrides, so `gri` on `Impl.run` lists the implementations of `Iface.run`. With

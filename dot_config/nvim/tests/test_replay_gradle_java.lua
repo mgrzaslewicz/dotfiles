@@ -212,6 +212,29 @@ T['gradle-java | <M-m>v | in a method body selects the method with its annotatio
   eq({ child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 6, 9 })
 end
 
+T['gradle-java | <M-t>i | in an interface lists the class implementing it, like gri'] = function()
+  ctx.capture_pick()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.types').implementations()"
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':5' } })
+end
+
+T['gradle-java | <M-t>r | in an interface lists its usages, the declaration left out'] = function()
+  ctx.capture_pick()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.types').usages()"
+  ctx.wait('usages picked', '_G.picked ~= nil')
+  local picked = child.lua_get '_G.picked'
+  eq(picked[1], 'Usages of Greeting')
+  eq(
+    { vim.tbl_contains(picked[2], FORMAL .. ':5'), vim.tbl_contains(picked[2], CALLERS .. ':8'), vim.tbl_contains(picked[2], GREETING .. ':5') },
+    { true, true, false }
+  )
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

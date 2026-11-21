@@ -691,6 +691,8 @@ do
       vim.keymap.set('n', '<M-t>s', types.goto_supertypes, { buffer = buf, desc = 'Type: [S]upertypes' })
       vim.keymap.set('n', '<M-t>H', types.supertypes, { buffer = buf, desc = 'Type: [H]ierarchy up (supertypes)' })
       vim.keymap.set('n', '<M-t>h', types.subtypes, { buffer = buf, desc = 'Type: [h]ierarchy down (subtypes)' })
+      vim.keymap.set('n', '<M-t>i', types.implementations, { buffer = buf, desc = 'Type: [I]mplementations' })
+      vim.keymap.set('n', '<M-t>r', types.usages, { buffer = buf, desc = 'Type: usages ([R]eferences)' })
 
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).

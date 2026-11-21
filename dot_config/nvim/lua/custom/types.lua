@@ -7,6 +7,9 @@
 -- go-to-definition, then theirs (type hierarchy is not used: kotlin_lsp answers it with nothing). `<M-t>h` lists its
 -- subtypes (textDocument/implementation at its name).
 --
+-- `<M-t>i` is `gri` on the type's name (where `gri` would go to the definition, the type itself: its name); `<M-t>r`
+-- lists the type's usages, its declaration left out.
+--
 -- Known limit: a supertype outside the project (`jdt://`, `jar:`) is listed, but its own supertypes are not read.
 
 local implementations = require 'custom.implementations'
@@ -113,6 +116,28 @@ function M.subtypes()
       local subtypes = implementations.merge { found }
       if #subtypes == 0 then return vim.notify(('No subtypes of %s'):format(name), vim.log.levels.INFO) end
       implementations.pick(subtypes, ('Subtypes of %s'):format(name))
+    end)
+  end)
+end
+
+--- The implementations of the type around the cursor (`<M-t>i`): `gri` on its name, from anywhere in it.
+function M.implementations()
+  M.type_around_cursor(function(here, name)
+    implementations.goto_implementation_at({ uri = here.uri, position = here.range.start }, name, function()
+      vim.cmd "normal! m'"
+      vim.lsp.util.show_document(here, 'utf-16', { focus = true })
+    end)
+  end)
+end
+
+--- The usages of the type around the cursor (`<M-t>r`, IntelliJ Alt+F7 on it), its declaration left out.
+function M.usages()
+  M.type_around_cursor(function(here, name)
+    local params = { textDocument = { uri = here.uri }, position = here.range.start, context = { includeDeclaration = false } }
+    request_all('textDocument/references', params, function(found)
+      local usages = implementations.merge { found }
+      if #usages == 0 then return vim.notify(('No usages of %s'):format(name), vim.log.levels.INFO) end
+      implementations.pick(usages, ('Usages of %s'):format(name))
     end)
   end)
 end

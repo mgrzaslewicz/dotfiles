@@ -106,6 +106,31 @@ T['<M-t>h lists the subtypes, in a picker even for one'] = function()
   eq(picked(), { title = 'Subtypes of Foo', locations = { 'Sub.kt:0' } })
 end
 
+T['<M-t>i lists the implementations of the type, like gri on its name'] = function()
+  child.type_keys '<M-t>i'
+  eq(picked(), { title = 'Implementations of Foo', locations = { 'Sub.kt:0' } })
+end
+
+T['<M-t>i on a type without implementations goes to its name, where gri stays'] = function()
+  child.lua [=[ _G.fake['textDocument/implementation'] = {} ]=]
+  child.type_keys '<M-t>i'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 5 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 5, 6 })
+end
+
+T['<M-t>r lists the usages of the type, its declaration left out'] = function()
+  child.lua [=[
+    local function at(name, line) return { uri = _G.u(name), range = { start = { line = line, character = 0 }, ['end'] = { line = line, character = 3 } } } end
+    _G.fake['textDocument/references'][_G.u 'Foo.kt' .. ':4:6'] = function(params)
+      local refs = { at('Sub.kt', 0), at('Foo.kt', 6) }
+      if params.context.includeDeclaration then table.insert(refs, at('Foo.kt', 4)) end
+      return refs
+    end
+  ]=]
+  child.type_keys '<M-t>r'
+  eq(picked(), { title = 'Usages of Foo', locations = { 'Foo.kt:6', 'Sub.kt:0' } })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -116,8 +141,8 @@ end
 
 T['<M-t> maps are set in LSP buffers with their descs'] = function()
   eq(
-    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h' }),
-    { 'Type: [S]upertypes', 'Type: [H]ierarchy up (supertypes)', 'Type: [h]ierarchy down (subtypes)' }
+    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r' }),
+    { 'Type: [S]upertypes', 'Type: [H]ierarchy up (supertypes)', 'Type: [h]ierarchy down (subtypes)', 'Type: [I]mplementations', 'Type: usages ([R]eferences)' }
   )
 end
 
