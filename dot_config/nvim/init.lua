@@ -662,6 +662,9 @@ do
       -- Overrides of the method (IntelliJ Ctrl+Alt+B on a method): one is jumped to, several open a picker.
       vim.keymap.set('n', '<M-m>i', require('custom.implementations').method_implementations, { buffer = buf, desc = 'Method: [I]mplementations' })
 
+      -- Usages of the method, its supers and its implementations (IntelliJ Alt+F7), in the order of <M-m>c.
+      vim.keymap.set('n', '<M-m>r', require('custom.implementations').method_usages, { buffer = buf, desc = 'Method: usages ([R]eferences)' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })

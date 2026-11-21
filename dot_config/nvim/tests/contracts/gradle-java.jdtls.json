@@ -930,6 +930,92 @@
       "method": "textDocument/references",
       "params": {
         "context": {
+          "includeDeclaration": false
+        },
+        "position": {
+          "character": 11,
+          "line": 5
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 8
+            },
+            "start": {
+              "character": 24,
+              "line": 8
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        },
+        {
+          "range": {
+            "end": {
+              "character": 34,
+              "line": 12
+            },
+            "start": {
+              "character": 22,
+              "line": 12
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/references",
+      "params": {
+        "context": {
+          "includeDeclaration": false
+        },
+        "position": {
+          "character": 18,
+          "line": 6
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 8
+            },
+            "start": {
+              "character": 24,
+              "line": 8
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        },
+        {
+          "range": {
+            "end": {
+              "character": 34,
+              "line": 12
+            },
+            "start": {
+              "character": 22,
+              "line": 12
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/references",
+      "params": {
+        "context": {
           "includeDeclaration": true
         },
         "position": {

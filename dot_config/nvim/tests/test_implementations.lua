@@ -114,7 +114,9 @@ T['collect()'] = MiniTest.new_set {
                   ['callHierarchy/outgoingCalls'] = function() return _G.fake.outgoing and _G.fake.outgoing(params.item) or {} end,
                   ['textDocument/implementation'] = function() return _G.fake.implementation(params) end,
                   ['textDocument/definition'] = function() return _G.fake.definition(params) end,
-                  ['textDocument/references'] = function() return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
+                  ['textDocument/references'] = function()
+                    if _G.fake.references then return _G.fake.references(params) end
+                    return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
                   ['textDocument/documentSymbol'] = function() return _G.fake.symbols(params.textDocument.uri) end,
                 }
                 local result = handlers[method] and handlers[method]()
@@ -288,12 +290,12 @@ T['collect()']['<M-m>c in the body of an override lists the callers of the overr
 end
 
 -- The whole family of the method: Foo.run overrides Iface.run, which overrides Base.run (Iface.kt's header names
--- Base); Bar.run is another implementation of Iface.run, Sub.run overrides Foo.run. Each is called once: Foo.run on
--- line 8, Iface.run on line 11, Bar.run on line 14, Base.run on line 15, Sub.run on line 13. The callers come in
+-- Base); Bar.run is another implementation of Iface.run, Sub.run overrides Foo.run. Each is called (and referenced)
+-- once: Foo.run on line 8, Iface.run on line 11, Bar.run on line 14, Base.run on line 15, Sub.run on line 13. They come in
 -- hierarchy order, the closest to Foo.run first (Telescope shows the first result at the bottom, by the prompt): its
 -- own, then one step away its super's before its override's, then two steps away its super's super's before its
 -- sibling's (on a tie the ancestor comes first).
-T['collect()']['<M-m>c lists the callers of the supers, transitively, and of every implementation'] = function()
+local function family()
   in_method_body()
   child.lua [=[
     local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
@@ -329,7 +331,18 @@ T['collect()']['<M-m>c lists the callers of the supers, transitively, and of eve
       if not line then return {} end
       return { { from = { name = 'caller', kind = 6, uri = uri, range = span(line, 0, line, 3), selectionRange = span(line, 0, line, 3) }, fromRanges = { span(line, 2, line, 5) } } }
     end
+    _G.fake.references = function(p)
+      local line = callers[p.textDocument.uri .. ':' .. p.position.line]
+      if not line then return {} end
+      local refs = { { uri = uri, range = span(line, 2, line, 5) } }
+      if p.context.includeDeclaration then table.insert(refs, { uri = p.textDocument.uri, range = span(p.position.line, 4, p.position.line, 7) }) end
+      return refs
+    end
   ]=]
+end
+
+T['collect()']['<M-m>c lists the callers of the supers, transitively, and of every implementation'] = function()
+  family()
   child.type_keys '<M-m>c'
   child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
   local uri = child.lua_get 'vim.uri_from_bufnr(0)'
@@ -342,6 +355,19 @@ T['collect()']['<M-m>c lists the callers of the supers, transitively, and of eve
   })
   eq(child.lua_get '_G.picked.keep_order', true)
   eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with its supers and implementations')
+end
+
+-- `<M-m>r` (method_usages): the usages of the family, declarations left out, in the same hierarchy order.
+T['collect()']['<M-m>r lists the usages of the method, its supers and every implementation, closest first'] = function()
+  family()
+  child.type_keys '<M-m>r'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 7, 10, 12, 14, 13 })
+  eq(child.lua_get '{ _G.picked.title, _G.picked.keep_order }', { 'Usages of run, with its supers and implementations', true })
+end
+
+T['collect()']['<M-m>r is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('<M-m>r', 'n', false, true).desc", 'Method: usages ([R]eferences)')
 end
 
 -- `<M-m>C` (method_outgoing_calls): the methods the one around the cursor calls, at their declarations, in the order

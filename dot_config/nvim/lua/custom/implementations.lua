@@ -23,6 +23,8 @@
 -- jdtls answers a call through the interface as a call of each implementation too: such a call is the method's own.
 -- Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
 --
+-- `<M-m>r` (method_usages) lists the references of the same family, in the same order, without the declarations.
+--
 -- `<M-m>i` (method_implementations) goes to the overrides of the method around the cursor: one is jumped to, several
 -- open a picker.
 --
@@ -481,45 +483,77 @@ function M.method_implementations()
   end)
 end
 
---- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
---- its whole family, the method itself, the methods it overrides (transitively) and every implementation of each,
---- in one picker. The calls come in hierarchy order (`by_hierarchy`), each declaration's in file order, so the
---- closest to the method are at the bottom of the picker, by the prompt. The cursor stays where it is.
-function M.method_incoming_calls()
+--- Calls back with the family of the method `name` declared at `here`: the method, the methods it overrides
+--- (transitively) and the implementations of each, ranked by `by_hierarchy`, the method first.
+---@param here {uri: string, range: table}
+---@param name string
+---@param callback fun(family: {uri: string, range: table}[])
+local function family_of(here, name, callback)
+  supers_of(here, name, function(supers)
+    local decls = vim.list_extend({ here }, supers)
+    local impls, pending = {}, #decls
+    for k, decl in ipairs(decls) do
+      request_all('textDocument/implementation', { textDocument = { uri = decl.uri }, position = decl.range.start }, function(found)
+        impls[k] = found
+        pending = pending - 1
+        if pending == 0 then callback(M.by_hierarchy(decls, impls)) end
+      end)
+    end
+  end)
+end
+
+--- Asks `ask(member, done)` for the locations of every member of the family of the method around the cursor, then
+--- opens them in one picker in family order (each member's in file order, every location once), titled `what` of
+--- the method.
+---@param what string
+---@param ask fun(member: {uri: string, range: table}, done: fun(locations: table[]))
+local function pick_for_family(what, ask)
   M.method_around_cursor(function(here, name)
-    supers_of(here, name, function(supers)
-      local decls = vim.list_extend({ here }, supers)
-      local impls, pending = {}, #decls
-      for k, decl in ipairs(decls) do
-        request_all('textDocument/implementation', { textDocument = { uri = decl.uri }, position = decl.range.start }, function(found)
-          impls[k] = found
-          pending = pending - 1
-          if pending > 0 then return end
-          local family = M.by_hierarchy(decls, impls)
-          local sites, left = {}, #family
-          for i, member in ipairs(family) do
-            call_sites({ textDocument = { uri = member.uri }, position = member.range.start }, function(calls)
-              sites[i] = calls
-              left = left - 1
-              if left > 0 then return end
-              local ordered, seen = {}, {}
-              for j = 1, #family do
-                for _, site in ipairs(M.merge { sites[j] }) do
-                  local key = ('%s:%d:%d'):format(site.uri, site.range.start.line, site.range.start.character)
-                  if not seen[key] then
-                    seen[key] = true
-                    table.insert(ordered, site)
-                  end
-                end
+    family_of(here, name, function(family)
+      local found, left = {}, #family
+      for i, member in ipairs(family) do
+        ask(member, function(locations)
+          found[i] = locations
+          left = left - 1
+          if left > 0 then return end
+          local ordered, seen = {}, {}
+          for j = 1, #family do
+            for _, loc in ipairs(M.merge { found[j] }) do
+              local key = ('%s:%d:%d'):format(loc.uri, loc.range.start.line, loc.range.start.character)
+              if not seen[key] then
+                seen[key] = true
+                table.insert(ordered, loc)
               end
-              local title = #family > 1 and 'Incoming calls of %s, with its supers and implementations' or 'Incoming calls of %s'
-              M.pick(ordered, title:format(name), { keep_order = true })
-            end)
+            end
           end
+          local title = #family > 1 and '%s of %s, with its supers and implementations' or '%s of %s'
+          M.pick(ordered, title:format(what, name), { keep_order = true })
         end)
       end
     end)
   end)
+end
+
+--- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
+--- its whole family (`family_of`) in one picker, closest to the method first, so at the bottom of the picker, by the
+--- prompt. The cursor stays where it is.
+function M.method_incoming_calls()
+  pick_for_family('Incoming calls', function(member, done) call_sites({ textDocument = { uri = member.uri }, position = member.range.start }, done) end)
+end
+
+--- Usages of the method around the cursor (`<M-m>r`, IntelliJ Alt+F7): the references of its whole family, its
+--- declarations left out, in the order of `<M-m>c`. A method reference (`Foo::run`) is a usage, not a call.
+function M.method_usages()
+  pick_for_family(
+    'Usages',
+    function(member, done)
+      request_all(
+        'textDocument/references',
+        { textDocument = { uri = member.uri }, position = member.range.start, context = { includeDeclaration = false } },
+        done
+      )
+    end
+  )
 end
 
 --- Goes to the supertypes named in the header of `class` (a documentSymbol of the current buffer): one is jumped to,

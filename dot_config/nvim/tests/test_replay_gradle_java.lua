@@ -120,6 +120,18 @@ T['gradle-java | <M-m>i | on the interface method goes to its only implementatio
   eq(ctx.position(), { FORMAL, 7, 18 })
 end
 
+T['gradle-java | <M-m>r | in the body of an override lists the usages of it and of the interface method'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.implementations').method_usages()"
+  ctx.wait('usages picked', '_G.picked ~= nil')
+  local picked = child.lua_get '_G.picked'
+  eq(picked[1], 'Usages of greet, with its supers and implementations')
+  eq({ vim.tbl_contains(picked[2], CALLERS .. ':9'), vim.tbl_contains(picked[2], CALLERS .. ':13') }, { true, true })
+  eq(vim.tbl_contains(picked[2], FORMAL .. ':7'), false)
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
