@@ -229,6 +229,79 @@
       ]
     },
     {
+      "method": "callHierarchy/outgoingCalls",
+      "params": {
+        "item": {
+          "detail": "com.example.app.Callers",
+          "kind": 6,
+          "name": "throughClass(Formal) : String",
+          "range": {
+            "end": {
+              "character": 5,
+              "line": 13
+            },
+            "start": {
+              "character": 4,
+              "line": 11
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 30,
+              "line": 11
+            },
+            "start": {
+              "character": 18,
+              "line": 11
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      },
+      "result": [
+        {
+          "fromRanges": [
+            {
+              "end": {
+                "character": 34,
+                "line": 12
+              },
+              "start": {
+                "character": 15,
+                "line": 12
+              }
+            }
+          ],
+          "to": {
+            "detail": "com.example.model.Formal",
+            "kind": 6,
+            "name": "greet(String) : String",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 8
+              },
+              "start": {
+                "character": 4,
+                "line": 5
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 23,
+                "line": 6
+              },
+              "start": {
+                "character": 18,
+                "line": 6
+              }
+            },
+            "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+          }
+        }
+      ]
+    },
+    {
       "method": "textDocument/definition",
       "params": {
         "position": {
@@ -290,6 +363,118 @@
             "start": {
               "character": 36,
               "line": 8
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.app",
+          "range": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "throughInterface(Greeting)",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 9
+                },
+                "start": {
+                  "character": 4,
+                  "line": 7
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 34,
+                  "line": 7
+                },
+                "start": {
+                  "character": 18,
+                  "line": 7
+                }
+              }
+            },
+            {
+              "detail": " : String",
+              "kind": 6,
+              "name": "throughClass(Formal)",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 13
+                },
+                "start": {
+                  "character": 4,
+                  "line": 11
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 30,
+                  "line": 11
+                },
+                "start": {
+                  "character": 18,
+                  "line": 11
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 5,
+          "name": "Callers",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 14
+            },
+            "start": {
+              "character": 0,
+              "line": 6
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 13,
+              "line": 6
+            },
+            "start": {
+              "character": 6,
+              "line": 6
             }
           }
         }
@@ -658,6 +843,46 @@
             }
           },
           "uri": "file://${fixture}/model/src/main/java/com/example/model/Greeting.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/prepareCallHierarchy",
+      "params": {
+        "position": {
+          "character": 18,
+          "line": 11
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "com.example.app.Callers",
+          "kind": 6,
+          "name": "throughClass(Formal) : String",
+          "range": {
+            "end": {
+              "character": 5,
+              "line": 13
+            },
+            "start": {
+              "character": 4,
+              "line": 11
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 30,
+              "line": 11
+            },
+            "start": {
+              "character": 18,
+              "line": 11
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
         }
       ]
     },

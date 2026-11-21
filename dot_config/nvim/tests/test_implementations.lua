@@ -111,6 +111,7 @@ T['collect()'] = MiniTest.new_set {
                     local line = params.item.uri == uri and 7 or 10
                     return { { from = { name = 'caller', kind = 6, uri = uri, range = at(line, 0).range, selectionRange = at(line, 0).range }, fromRanges = { at(line, 2).range } } }
                   end,
+                  ['callHierarchy/outgoingCalls'] = function() return _G.fake.outgoing and _G.fake.outgoing(params.item) or {} end,
                   ['textDocument/implementation'] = function() return _G.fake.implementation(params) end,
                   ['textDocument/definition'] = function() return _G.fake.definition(params) end,
                   ['textDocument/references'] = function() return params.position.line == 2 and { at(5, 4) } or { at(12, 8) } end,
@@ -341,6 +342,37 @@ T['collect()']['<M-m>c lists the callers of the supers, transitively, and of eve
   })
   eq(child.lua_get '_G.picked.keep_order', true)
   eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with its supers and implementations')
+end
+
+-- `<M-m>C` (method_outgoing_calls): the methods the one around the cursor calls, at their declarations, in the order
+-- they are first called. `run` calls Foo.helper (line 10) on line 5 and Iface.run (line 2) on line 4, then helper again.
+T['collect()']['<M-m>C in a method body lists the methods it calls, in call order'] = function()
+  in_method_body()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local uri = vim.uri_from_bufnr(0)
+    _G.iface_uri = vim.uri_from_fname(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h') .. '/Iface.kt')
+    _G.fake.outgoing = function(item)
+      if item.selectionRange.start.line ~= 2 then return {} end
+      return {
+        { to = { name = 'helper', kind = 6, uri = uri, range = span(9, 0, 9, 20), selectionRange = span(9, 4, 9, 10) }, fromRanges = { span(4, 2, 4, 8), span(6, 2, 6, 8) } },
+        { to = { name = 'run', kind = 6, uri = _G.iface_uri, range = span(1, 0, 1, 9), selectionRange = span(1, 4, 1, 7) }, fromRanges = { span(3, 2, 3, 5) } },
+      }
+    end
+  ]=]
+  child.type_keys '<M-m>C'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri, iface_uri = child.lua_get 'vim.uri_from_bufnr(0)', child.lua_get '_G.iface_uri'
+  eq(child.lua_get 'vim.tbl_map(function(l) return { uri = l.uri, line = l.range.start.line, character = l.range.start.character } end, _G.picked.locations)', {
+    { uri = iface_uri, line = 1, character = 4 },
+    { uri = uri, line = 9, character = 4 },
+  })
+  eq(child.lua_get '{ _G.picked.title, _G.picked.keep_order }', { 'Outgoing calls of run', true })
+  eq(child.lua_get '_G.prepared', { { line = 2, character = 4 } })
+end
+
+T['collect()']['<M-m>C is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('<M-m>C', 'n', false, true).desc", 'Method: outgoing [C]alls')
 end
 
 T['collect()']['<M-m>c outside any method says so'] = function()

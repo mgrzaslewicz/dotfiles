@@ -103,6 +103,15 @@ T['gradle-java | <M-m>c | on the interface method lists the callers of its imple
   eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with its supers and implementations', { CALLERS .. ':9', CALLERS .. ':13' } })
 end
 
+T['gradle-java | <M-m>C | in a method body lists the method it calls, at its declaration'] = function()
+  ctx.capture_pick()
+  ctx.edit(CALLERS)
+  ctx.cursor('return formal', 0)
+  child.lua "require('custom.implementations').method_outgoing_calls()"
+  ctx.wait('outgoing calls picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Outgoing calls of throughClass', { FORMAL .. ':7' } })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

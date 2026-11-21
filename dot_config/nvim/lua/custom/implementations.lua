@@ -23,6 +23,9 @@
 -- jdtls answers a call through the interface as a call of each implementation too: such a call is the method's own.
 -- Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
 --
+-- `<M-m>C` (method_outgoing_calls) lists the methods the one around the cursor calls, at their declarations, in the
+-- order it first calls them.
+--
 -- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
 -- body; outside methods to the supertypes of the class, a picker when it names several.
 --
@@ -405,17 +408,66 @@ function M.by_hierarchy(decls, impls)
   return vim.tbl_map(function(entry) return entry.loc end, ranked)
 end
 
+--- Calls back with the method around the cursor, from its name or anywhere in its body: its declaration (the uri and
+--- the range of its name) and its name without a signature. The innermost method symbol of the documentSymbol tree;
+--- outside any method says so and does not call back.
+---@param callback fun(decl: {uri: string, range: table}, name: string, symbol: table)
+function M.method_around_cursor(callback)
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
+    local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
+    if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
+    callback({ uri = params.textDocument.uri, range = method.selectionRange }, identifier(method.name), method)
+  end)
+end
+
+--- The methods the one around the cursor calls (`<M-m>C`), at their declarations, in the order the method first calls
+--- them. Telescope's outgoing calls picker pairs each callee's file with the call's position in the caller, so its
+--- entries point at the wrong lines; this one opens the callee.
+function M.method_outgoing_calls()
+  M.method_around_cursor(function(here, name)
+    request_all('textDocument/prepareCallHierarchy', { textDocument = { uri = here.uri }, position = here.range.start }, function(items)
+      local pending, calls = #items, {}
+      if pending == 0 then return vim.notify(('No outgoing calls of %s'):format(name), vim.log.levels.INFO) end
+      for _, item in ipairs(items) do
+        request_all('callHierarchy/outgoingCalls', { item = item }, function(found)
+          vim.list_extend(calls, found)
+          pending = pending - 1
+          if pending > 0 then return end
+          local function first(call)
+            local min
+            for _, range in ipairs(call.fromRanges) do
+              local s = range.start
+              if not min or s.line < min.line or (s.line == min.line and s.character < min.character) then min = s end
+            end
+            return min or { line = math.huge, character = 0 }
+          end
+          table.sort(calls, function(a, b)
+            local x, y = first(a), first(b)
+            return x.line < y.line or (x.line == y.line and x.character < y.character)
+          end)
+          local callees, seen = {}, {}
+          for _, call in ipairs(calls) do
+            local key = ('%s:%d:%d'):format(call.to.uri, call.to.selectionRange.start.line, call.to.selectionRange.start.character)
+            if not seen[key] then
+              seen[key] = true
+              table.insert(callees, { uri = call.to.uri, range = call.to.selectionRange })
+            end
+          end
+          if #callees == 0 then return vim.notify(('No outgoing calls of %s'):format(name), vim.log.levels.INFO) end
+          M.pick(callees, ('Outgoing calls of %s'):format(name), { keep_order = true })
+        end)
+      end
+    end)
+  end)
+end
+
 --- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
 --- its whole family, the method itself, the methods it overrides (transitively) and every implementation of each,
 --- in one picker. The calls come in hierarchy order (`by_hierarchy`), each declaration's in file order, so the
 --- closest to the method are at the bottom of the picker, by the prompt. The cursor stays where it is.
 function M.method_incoming_calls()
-  local params = vim.lsp.util.make_position_params(0, 'utf-16')
-  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
-    local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
-    if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
-    local name = identifier(method.name)
-    local here = { uri = params.textDocument.uri, range = method.selectionRange }
+  M.method_around_cursor(function(here, name)
     supers_of(here, name, function(supers)
       local decls = vim.list_extend({ here }, supers)
       local impls, pending = {}, #decls
