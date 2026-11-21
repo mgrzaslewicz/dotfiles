@@ -132,7 +132,7 @@ function M.collect(callback)
   end)
 end
 
-local CLASS_KINDS = { [5] = true, [10] = true, [11] = true, [23] = true } -- class, enum, interface, struct
+local CLASS_KINDS = { [5] = true, [10] = true, [11] = true, [19] = true, [23] = true } -- class, enum, interface, object (Kotlin), struct
 local METHOD_KINDS = { [6] = true, [12] = true } -- method, function
 M.CLASS_KINDS, M.METHOD_KINDS = CLASS_KINDS, METHOD_KINDS
 

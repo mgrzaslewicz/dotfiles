@@ -256,6 +256,17 @@ T['<M-t>M lists the members of the type and of its supertypes, nearest first, an
   })
 end
 
+T['<M-t> works in a Kotlin object'] = function()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    _G.fake.symbols[_G.u 'Foo.kt'] = { { name = 'Registry', kind = 19, range = span(4, 0, 8, 1), selectionRange = span(4, 7, 4, 15), children = {
+      { name = 'run', kind = 6, range = span(5, 4, 7, 5), selectionRange = span(5, 8, 5, 11) },
+    } } }
+  ]=]
+  child.type_keys '<M-t>m'
+  eq(picked(), { title = 'Members of Registry', keep_order = true, locations = { 'Foo.kt:5' } })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'

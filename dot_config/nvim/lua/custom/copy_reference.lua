@@ -14,8 +14,7 @@
 
 local M = {}
 
-local CLASS_KINDS = { [5] = true, [10] = true, [11] = true, [19] = true, [23] = true } -- class, enum, interface, object, struct
-
+local CLASS_KINDS = require('custom.implementations').CLASS_KINDS
 local contains = require('custom.implementations').contains
 
 --- The reference of the declaration around `pos`, or nil outside every declaration.
