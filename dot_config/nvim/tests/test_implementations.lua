@@ -235,6 +235,68 @@ T['collect()']['grs on a method that overrides nothing says so and stays'] = fun
   eq(child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", 'Foo.kt')
 end
 
+-- `<M-m>c` (method_incoming_calls): the callers of the method around the cursor, from anywhere in its body. `run` here
+-- spans lines 3-9; the cursor is on line 6, in its body. The call hierarchy is asked at the method name.
+local function in_method_body()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local iface_uri = vim.uri_from_fname(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h') .. '/Iface.kt')
+    _G.fake.symbols = function(u)
+      if u == iface_uri then
+        return { { name = 'Iface', kind = 11, range = span(0, 0, 2, 0), selectionRange = span(0, 0, 0, 5), children = {
+          { name = 'run', kind = 6, range = span(1, 0, 1, 10), selectionRange = span(1, 4, 1, 7) },
+        } } }
+      end
+      return u == vim.uri_from_bufnr(0) and { { name = 'Foo', kind = 5, range = span(0, 0, 14, 0), selectionRange = span(0, 6, 0, 9), children = {
+        { name = 'run', kind = 6, range = span(2, 0, 8, 1), selectionRange = span(2, 4, 2, 7) },
+      } } } or {}
+    end
+    _G.prepared, _G.picked = {}, nil
+    local impls = require 'custom.implementations'
+    local request_all = impls.request_all
+    impls.request_all = function(method, params, ...)
+      if method == 'textDocument/prepareCallHierarchy' then table.insert(_G.prepared, params.position) end
+      return request_all(method, params, ...)
+    end
+    impls.pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+    vim.api.nvim_win_set_cursor(0, { 6, 2 })
+  ]=]
+end
+
+T['collect()']['<M-m>c in a method body lists the callers of the method'] = function()
+  in_method_body()
+  local before = child.lua_get 'vim.api.nvim_win_get_cursor(0)'
+  child.type_keys '<M-m>c'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri = child.lua_get 'vim.uri_from_bufnr(0)'
+  eq(child.lua_get '_G.picked', { locations = { { uri = uri, range = range(7, 2) } }, title = 'Incoming calls of run' })
+  eq(child.lua_get '_G.prepared', { { line = 2, character = 4 } })
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', before)
+end
+
+T['collect()']['<M-m>c in the body of an override lists the callers of the overridden method too'] = function()
+  in_method_body()
+  child.lua [=[ _G.fake.overrides = true ]=]
+  child.type_keys '<M-m>c'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  local uri = child.lua_get 'vim.uri_from_bufnr(0)'
+  eq(child.lua_get '_G.picked.locations', { { uri = uri, range = range(7, 2) }, { uri = uri, range = range(10, 2) } })
+  eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with the overridden method')
+end
+
+T['collect()']['<M-m>c outside any method says so'] = function()
+  child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
+  child.cmd 'messages clear'
+  child.type_keys '<M-m>c'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('Not in a method') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('Not in a method') ~= nil", true)
+end
+
+T['collect()']['<M-m>c is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('<M-m>c', 'n', false, true).desc", 'Method: [C]allers')
+  eq(child.lua_get "vim.fn.maparg('<M-m>c', 'n', false, true).buffer", 1)
+end
+
 T['collect()']['grf anywhere in a method body goes to the method name'] = function()
   child.lua [=[
     local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end

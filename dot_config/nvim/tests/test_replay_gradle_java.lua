@@ -83,6 +83,15 @@ T['gradle-java | grc | on an override lists its callers and those of the interfa
   eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with the overridden method', { CALLERS .. ':9', CALLERS .. ':13' } })
 end
 
+T['gradle-java | <M-m>c | in the body of an override lists its callers and those of the interface method'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.implementations').method_incoming_calls()"
+  ctx.wait('incoming calls picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with the overridden method', { CALLERS .. ':9', CALLERS .. ':13' } })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

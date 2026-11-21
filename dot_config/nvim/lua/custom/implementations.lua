@@ -14,6 +14,9 @@
 -- type is a call of the interface member, which the server's incoming calls of the override leave out (IntelliJ's
 -- Ctrl+Alt+H lists both). Elsewhere it is Telescope's incoming calls picker.
 --
+-- `<M-m>c` (method_incoming_calls) is `grc` for the method around the cursor, from anywhere in its body: the method is
+-- the innermost method symbol of the documentSymbol tree, and its callers always open in a picker.
+--
 -- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
 -- body; outside methods to the supertypes of the class, a picker when it names several.
 --
@@ -321,6 +324,26 @@ function M.goto_enclosing_method()
     local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
     if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
     vim.lsp.util.show_document({ uri = params.textDocument.uri, range = method.selectionRange }, 'utf-16', { focus = true })
+  end)
+end
+
+--- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the call
+--- hierarchy is asked at the method name. On an override merged with the calls of the method it overrides, like `grc`.
+--- Always a picker, so the cursor stays where it is.
+function M.method_incoming_calls()
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
+    local method = innermost(symbols, params.position, function(sym) return METHOD_KINDS[sym.kind] ~= nil end)
+    if not method then return vim.notify('Not in a method', vim.log.levels.WARN) end
+    local name = identifier(method.name)
+    local here = { textDocument = params.textDocument, position = method.selectionRange.start }
+    M.overridden(function(declared)
+      call_sites(here, function(own)
+        if not declared then return M.pick(M.merge { own }, ('Incoming calls of %s'):format(name)) end
+        local super = { textDocument = { uri = declared.uri }, position = declared.range.start }
+        call_sites(super, function(inherited) M.pick(M.merge { own, inherited }, ('Incoming calls of %s, with the overridden method'):format(name)) end)
+      end)
+    end, name)
   end)
 end
 

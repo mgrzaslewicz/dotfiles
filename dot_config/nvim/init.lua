@@ -653,6 +653,9 @@ do
       -- picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
       vim.keymap.set('n', '<M-m>M', require('custom.method_types').picker, { buffer = buf, desc = 'Method: [M]ethod types' })
 
+      -- Callers of the method (IntelliJ Ctrl+Alt+H), with those of the method it overrides (see lua/custom/implementations.lua).
+      vim.keymap.set('n', '<M-m>c', require('custom.implementations').method_incoming_calls, { buffer = buf, desc = 'Method: [C]allers' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })
