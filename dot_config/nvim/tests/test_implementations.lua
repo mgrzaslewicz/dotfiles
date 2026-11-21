@@ -416,44 +416,57 @@ T['collect()']['<M-m>C is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('<M-m>C', 'n', false, true).desc", 'Method: outgoing [C]alls')
 end
 
--- `<M-m>i` (method_implementations): the overrides of the method around the cursor, asked at its name (the fake
--- answers only there): one is jumped to, several open a picker.
-local function implemented_at_name(lines)
+-- `<M-m>i` (method_implementations): `gri` on the name of the method around the cursor. The fake answers
+-- implementations only at the name of `run` (line 3) or of `Iface.run`.
+local function implemented_at_name(lines, iface_lines)
   child.lua(([=[
     local uri = vim.uri_from_bufnr(0)
-    local lines = %s
+    local iface_uri = vim.uri_from_fname(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':h') .. '/Iface.kt')
+    local lines, iface_lines = %s, %s
+    local function locs(ls) return vim.tbl_map(function(l) return { uri = uri, range = { start = { line = l, character = 4 }, ['end'] = { line = l, character = 7 } } } end, ls) end
     _G.fake.implementation = function(p)
-      if p.position.line ~= 2 or p.position.character ~= 4 then return {} end
-      return vim.tbl_map(function(l) return { uri = uri, range = { start = { line = l, character = 4 }, ['end'] = { line = l, character = 7 } } } end, lines)
+      if p.textDocument.uri == iface_uri and p.position.line == 1 and p.position.character == 4 then return locs(iface_lines) end
+      if p.textDocument.uri ~= uri or p.position.line ~= 2 or p.position.character ~= 4 then return {} end
+      return locs(lines)
     end
-  ]=]):format(vim.inspect(lines)))
+  ]=]):format(vim.inspect(lines), vim.inspect(iface_lines or {})))
 end
 
-T['collect()']['<M-m>i in a method body goes to its only implementation'] = function()
+T['collect()']['<M-m>i in a method body lists its implementations, in a picker even for one, like gri'] = function()
   in_method_body()
   implemented_at_name { 9 }
   child.type_keys '<M-m>i'
-  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 10 end) ]=]
-  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 10)
-end
-
-T['collect()']['<M-m>i in a method body lists its implementations when there are several'] = function()
-  in_method_body()
-  implemented_at_name { 12, 9 }
-  child.type_keys '<M-m>i'
   child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
-  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 9, 12 })
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 9 })
   eq(child.lua_get '_G.picked.title', 'Implementations of run')
 end
 
-T['collect()']['<M-m>i on a method without implementations says so and stays'] = function()
+T['collect()']['<M-m>i in the body of an override lists the implementations of the overridden method, like gri'] = function()
+  in_method_body()
+  child.lua [=[ _G.fake.overrides = true ]=]
+  implemented_at_name({ 9 }, { 2, 12 })
+  child.type_keys '<M-m>i'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 2, 12 })
+  eq(child.lua_get '_G.picked.title', 'Implementations of run')
+end
+
+T['collect()']['<M-m>i in the body of an override without implementations goes to the overridden method, like gri'] = function()
+  in_method_body()
+  child.lua [=[ _G.fake.overrides = true ]=]
+  implemented_at_name {}
+  child.type_keys '<M-m>i'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end) ]=]
+  eq({ child.lua_get "vim.fn.fnamemodify(vim.api.nvim_buf_get_name(0), ':t')", child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]' }, { 'Iface.kt', 2 })
+end
+
+T['collect()']['<M-m>i on a method without implementations goes to its name, where gri stays'] = function()
   in_method_body()
   implemented_at_name {}
-  child.cmd 'messages clear'
   child.type_keys '<M-m>i'
-  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('No implementations of run') ~= nil end) ]=]
-  eq(child.lua_get "vim.fn.execute('messages'):match('No implementations of run') ~= nil", true)
-  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 6)
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_win_get_cursor(0)[1] == 3 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 3, 4 })
+  eq(child.lua_get '_G.picked', vim.NIL)
 end
 
 T['collect()']['<M-m>i is mapped in LSP buffers with its desc'] = function()

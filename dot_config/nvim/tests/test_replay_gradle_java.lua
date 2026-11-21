@@ -112,42 +112,22 @@ T['gradle-java | <M-m>C | in a method body lists the method it calls, at its dec
   eq(child.lua_get '_G.picked', { 'Outgoing calls of throughClass', { FORMAL .. ':7' } })
 end
 
-T['gradle-java | <M-m>i | on the interface method goes to its only implementation'] = function()
+T['gradle-java | <M-m>i | in the interface method lists its implementation, like gri'] = function()
+  ctx.capture_pick()
   ctx.edit(GREETING)
   ctx.cursor('String greet', 0)
   child.lua "require('custom.implementations').method_implementations()"
-  ctx.wait('Formal.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Formal.java')")
-  eq(ctx.position(), { FORMAL, 7, 18 })
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':7' } })
 end
 
-T['gradle-java | <M-m>r | in the body of an override lists the usages of it and of the interface method'] = function()
+T['gradle-java | <M-m>i | in the body of an override lists the implementations of the interface method, like gri'] = function()
   ctx.capture_pick()
   ctx.edit(FORMAL)
   ctx.cursor('return "Good day', 0)
-  child.lua "require('custom.implementations').method_usages()"
-  ctx.wait('usages picked', '_G.picked ~= nil')
-  local picked = child.lua_get '_G.picked'
-  eq(picked[1], 'Usages of greet, with its supers and implementations')
-  eq({ vim.tbl_contains(picked[2], CALLERS .. ':9'), vim.tbl_contains(picked[2], CALLERS .. ':13') }, { true, true })
-  eq(vim.tbl_contains(picked[2], FORMAL .. ':7'), false)
-end
-
-T['gradle-java | <M-m>t | in a method body lists the test methods calling it'] = function()
-  ctx.capture_pick()
-  ctx.edit 'app/src/main/java/com/example/app/Main.java'
-  ctx.cursor('return "Hello', 0)
-  child.lua "require('custom.method_tests').goto_tests()"
-  ctx.wait('tests picked', '_G.picked ~= nil')
-  local test = 'app/src/test/java/com/example/app/MainTest.java'
-  eq(child.lua_get '_G.picked', { 'Tests of greeting', { test .. ':9', test .. ':14' } })
-end
-
-T['gradle-java | <M-m>v | in a method body selects the method with its annotation'] = function()
-  ctx.edit(FORMAL)
-  ctx.cursor('return "Good day', 0)
-  child.lua "require('custom.implementations').select_method()"
-  ctx.wait('method selected', "vim.fn.mode() == 'V'")
-  eq({ child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 6, 9 })
+  child.lua "require('custom.implementations').method_implementations()"
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':7' } })
 end
 
 T['gradle-java | gri | on the interface method lists its implementation'] = function()

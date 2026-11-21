@@ -659,7 +659,7 @@ do
       -- Methods the method calls, at their declarations, in call order (IntelliJ Ctrl+Alt+H, callee hierarchy).
       vim.keymap.set('n', '<M-m>C', require('custom.implementations').method_outgoing_calls, { buffer = buf, desc = 'Method: outgoing [C]alls' })
 
-      -- Overrides of the method (IntelliJ Ctrl+Alt+B on a method): one is jumped to, several open a picker.
+      -- Implementations of the method (IntelliJ Ctrl+Alt+B on a method): gri on its name, from anywhere in its body.
       vim.keymap.set('n', '<M-m>i', require('custom.implementations').method_implementations, { buffer = buf, desc = 'Method: [I]mplementations' })
 
       -- Usages of the method, its supers and its implementations (IntelliJ Alt+F7), in the order of <M-m>c.

@@ -25,8 +25,7 @@
 --
 -- `<M-m>r` (method_usages) lists the references of the same family, in the same order, without the declarations.
 --
--- `<M-m>i` (method_implementations) goes to the overrides of the method around the cursor: one is jumped to, several
--- open a picker.
+-- `<M-m>i` (method_implementations) is `gri` on the name of the method around the cursor, from anywhere in its body.
 --
 -- `<M-m>v` (select_method) selects the method around the cursor linewise, with the annotations and comment lines
 -- right above it (whether the server's range has them or not).
@@ -258,28 +257,43 @@ function M.overridden(callback, name)
   overridden_at({ uri = params.textDocument.uri, position = params.position }, name or vim.fn.expand '<cword>', callback)
 end
 
---- Jumps to the implementations of the word under the cursor (`gri`), in a picker even when there is only one. On an
---- override those of the method it overrides, so `gri` on `Impl.run` lists the implementations of `Iface.run`. With
---- none, goes to the overridden method, else to the definition, so `gri` always lands somewhere.
-function M.goto_implementation()
-  M.overridden(function(declared)
-    local word = vim.fn.expand '<cword>'
-    local target = declared and { textDocument = { uri = declared.uri }, position = declared.range.start } or vim.lsp.util.make_position_params(0, 'utf-16')
-    request_all('textDocument/implementation', target, function(implementations)
+--- Goes to the implementations of the method `name` at `target` (a uri and a position on its name), in a picker even
+--- when there is only one. On an override those of the method it overrides; with none, to the overridden method,
+--- else `otherwise()`.
+---@param target {uri: string, position: table}
+---@param name string
+---@param otherwise fun()
+local function goto_implementation_at(target, name, otherwise)
+  overridden_at(target, name, function(declared)
+    local at = declared and { textDocument = { uri = declared.uri }, position = declared.range.start }
+      or { textDocument = { uri = target.uri }, position = target.position }
+    request_all('textDocument/implementation', at, function(implementations)
       if #implementations > 0 then
         local locations = {}
         for _, raw in ipairs(implementations) do
           table.insert(locations, normalize(raw))
         end
-        return M.pick(locations, ('Implementations of %s'):format(word))
+        return M.pick(locations, ('Implementations of %s'):format(name))
       end
       if declared then
         vim.lsp.util.show_document(declared, 'utf-16', { focus = true })
         return
       end
-      require('telescope.builtin').lsp_definitions()
+      otherwise()
     end)
   end)
+end
+
+--- Jumps to the implementations of the word under the cursor (`gri`), in a picker even when there is only one. On an
+--- override those of the method it overrides, so `gri` on `Impl.run` lists the implementations of `Iface.run`. With
+--- none, goes to the overridden method, else to the definition, so `gri` always lands somewhere.
+function M.goto_implementation()
+  local params = vim.lsp.util.make_position_params(0, 'utf-16')
+  goto_implementation_at(
+    { uri = params.textDocument.uri, position = params.position },
+    vim.fn.expand '<cword>',
+    function() require('telescope.builtin').lsp_definitions() end
+  )
 end
 
 --- Jumps to the definition of the word under the cursor (`grd`). On an override that is the method it overrides, so
@@ -482,18 +496,13 @@ function M.method_outgoing_calls()
   end)
 end
 
---- The implementations of the method around the cursor (`<M-m>i`, IntelliJ Ctrl+Alt+B on a method): the methods
---- that override it, asked at its name. One is jumped to, several open a picker.
+--- The implementations of the method around the cursor (`<M-m>i`, IntelliJ Ctrl+Alt+B on a method): `gri` on its
+--- name, from anywhere in its body. Where `gri` would go to the definition, that is the method itself: its name.
 function M.method_implementations()
   M.method_around_cursor(function(here, name)
-    request_all('textDocument/implementation', { textDocument = { uri = here.uri }, position = here.range.start }, function(found)
-      local locations = M.merge { found }
-      if #locations == 0 then return vim.notify(('No implementations of %s'):format(name), vim.log.levels.INFO) end
-      if #locations == 1 then
-        vim.cmd "normal! m'"
-        return vim.lsp.util.show_document(locations[1], 'utf-16', { focus = true })
-      end
-      M.pick(locations, ('Implementations of %s'):format(name))
+    goto_implementation_at({ uri = here.uri, position = here.range.start }, name, function()
+      vim.cmd "normal! m'"
+      vim.lsp.util.show_document(here, 'utf-16', { focus = true })
     end)
   end)
 end
