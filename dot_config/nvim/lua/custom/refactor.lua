@@ -6,7 +6,7 @@
 -- If a server titles its extract actions differently, adjust the title words below or register a handler.
 -- kotlin_lsp offers fewer refactorings than IntelliJ; large Kotlin refactors are still IntelliJ's job.
 -- `<M-m>n` (rename_method) and `<M-m>S` (change_method_signature) run <leader>rn and <leader>rs on the name of the
--- method around the cursor, from anywhere in its body.
+-- method around the cursor, from anywhere in its body; `<M-t>n` (rename_type) the rename on the type's name.
 -- Known limit: kotlin_lsp offers no change signature, so <leader>rs and <M-m>S say "No code actions available" in Kotlin.
 -- Known limit: kotlin_lsp has no extract function, so <leader>rm says "No code actions available" in Kotlin.
 
@@ -71,12 +71,13 @@ function M.run(name, visual)
   error('no refactor action ' .. name)
 end
 
---- Runs the refactor action `name` on the name of the method around the cursor, from anywhere in its body: moves the
---- cursor there, with a jumplist entry (<C-o> goes back). The cursor stays on the name: the actions ask for input
---- asynchronously.
+--- Runs the refactor action `name` on the name of the declaration `around` finds (the method or the type around the
+--- cursor), from anywhere in it: moves the cursor there, with a jumplist entry (<C-o> goes back). The cursor stays on
+--- the name: the actions ask for input asynchronously.
+---@param around fun(callback: fun(decl: {uri: string, range: table}))
 ---@param name string
-local function on_method_name(name)
-  require('custom.implementations').method_around_cursor(function(here)
+local function on_name(around, name)
+  around(function(here)
     vim.cmd "normal! m'"
     local line = vim.api.nvim_buf_get_lines(0, here.range.start.line, here.range.start.line + 1, false)[1] or ''
     local col = vim.str_byteindex(line, 'utf-16', here.range.start.character, false)
@@ -86,10 +87,13 @@ local function on_method_name(name)
 end
 
 --- Renames the method around the cursor (`<M-m>n`, IntelliJ Shift+F6 on it): <leader>rn on its name.
-function M.rename_method() on_method_name 'rename' end
+function M.rename_method() on_name(require('custom.implementations').method_around_cursor, 'rename') end
+
+--- Renames the type around the cursor (`<M-t>n`): <leader>rn on its name.
+function M.rename_type() on_name(require('custom.types').type_around_cursor, 'rename') end
 
 --- Changes the signature of the method around the cursor (`<M-m>S`, IntelliJ Ctrl+F6): <leader>rs on its name.
-function M.change_method_signature() on_method_name 'change_signature' end
+function M.change_method_signature() on_name(require('custom.implementations').method_around_cursor, 'change_signature') end
 
 -- Rename lives at <leader>rn; drop Neovim's built-in `grn` default so there is one key for it.
 pcall(vim.keymap.del, 'n', 'grn')

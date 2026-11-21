@@ -152,6 +152,24 @@ T['<M-t>m lists the members of the type, in file order, a nested type without it
   eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 5, 5, 7 })
 end
 
+T['<M-t>n renames the type, from its name'] = function()
+  child.lua [=[
+    _G.ran = nil
+    require('custom.refactor').run = function(name) _G.ran = { name, vim.api.nvim_win_get_cursor(0) } end
+  ]=]
+  child.type_keys '<M-t>n'
+  child.lua [=[ vim.wait(2000, function() return _G.ran ~= nil end) ]=]
+  eq(child.lua_get '_G.ran', { 'rename', { 5, 6 } })
+  child.type_keys '<C-o>'
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)[1]', 7)
+end
+
+T['<M-t>v selects the type linewise, with its annotation and doc comment'] = function()
+  child.type_keys '<M-t>v'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.mode() == 'V' end) ]=]
+  eq({ child.lua_get 'vim.fn.mode()', child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 'V', 3, 9 })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -161,14 +179,19 @@ T['<M-t> outside any type says so'] = function()
 end
 
 T['<M-t> maps are set in LSP buffers with their descs'] = function()
-  eq(vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r', 'm' }), {
-    'Type: [S]upertypes',
-    'Type: [H]ierarchy up (supertypes)',
-    'Type: [h]ierarchy down (subtypes)',
-    'Type: [I]mplementations',
-    'Type: usages ([R]eferences)',
-    'Type: [M]embers',
-  })
+  eq(
+    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v' }),
+    {
+      'Type: [S]upertypes',
+      'Type: [H]ierarchy up (supertypes)',
+      'Type: [h]ierarchy down (subtypes)',
+      'Type: [I]mplementations',
+      'Type: usages ([R]eferences)',
+      'Type: [M]embers',
+      'Type: re[n]ame',
+      'Type: select ([V]isual)',
+    }
+  )
 end
 
 return T

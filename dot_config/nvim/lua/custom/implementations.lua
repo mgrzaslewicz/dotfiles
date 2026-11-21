@@ -582,15 +582,19 @@ function M.method_start(lines, first)
   return start
 end
 
+--- Selects `symbol` (a documentSymbol of the current buffer) linewise, its annotations and doc comment included.
+---@param symbol table
+function M.select_symbol(symbol)
+  local lines = vim.api.nvim_buf_get_lines(0, 0, symbol.range.start.line, false)
+  local first = M.method_start(lines, symbol.range.start.line)
+  vim.api.nvim_win_set_cursor(0, { first + 1, 0 })
+  vim.cmd 'normal! V'
+  vim.api.nvim_win_set_cursor(0, { symbol.range['end'].line + 1, 0 })
+end
+
 --- Selects the method around the cursor (`<M-m>v`) linewise, its annotations and doc comment included.
 function M.select_method()
-  M.method_around_cursor(function(_, _, method)
-    local lines = vim.api.nvim_buf_get_lines(0, 0, method.range.start.line, false)
-    local first = M.method_start(lines, method.range.start.line)
-    vim.api.nvim_win_set_cursor(0, { first + 1, 0 })
-    vim.cmd 'normal! V'
-    vim.api.nvim_win_set_cursor(0, { method.range['end'].line + 1, 0 })
-  end)
+  M.method_around_cursor(function(_, _, method) M.select_symbol(method) end)
 end
 
 --- The methods the one around the cursor overrides (`<M-m>H`, the method's hierarchy up), walked up through the class

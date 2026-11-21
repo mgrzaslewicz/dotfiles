@@ -13,6 +13,9 @@
 -- `<M-t>m` lists the type's own members (IntelliJ Ctrl+F12 on the class): its children in the documentSymbol tree, in
 -- file order; a nested type is listed, not its members.
 --
+-- `<M-t>n` renames the type (<leader>rn on its name, see custom/refactor.lua); `<M-t>v` selects it linewise, with its
+-- annotations and doc comment.
+--
 -- Known limit: a supertype outside the project (`jdt://`, `jar:`) is listed, but its own supertypes are not read.
 
 local implementations = require 'custom.implementations'
@@ -159,6 +162,11 @@ function M.members()
     if #members == 0 then return vim.notify(('%s has no members'):format(name), vim.log.levels.INFO) end
     implementations.pick(members, ('Members of %s'):format(name), { keep_order = true, columns = true })
   end)
+end
+
+--- Selects the type around the cursor (`<M-t>v`) linewise, its annotations and doc comment included.
+function M.select_type()
+  M.type_around_cursor(function(_, _, class) implementations.select_symbol(class) end)
 end
 
 return M
