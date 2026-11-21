@@ -23,6 +23,9 @@
 -- jdtls answers a call through the interface as a call of each implementation too: such a call is the method's own.
 -- Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
 --
+-- `<M-m>i` (method_implementations) goes to the overrides of the method around the cursor: one is jumped to, several
+-- open a picker.
+--
 -- `<M-m>C` (method_outgoing_calls) lists the methods the one around the cursor calls, at their declarations, in the
 -- order it first calls them.
 --
@@ -458,6 +461,22 @@ function M.method_outgoing_calls()
           M.pick(callees, ('Outgoing calls of %s'):format(name), { keep_order = true })
         end)
       end
+    end)
+  end)
+end
+
+--- The implementations of the method around the cursor (`<M-m>i`, IntelliJ Ctrl+Alt+B on a method): the methods
+--- that override it, asked at its name. One is jumped to, several open a picker.
+function M.method_implementations()
+  M.method_around_cursor(function(here, name)
+    request_all('textDocument/implementation', { textDocument = { uri = here.uri }, position = here.range.start }, function(found)
+      local locations = M.merge { found }
+      if #locations == 0 then return vim.notify(('No implementations of %s'):format(name), vim.log.levels.INFO) end
+      if #locations == 1 then
+        vim.cmd "normal! m'"
+        return vim.lsp.util.show_document(locations[1], 'utf-16', { focus = true })
+      end
+      M.pick(locations, ('Implementations of %s'):format(name))
     end)
   end)
 end

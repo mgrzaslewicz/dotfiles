@@ -659,6 +659,9 @@ do
       -- Methods the method calls, at their declarations, in call order (IntelliJ Ctrl+Alt+H, callee hierarchy).
       vim.keymap.set('n', '<M-m>C', require('custom.implementations').method_outgoing_calls, { buffer = buf, desc = 'Method: outgoing [C]alls' })
 
+      -- Overrides of the method (IntelliJ Ctrl+Alt+B on a method): one is jumped to, several open a picker.
+      vim.keymap.set('n', '<M-m>i', require('custom.implementations').method_implementations, { buffer = buf, desc = 'Method: [I]mplementations' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })

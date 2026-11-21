@@ -112,6 +112,14 @@ T['gradle-java | <M-m>C | in a method body lists the method it calls, at its dec
   eq(child.lua_get '_G.picked', { 'Outgoing calls of throughClass', { FORMAL .. ':7' } })
 end
 
+T['gradle-java | <M-m>i | on the interface method goes to its only implementation'] = function()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.implementations').method_implementations()"
+  ctx.wait('Formal.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'Formal.java')")
+  eq(ctx.position(), { FORMAL, 7, 18 })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
