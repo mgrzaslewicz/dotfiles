@@ -5,6 +5,7 @@
 -- registers it per buffer with `register` instead of adding its own keymaps (see custom/plugins/jdtls.lua).
 -- If a server titles its extract actions differently, adjust the title words below or register a handler.
 -- kotlin_lsp offers fewer refactorings than IntelliJ; large Kotlin refactors are still IntelliJ's job.
+-- `<M-m>n` (rename_method) runs the rename on the name of the method around the cursor, from anywhere in its body.
 -- Known limit: kotlin_lsp has no extract function, so <leader>rm says "No code actions available" in Kotlin.
 
 local M = {}
@@ -54,6 +55,29 @@ local overrides = {}
 function M.register(bufnr, handlers)
   if bufnr == 0 then bufnr = vim.api.nvim_get_current_buf() end
   overrides[bufnr] = handlers
+end
+
+--- Runs the refactor action `name` in the current buffer: the language's registered handler, else the default.
+---@param name string
+---@param visual? boolean
+function M.run(name, visual)
+  for _, action in ipairs(actions) do
+    if action.name == name then return ((overrides[vim.api.nvim_get_current_buf()] or {})[name] or action.default)(visual or false) end
+  end
+  error('no refactor action ' .. name)
+end
+
+--- Renames the method around the cursor (`<M-m>n`, IntelliJ Shift+F6 on it) from anywhere in its body: moves the
+--- cursor to the method name, with a jumplist entry (<C-o> goes back), and runs the rename of <leader>rn there. The
+--- cursor stays on the name: the rename asks for the new name asynchronously.
+function M.rename_method()
+  require('custom.implementations').method_around_cursor(function(here)
+    vim.cmd "normal! m'"
+    local line = vim.api.nvim_buf_get_lines(0, here.range.start.line, here.range.start.line + 1, false)[1] or ''
+    local col = vim.str_byteindex(line, 'utf-16', here.range.start.character, false)
+    vim.api.nvim_win_set_cursor(0, { here.range.start.line + 1, col })
+    M.run 'rename'
+  end)
 end
 
 -- Rename lives at <leader>rn; drop Neovim's built-in `grn` default so there is one key for it.
