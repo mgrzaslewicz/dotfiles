@@ -235,6 +235,27 @@ T['<M-t>u runs those test files through neotest'] = function()
   eq(child.lua_get '_G.ran', { 'FooTest.kt', 'UsesTest.kt' })
 end
 
+T['<M-t>M lists the members of the type and of its supertypes, nearest first, an override once'] = function()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local function member(name, kind, line) return { name = name, kind = kind, range = span(line, 2, line, 20), selectionRange = span(line, 6, line, 6 + #name) } end
+    _G.fake.symbols[_G.u 'Base.kt'][1].children = { member('count', 8, 0), member('run', 6, 0) }
+    _G.fake.symbols[_G.u 'Iface.kt'][1].children = { member('greet()', 6, 0) }
+    _G.fake.symbols[_G.u 'Root.kt'][1].children = { member('id', 8, 0) }
+    require('custom.implementations').pick = function(locations, title, opts)
+      _G.picked = { title = title, keep_order = opts and opts.keep_order, columns = opts and opts.columns, names = vim.tbl_map(function(l) return l.name end, locations) }
+    end
+  ]=]
+  child.type_keys '<M-t>M'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(child.lua_get '_G.picked', {
+    title = 'Members of Foo, with its supertypes',
+    keep_order = true,
+    columns = true,
+    names = { 'Foo.run', 'Base.count', 'Iface.greet', 'Root.id' },
+  })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -247,7 +268,7 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
   eq(
     vim.tbl_map(
       function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end,
-      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y', 't', 'u' }
+      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y', 't', 'u', 'M' }
     ),
     {
       'Type: [S]upertypes',
@@ -261,6 +282,7 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
       'Type: cop[y] reference',
       'Type: [T]ests',
       'Type: r[u]n its tests',
+      'Type: [M]embers with supertypes',
     }
   )
 end

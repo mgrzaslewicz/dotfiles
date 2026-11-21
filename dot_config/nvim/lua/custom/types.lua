@@ -16,6 +16,9 @@
 -- `<M-t>n` renames the type (<leader>rn on its name, see custom/refactor.lua); `<M-t>v` selects it linewise, with its
 -- annotations and doc comment.
 --
+-- `<M-t>M` adds the members of its supertypes (those of `<M-t>H`, nearest first), each named `Type.member`; a member
+-- an override below already lists is left out (matched by name, so of overloads only the lowest declaring type's).
+--
 -- `<M-t>t` lists the test files using the type: its test counterpart (`FooTest`, custom/jvm/test_pair.lua) first when
 -- it exists, then the test files referencing it, each at its first use. `<M-t>u` runs those files through neotest.
 --
@@ -151,17 +154,23 @@ function M.usages()
   end)
 end
 
+--- The members of `class` (a symbol in the file at `uri`), in file order, each at its name.
+local function members_of(uri, class)
+  local members = vim.tbl_map(
+    function(child) return { uri = uri, range = child.selectionRange, name = vim.trim(child.name:match '^[^:]+'), kind = child.kind } end,
+    class.children or {}
+  )
+  table.sort(members, function(a, b)
+    local x, y = a.range.start, b.range.start
+    return x.line < y.line or (x.line == y.line and x.character < y.character)
+  end)
+  return members
+end
+
 --- The members of the type around the cursor (`<M-t>m`), in file order, each at its name.
 function M.members()
   M.type_around_cursor(function(here, name, class)
-    local members = vim.tbl_map(
-      function(child) return { uri = here.uri, range = child.selectionRange, name = vim.trim(child.name:match '^[^:]+') } end,
-      class.children or {}
-    )
-    table.sort(members, function(a, b)
-      local x, y = a.range.start, b.range.start
-      return x.line < y.line or (x.line == y.line and x.character < y.character)
-    end)
+    local members = members_of(here.uri, class)
     if #members == 0 then return vim.notify(('%s has no members'):format(name), vim.log.levels.INFO) end
     implementations.pick(members, ('Members of %s'):format(name), { keep_order = true, columns = true })
   end)
@@ -219,6 +228,43 @@ function M.run_tests()
     for _, file in ipairs(files) do
       neotest.run.run(vim.uri_to_fname(file.uri))
     end
+  end)
+end
+
+--- The members of the type around the cursor and of its supertypes (`<M-t>M`): its own, then each supertype's,
+--- nearest first, each named `Type.member`; a member an override below lists already is left out.
+function M.members_with_supertypes()
+  M.type_around_cursor(function(here, name, class)
+    all_supertypes(here.uri, class, function(supers)
+      local classes, pending = {}, #supers
+      local function done()
+        local out, seen = {}, {}
+        local function add(owner, members)
+          for _, member in ipairs(members) do
+            local id = member.name:match '^[^(%s]+' or member.name
+            if not seen[id] then
+              seen[id] = true
+              member.name = owner .. '.' .. id
+              table.insert(out, member)
+            end
+          end
+        end
+        add(name, members_of(here.uri, class))
+        for i, super in ipairs(supers) do
+          if classes[i] then add(classes[i].name, members_of(super.uri, classes[i])) end
+        end
+        if #out == 0 then return vim.notify(('%s has no members'):format(name), vim.log.levels.INFO) end
+        implementations.pick(out, ('Members of %s, with its supertypes'):format(name), { keep_order = true, columns = true })
+      end
+      if pending == 0 then return done() end
+      for i, super in ipairs(supers) do
+        request_all('textDocument/documentSymbol', { textDocument = { uri = super.uri } }, function(symbols)
+          classes[i] = class_at(symbols, super.range.start)
+          pending = pending - 1
+          if pending == 0 then done() end
+        end)
+      end
+    end)
   end)
 end
 

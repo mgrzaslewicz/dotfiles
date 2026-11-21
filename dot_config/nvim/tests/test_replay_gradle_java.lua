@@ -269,6 +269,15 @@ T['gradle-java | <M-t>t | in a class goes to its test counterpart, the only test
   eq(ctx.position()[1], 'app/src/test/java/com/example/app/MainTest.java')
 end
 
+T['gradle-java | <M-t>M | in a class lists its members and those of the interface, an override once'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.types').members_with_supertypes()"
+  ctx.wait('members picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Members of Formal, with its supertypes', { FORMAL .. ':7' } })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
