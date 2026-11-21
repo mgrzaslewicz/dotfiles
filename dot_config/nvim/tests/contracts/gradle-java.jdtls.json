@@ -6,6 +6,159 @@
       "method": "callHierarchy/incomingCalls",
       "params": {
         "item": {
+          "detail": "com.example.app.Main",
+          "kind": 6,
+          "name": "greeting(String) : String",
+          "range": {
+            "end": {
+              "character": 5,
+              "line": 13
+            },
+            "start": {
+              "character": 4,
+              "line": 11
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 26,
+              "line": 11
+            },
+            "start": {
+              "character": 18,
+              "line": 11
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": [
+        {
+          "from": {
+            "detail": "com.example.app.MainTest",
+            "kind": 6,
+            "name": "failsOnPurpose() : void",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 15
+              },
+              "start": {
+                "character": 4,
+                "line": 12
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 52,
+                "line": 14
+              },
+              "start": {
+                "character": 37,
+                "line": 14
+              }
+            },
+            "uri": "file://${fixture}/app/src/test/java/com/example/app/MainTest.java"
+          },
+          "fromRanges": [
+            {
+              "end": {
+                "character": 52,
+                "line": 14
+              },
+              "start": {
+                "character": 37,
+                "line": 14
+              }
+            }
+          ]
+        },
+        {
+          "from": {
+            "detail": "com.example.app.Main",
+            "kind": 6,
+            "name": "main(String[]) : void",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 9
+              },
+              "start": {
+                "character": 4,
+                "line": 6
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 53,
+                "line": 8
+              },
+              "start": {
+                "character": 27,
+                "line": 8
+              }
+            },
+            "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+          },
+          "fromRanges": [
+            {
+              "end": {
+                "character": 53,
+                "line": 8
+              },
+              "start": {
+                "character": 27,
+                "line": 8
+              }
+            }
+          ]
+        },
+        {
+          "from": {
+            "detail": "com.example.app.MainTest",
+            "kind": 6,
+            "name": "greets() : void",
+            "range": {
+              "end": {
+                "character": 5,
+                "line": 10
+              },
+              "start": {
+                "character": 4,
+                "line": 7
+              }
+            },
+            "selectionRange": {
+              "end": {
+                "character": 55,
+                "line": 9
+              },
+              "start": {
+                "character": 40,
+                "line": 9
+              }
+            },
+            "uri": "file://${fixture}/app/src/test/java/com/example/app/MainTest.java"
+          },
+          "fromRanges": [
+            {
+              "end": {
+                "character": 55,
+                "line": 9
+              },
+              "start": {
+                "character": 40,
+                "line": 9
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "method": "callHierarchy/incomingCalls",
+      "params": {
+        "item": {
           "detail": "com.example.model.Formal",
           "kind": 6,
           "name": "greet(String) : String",
@@ -596,6 +749,118 @@
       "method": "textDocument/documentSymbol",
       "params": {
         "textDocument": {
+          "uri": "file://${fixture}/app/src/test/java/com/example/app/MainTest.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "",
+          "kind": 4,
+          "name": "com.example.app",
+          "range": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 24,
+              "line": 0
+            },
+            "start": {
+              "character": 0,
+              "line": 0
+            }
+          }
+        },
+        {
+          "children": [
+            {
+              "detail": " : void",
+              "kind": 6,
+              "name": "greets()",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 10
+                },
+                "start": {
+                  "character": 4,
+                  "line": 7
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 15,
+                  "line": 8
+                },
+                "start": {
+                  "character": 9,
+                  "line": 8
+                }
+              }
+            },
+            {
+              "detail": " : void",
+              "kind": 6,
+              "name": "failsOnPurpose()",
+              "range": {
+                "end": {
+                  "character": 5,
+                  "line": 15
+                },
+                "start": {
+                  "character": 4,
+                  "line": 12
+                }
+              },
+              "selectionRange": {
+                "end": {
+                  "character": 23,
+                  "line": 13
+                },
+                "start": {
+                  "character": 9,
+                  "line": 13
+                }
+              }
+            }
+          ],
+          "detail": "",
+          "kind": 5,
+          "name": "MainTest",
+          "range": {
+            "end": {
+              "character": 1,
+              "line": 16
+            },
+            "start": {
+              "character": 0,
+              "line": 6
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 14,
+              "line": 6
+            },
+            "start": {
+              "character": 6,
+              "line": 6
+            }
+          }
+        }
+      ]
+    },
+    {
+      "method": "textDocument/documentSymbol",
+      "params": {
+        "textDocument": {
           "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
         }
       },
@@ -798,6 +1063,19 @@
       "params": {
         "position": {
           "character": 18,
+          "line": 11
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": []
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
+          "character": 18,
           "line": 6
         },
         "textDocument": {
@@ -883,6 +1161,46 @@
             }
           },
           "uri": "file://${fixture}/app/src/main/java/com/example/app/Callers.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/prepareCallHierarchy",
+      "params": {
+        "position": {
+          "character": 18,
+          "line": 11
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": [
+        {
+          "detail": "com.example.app.Main",
+          "kind": 6,
+          "name": "greeting(String) : String",
+          "range": {
+            "end": {
+              "character": 5,
+              "line": 13
+            },
+            "start": {
+              "character": 4,
+              "line": 11
+            }
+          },
+          "selectionRange": {
+            "end": {
+              "character": 26,
+              "line": 11
+            },
+            "start": {
+              "character": 18,
+              "line": 11
+            }
+          },
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
         }
       ]
     },

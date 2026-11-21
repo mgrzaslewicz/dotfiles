@@ -668,6 +668,9 @@ do
       -- Rename the method (IntelliJ Shift+F6): <leader>rn on its name; the cursor moves there, <C-o> goes back.
       vim.keymap.set('n', '<M-m>n', function() require('custom.refactor').rename_method() end, { buffer = buf, desc = 'Method: re[n]ame' })
 
+      -- Tests of the method: the test methods calling it or its family; one is jumped to (see lua/custom/method_tests.lua).
+      vim.keymap.set('n', '<M-m>t', function() require('custom.method_tests').goto_tests() end, { buffer = buf, desc = 'Method: [T]ests' })
+
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
       vim.keymap.set('n', 'gry', require('custom.copy_reference').copy, { buffer = buf, desc = 'Cop[y] Reference' })

@@ -291,24 +291,36 @@ function M.goto_definition()
   end)
 end
 
+--- The incoming calls (CallHierarchyIncomingCall: `from`, `fromRanges`) of the method at `target` (a
+--- TextDocumentPositionParams), once every server has answered.
+---@param target table
+---@param callback fun(calls: table[])
+function M.incoming(target, callback)
+  request_all('textDocument/prepareCallHierarchy', target, function(items)
+    if #items == 0 then return callback {} end
+    local pending, calls = #items, {}
+    for _, item in ipairs(items) do
+      request_all('callHierarchy/incomingCalls', { item = item }, function(found)
+        vim.list_extend(calls, found)
+        pending = pending - 1
+        if pending == 0 then callback(calls) end
+      end)
+    end
+  end)
+end
+
 --- The call sites of the method at `target` (a TextDocumentPositionParams), as locations, once every server has answered.
 ---@param target table
 ---@param callback fun(locations: {uri: string, range: table}[])
 local function call_sites(target, callback)
-  request_all('textDocument/prepareCallHierarchy', target, function(items)
-    if #items == 0 then return callback {} end
-    local pending, sites = #items, {}
-    for _, item in ipairs(items) do
-      request_all('callHierarchy/incomingCalls', { item = item }, function(calls)
-        for _, call in ipairs(calls) do
-          for _, range in ipairs(call.fromRanges) do
-            table.insert(sites, { uri = call.from.uri, range = range })
-          end
-        end
-        pending = pending - 1
-        if pending == 0 then callback(sites) end
-      end)
+  M.incoming(target, function(calls)
+    local sites = {}
+    for _, call in ipairs(calls) do
+      for _, range in ipairs(call.fromRanges) do
+        table.insert(sites, { uri = call.from.uri, range = range })
+      end
     end
+    callback(sites)
   end)
 end
 
@@ -488,7 +500,7 @@ end
 ---@param here {uri: string, range: table}
 ---@param name string
 ---@param callback fun(family: {uri: string, range: table}[])
-local function family_of(here, name, callback)
+function M.family_of(here, name, callback)
   supers_of(here, name, function(supers)
     local decls = vim.list_extend({ here }, supers)
     local impls, pending = {}, #decls
@@ -509,7 +521,7 @@ end
 ---@param ask fun(member: {uri: string, range: table}, done: fun(locations: table[]))
 local function pick_for_family(what, ask)
   M.method_around_cursor(function(here, name)
-    family_of(here, name, function(family)
+    M.family_of(here, name, function(family)
       local found, left = {}, #family
       for i, member in ipairs(family) do
         ask(member, function(locations)
@@ -535,7 +547,7 @@ local function pick_for_family(what, ask)
 end
 
 --- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
---- its whole family (`family_of`) in one picker, closest to the method first, so at the bottom of the picker, by the
+--- its whole family (`M.family_of`) in one picker, closest to the method first, so at the bottom of the picker, by the
 --- prompt. The cursor stays where it is.
 function M.method_incoming_calls()
   pick_for_family('Incoming calls', function(member, done) call_sites({ textDocument = { uri = member.uri }, position = member.range.start }, done) end)

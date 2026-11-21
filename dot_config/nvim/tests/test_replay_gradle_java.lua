@@ -132,6 +132,16 @@ T['gradle-java | <M-m>r | in the body of an override lists the usages of it and 
   eq(vim.tbl_contains(picked[2], FORMAL .. ':7'), false)
 end
 
+T['gradle-java | <M-m>t | in a method body lists the test methods calling it'] = function()
+  ctx.capture_pick()
+  ctx.edit 'app/src/main/java/com/example/app/Main.java'
+  ctx.cursor('return "Hello', 0)
+  child.lua "require('custom.method_tests').goto_tests()"
+  ctx.wait('tests picked', '_G.picked ~= nil')
+  local test = 'app/src/test/java/com/example/app/MainTest.java'
+  eq(child.lua_get '_G.picked', { 'Tests of greeting', { test .. ':9', test .. ':14' } })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
