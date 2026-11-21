@@ -4,6 +4,9 @@
 -- own first. One is jumped to, several open a picker. Tests: tests/test_method_tests.lua; replayed on jdtls in
 -- tests/test_replay_gradle_java.lua.
 --
+-- `<M-m>u` runs those tests through neotest: each test file is added to the buffer list (neotest parses a file on
+-- BufAdd), and each test is the innermost neotest test position on its name's line, run by its id.
+--
 -- Known limit: only direct callers count, so a test reaching the method through a helper is not listed.
 
 local implementations = require 'custom.implementations'
@@ -108,6 +111,65 @@ function M.goto_tests()
       return
     end
     implementations.pick(tests, ('Tests of %s'):format(name), { keep_order = true })
+  end)
+end
+
+--- The neotest position ids of `tests`: for each, the innermost test position on the line of its name in the tree
+--- `tree_of(path)` gives for its file. Tests without one are left out.
+---@param tests {uri: string, range: table}[]
+---@param tree_of fun(path: string): table? a neotest.Tree or nil
+---@return string[]
+function M.position_ids(tests, tree_of)
+  local ids, seen = {}, {}
+  for _, test in ipairs(tests) do
+    local tree, line, best = tree_of(vim.uri_to_fname(test.uri)), test.range.start.line, nil
+    for _, pos in tree and tree:iter() or function() end do
+      if pos.type == 'test' and pos.range and pos.range[1] <= line and line <= pos.range[3] and (not best or pos.range[1] >= best.range[1]) then best = pos end
+    end
+    if best and not seen[best.id] then
+      seen[best.id] = true
+      table.insert(ids, best.id)
+    end
+  end
+  return ids
+end
+
+--- Runs the tests of the method around the cursor (`<M-m>u`) through neotest, once neotest has parsed their files
+--- (up to 3 s).
+function M.run_tests()
+  M.collect(function(tests, name)
+    if #tests == 0 then
+      vim.notify(('No tests call %s'):format(name), vim.log.levels.INFO)
+      return
+    end
+    local neotest = require 'neotest'
+    local buffers = {}
+    for _, test in ipairs(tests) do
+      local path = vim.uri_to_fname(test.uri)
+      if not buffers[path] then
+        vim.cmd.badd(vim.fn.fnameescape(path))
+        buffers[path] = vim.fn.bufnr(path)
+      end
+    end
+    local function tree_of(path)
+      for _, adapter in ipairs(neotest.state.adapter_ids()) do
+        local tree = neotest.state.positions(adapter, { buffer = buffers[path] })
+        if tree then return tree end
+      end
+    end
+    local deadline = vim.uv.now() + 3000
+    local function try()
+      local ids = M.position_ids(tests, tree_of)
+      if #ids < #tests and vim.uv.now() < deadline then return vim.defer_fn(try, 100) end
+      if #ids == 0 then
+        vim.notify(('neotest knows no test of %s'):format(name), vim.log.levels.WARN)
+        return
+      end
+      for _, id in ipairs(ids) do
+        neotest.run.run(id)
+      end
+    end
+    try()
   end)
 end
 

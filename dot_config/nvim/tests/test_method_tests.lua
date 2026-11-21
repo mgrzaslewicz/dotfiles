@@ -146,4 +146,49 @@ T['collect()']['<M-m>t is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('<M-m>t', 'n', false, true).desc", 'Method: [T]ests')
 end
 
+-- `<M-m>u` (run_tests): the tests of `collect`, run through neotest by their position ids. neotest is a stub here:
+-- its tree for FooTest.kt has the class (lines 1-12) holding `greets` (lines 4-6) and `other` (lines 8-10).
+local function stub_neotest(tests)
+  child.lua(([=[
+    _G.ran = {}
+    local path = vim.uri_to_fname(_G.test_uri)
+    local function node(id, type, range) return { id = id, type = type, range = range, path = path } end
+    local nodes = { node(path, 'file', { 0, 0, 12, 0 }), node(path .. '::FooTest', 'namespace', { 0, 0, 12, 0 }), node(path .. '::FooTest::greets', 'test', { 3, 4, 5, 5 }), node(path .. '::FooTest::other', 'test', { 7, 4, 9, 5 }) }
+    local tree = { iter = function() local i = 0 return function() i = i + 1 if nodes[i] then return i, nodes[i] end end end }
+    package.loaded.neotest = {
+      state = {
+        adapter_ids = function() return { 'neotest-x' } end,
+        positions = function(_, args) return args and vim.api.nvim_buf_get_name(args.buffer) == path and tree or nil end,
+      },
+      run = { run = function(id) table.insert(_G.ran, id) end },
+    }
+    local tests = %s
+    for _, t in ipairs(tests) do t.uri = t.uri or _G.test_uri end
+    require('custom.method_tests').collect = function(callback) callback(tests, 'run') end
+  ]=]):format(tests))
+end
+
+local function at(line) return ('{ range = { start = { line = %d, character = 4 }, ["end"] = { line = %d, character = 10 } } }'):format(line, line) end
+
+T['collect()']['<M-m>u runs the tests of the method through neotest'] = function()
+  stub_neotest('{ ' .. at(4) .. ', ' .. at(8) .. ' }')
+  child.type_keys '<M-m>u'
+  child.lua [=[ vim.wait(3000, function() return #_G.ran == 2 end) ]=]
+  local path = child.lua_get 'vim.uri_to_fname(_G.test_uri)'
+  eq(child.lua_get '_G.ran', { path .. '::FooTest::greets', path .. '::FooTest::other' })
+end
+
+T['collect()']['<M-m>u says so when neotest knows no test there'] = function()
+  stub_neotest '{ { uri = vim.uri_from_fname("/nowhere/BarTest.kt"), range = { start = { line = 1, character = 0 }, ["end"] = { line = 1, character = 3 } } } }'
+  child.cmd 'messages clear'
+  child.type_keys '<M-m>u'
+  child.lua [=[ vim.wait(4000, function() return vim.fn.execute('messages'):match('neotest knows no test') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('neotest knows no test of run') ~= nil", true)
+  eq(child.lua_get '_G.ran', {})
+end
+
+T['collect()']['<M-m>u is mapped in LSP buffers with its desc'] = function()
+  eq(child.lua_get "vim.fn.maparg('<M-m>u', 'n', false, true).desc", 'Method: r[u]n its tests')
+end
+
 return T
