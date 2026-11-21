@@ -260,7 +260,7 @@ local function in_method_body()
       if method == 'textDocument/prepareCallHierarchy' then table.insert(_G.prepared, params.position) end
       return request_all(method, params, ...)
     end
-    impls.pick = function(locations, title) _G.picked = { locations = locations, title = title } end
+    impls.pick = function(locations, title, opts) _G.picked = { locations = locations, title = title, keep_order = opts and opts.keep_order } end
     vim.api.nvim_win_set_cursor(0, { 6, 2 })
   ]=]
 end
@@ -271,7 +271,7 @@ T['collect()']['<M-m>c in a method body lists the callers of the method'] = func
   child.type_keys '<M-m>c'
   child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
   local uri = child.lua_get 'vim.uri_from_bufnr(0)'
-  eq(child.lua_get '_G.picked', { locations = { { uri = uri, range = range(7, 2) } }, title = 'Incoming calls of run' })
+  eq(child.lua_get '_G.picked', { locations = { { uri = uri, range = range(7, 2) } }, title = 'Incoming calls of run', keep_order = true })
   eq(child.lua_get '_G.prepared', { { line = 2, character = 4 } })
   eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', before)
 end
@@ -287,8 +287,11 @@ T['collect()']['<M-m>c in the body of an override lists the callers of the overr
 end
 
 -- The whole family of the method: Foo.run overrides Iface.run, which overrides Base.run (Iface.kt's header names
--- Base); Bar.run is another implementation of Iface.run. Each is called once: Foo.run on line 8, Iface.run on line 11,
--- Bar.run on line 14, Base.run on line 15.
+-- Base); Bar.run is another implementation of Iface.run, Sub.run overrides Foo.run. Each is called once: Foo.run on
+-- line 8, Iface.run on line 11, Bar.run on line 14, Base.run on line 15, Sub.run on line 13. The callers come in
+-- hierarchy order, the closest to Foo.run first (Telescope shows the first result at the bottom, by the prompt): its
+-- own, then one step away its super's before its override's, then two steps away its super's super's before its
+-- sibling's (on a tie the ancestor comes first).
 T['collect()']['<M-m>c lists the callers of the supers, transitively, and of every implementation'] = function()
   in_method_body()
   child.lua [=[
@@ -313,13 +316,13 @@ T['collect()']['<M-m>c lists the callers of the supers, transitively, and of eve
       if p.textDocument.uri == iface_uri then return { at(base_uri, 0) } end
       return { at(iface_uri, 0) }
     end
-    local siblings = { at(uri, 2), at(uri, 12) } -- Foo.run, Bar.run
+    local below = { at(uri, 2), at(uri, 12), at(uri, 11) } -- Foo.run, Bar.run, Sub.run
     _G.fake.implementation = function(p)
-      if p.textDocument.uri == iface_uri then return siblings end
-      if p.textDocument.uri == base_uri then return vim.list_extend({ at(iface_uri, 1) }, siblings) end
-      return {}
+      if p.textDocument.uri == iface_uri then return below end
+      if p.textDocument.uri == base_uri then return vim.list_extend({ at(iface_uri, 1) }, below) end
+      return { at(uri, 11) }
     end
-    local callers = { [uri .. ':2'] = 7, [iface_uri .. ':1'] = 10, [uri .. ':12'] = 13, [base_uri .. ':1'] = 14 }
+    local callers = { [uri .. ':2'] = 7, [iface_uri .. ':1'] = 10, [uri .. ':12'] = 13, [base_uri .. ':1'] = 14, [uri .. ':11'] = 12 }
     _G.fake.incoming = function(item)
       local line = callers[item.uri .. ':' .. item.selectionRange.start.line]
       if not line then return {} end
@@ -332,9 +335,11 @@ T['collect()']['<M-m>c lists the callers of the supers, transitively, and of eve
   eq(child.lua_get '_G.picked.locations', {
     { uri = uri, range = range(7, 2) },
     { uri = uri, range = range(10, 2) },
-    { uri = uri, range = range(13, 2) },
+    { uri = uri, range = range(12, 2) },
     { uri = uri, range = range(14, 2) },
+    { uri = uri, range = range(13, 2) },
   })
+  eq(child.lua_get '_G.picked.keep_order', true)
   eq(child.lua_get '_G.picked.title', 'Incoming calls of run, with its supers and implementations')
 end
 

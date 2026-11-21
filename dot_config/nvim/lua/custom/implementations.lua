@@ -18,7 +18,10 @@
 -- innermost method symbol of the documentSymbol tree), and of its whole family: the methods it overrides, walked up
 -- through the class headers like `grd`, and the implementations of each (textDocument/implementation), so a call
 -- through the interface, through the class or through another implementation is listed, as IntelliJ's Ctrl+Alt+H
--- with the hierarchy does. Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
+-- with the hierarchy does. They are listed closest to the method first, so at the bottom of the picker by the prompt:
+-- its own calls, then by steps away in the hierarchy (up to a super, down to an override), an ancestor first on a tie.
+-- jdtls answers a call through the interface as a call of each implementation too: such a call is the method's own.
+-- Supertypes outside the project (`jdt://`, `jar:`) are not read, so the walk stops there.
 --
 -- `grs` (goto_super, IntelliJ Ctrl+U) goes to the method the one around the cursor overrides, from its name or its
 -- body; outside methods to the supertypes of the class, a picker when it names several.
@@ -367,9 +370,45 @@ local function supers_of(decl, name, callback)
   up(decl)
 end
 
+--- The declarations of a method family ranked by their distance in the hierarchy from the method at distance 0, the
+--- closest first: `decls[k + 1]` is k steps up (the method, then its supers, nearest first), and the implementations
+--- of `decls[k + 1]`, `impls[k + 1]`, are one step below it. Each declaration is ranked once, at its smallest distance;
+--- on a tie an ancestor comes before an implementation, else the order found is kept.
+---@param decls {uri: string, range: table}[]
+---@param impls table[][] Location or LocationLink lists, one per declaration
+---@return {uri: string, range: table}[]
+function M.by_hierarchy(decls, impls)
+  local ranked, index = {}, {}
+  local function add(raw, distance)
+    local loc = normalize(raw)
+    local key = ('%s:%d:%d'):format(loc.uri, loc.range.start.line, loc.range.start.character)
+    local found = index[key]
+    if found then
+      found.distance = math.min(found.distance, distance)
+      return
+    end
+    index[key] = { loc = loc, distance = distance, order = #ranked }
+    table.insert(ranked, index[key])
+  end
+  for k, decl in ipairs(decls) do
+    add(decl, k - 1)
+  end
+  for k, list in ipairs(impls) do
+    for _, raw in ipairs(list) do
+      add(raw, k)
+    end
+  end
+  table.sort(ranked, function(x, y)
+    if x.distance ~= y.distance then return x.distance < y.distance end
+    return x.order < y.order
+  end)
+  return vim.tbl_map(function(entry) return entry.loc end, ranked)
+end
+
 --- Incoming calls of the method around the cursor (`<M-m>c`), from its name or anywhere in its body: the calls of
 --- its whole family, the method itself, the methods it overrides (transitively) and every implementation of each,
---- merged in one picker. The cursor stays where it is.
+--- in one picker. The calls come in hierarchy order (`by_hierarchy`), each declaration's in file order, so the
+--- closest to the method are at the bottom of the picker, by the prompt. The cursor stays where it is.
 function M.method_incoming_calls()
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
   request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
@@ -378,24 +417,32 @@ function M.method_incoming_calls()
     local name = identifier(method.name)
     local here = { uri = params.textDocument.uri, range = method.selectionRange }
     supers_of(here, name, function(supers)
-      -- The declarations so far, then the implementations of each, every one once.
-      local family = M.merge { { here }, supers }
-      local pending = #family
-      local implementations = {}
-      for index, decl in ipairs(family) do
+      local decls = vim.list_extend({ here }, supers)
+      local impls, pending = {}, #decls
+      for k, decl in ipairs(decls) do
         request_all('textDocument/implementation', { textDocument = { uri = decl.uri }, position = decl.range.start }, function(found)
-          implementations[index] = found
+          impls[k] = found
           pending = pending - 1
           if pending > 0 then return end
-          local all = M.merge(vim.list_extend({ family }, implementations))
-          local sites, left = {}, #all
-          for i, decl_or_impl in ipairs(all) do
-            call_sites({ textDocument = { uri = decl_or_impl.uri }, position = decl_or_impl.range.start }, function(calls)
+          local family = M.by_hierarchy(decls, impls)
+          local sites, left = {}, #family
+          for i, member in ipairs(family) do
+            call_sites({ textDocument = { uri = member.uri }, position = member.range.start }, function(calls)
               sites[i] = calls
               left = left - 1
               if left > 0 then return end
-              local title = #all > 1 and 'Incoming calls of %s, with its supers and implementations' or 'Incoming calls of %s'
-              M.pick(M.merge(sites), title:format(name))
+              local ordered, seen = {}, {}
+              for j = 1, #family do
+                for _, site in ipairs(M.merge { sites[j] }) do
+                  local key = ('%s:%d:%d'):format(site.uri, site.range.start.line, site.range.start.character)
+                  if not seen[key] then
+                    seen[key] = true
+                    table.insert(ordered, site)
+                  end
+                end
+              end
+              local title = #family > 1 and 'Incoming calls of %s, with its supers and implementations' or 'Incoming calls of %s'
+              M.pick(ordered, title:format(name), { keep_order = true })
             end)
           end
         end)

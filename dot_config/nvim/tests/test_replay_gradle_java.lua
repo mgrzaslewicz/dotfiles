@@ -89,6 +89,7 @@ T['gradle-java | <M-m>c | in the body of an override lists its callers and those
   ctx.cursor('return "Good day', 0)
   child.lua "require('custom.implementations').method_incoming_calls()"
   ctx.wait('incoming calls picked', '_G.picked ~= nil')
+  -- jdtls answers both calls as calls of Formal.greet (and of Greeting.greet): all are its own, in file order.
   eq(child.lua_get '_G.picked', { 'Incoming calls of greet, with its supers and implementations', { CALLERS .. ':9', CALLERS .. ':13' } })
 end
 
