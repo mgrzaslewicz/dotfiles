@@ -255,9 +255,18 @@ end
 T['gradle-java | <M-t>y | in a method copies the qualified name of its class'] = function()
   ctx.edit(FORMAL)
   ctx.cursor('return "Good day', 0)
+  child.lua "vim.fn.setreg('+', '')"
   child.lua "require('custom.copy_reference').copy { type = true }"
   ctx.wait('a reference copied', "vim.fn.getreg('+') ~= ''")
   eq(child.lua_get "vim.fn.getreg('+')", 'com.example.model.Formal')
+end
+
+T['gradle-java | <M-t>t | in a class goes to its test counterpart, the only test using it'] = function()
+  ctx.edit(MAIN)
+  ctx.cursor('return "Hello', 0)
+  child.lua "require('custom.types').goto_tests()"
+  ctx.wait('MainTest.java opened', "vim.endswith(vim.api.nvim_buf_get_name(0), 'MainTest.java')")
+  eq(ctx.position()[1], 'app/src/test/java/com/example/app/MainTest.java')
 end
 
 T['gradle-java | gri | on the interface method lists its implementation'] = function()

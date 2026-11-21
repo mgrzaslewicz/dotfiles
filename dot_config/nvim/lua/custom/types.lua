@@ -16,6 +16,9 @@
 -- `<M-t>n` renames the type (<leader>rn on its name, see custom/refactor.lua); `<M-t>v` selects it linewise, with its
 -- annotations and doc comment.
 --
+-- `<M-t>t` lists the test files using the type: its test counterpart (`FooTest`, custom/jvm/test_pair.lua) first when
+-- it exists, then the test files referencing it, each at its first use. `<M-t>u` runs those files through neotest.
+--
 -- Known limit: a supertype outside the project (`jdt://`, `jar:`) is listed, but its own supertypes are not read.
 
 local implementations = require 'custom.implementations'
@@ -167,6 +170,56 @@ end
 --- Selects the type around the cursor (`<M-t>v`) linewise, its annotations and doc comment included.
 function M.select_type()
   M.type_around_cursor(function(_, _, class) implementations.select_symbol(class) end)
+end
+
+--- Calls back with the test files using the type around the cursor, each as a location (its first use, or the top of
+--- the counterpart), and the type's name.
+---@param callback fun(files: {uri: string, range: table}[], name: string)
+function M.test_files(callback)
+  local method_tests = require 'custom.method_tests'
+  M.type_around_cursor(function(here, name)
+    local params = { textDocument = { uri = here.uri }, position = here.range.start, context = { includeDeclaration = false } }
+    request_all('textDocument/references', params, function(found)
+      local files, seen = {}, {}
+      local counterpart = require('custom.jvm.test_pair').counterpart(vim.uri_to_fname(here.uri))
+      if counterpart and vim.uv.fs_stat(counterpart) then
+        local uri = vim.uri_from_fname(counterpart)
+        seen[uri] = true
+        table.insert(files, { uri = uri, range = { start = { line = 0, character = 0 }, ['end'] = { line = 0, character = 0 } } })
+      end
+      for _, ref in ipairs(implementations.merge { found }) do
+        if not seen[ref.uri] and method_tests.is_test_file(vim.uri_to_fname(ref.uri)) then
+          seen[ref.uri] = true
+          table.insert(files, ref)
+        end
+      end
+      callback(files, name)
+    end)
+  end)
+end
+
+--- Goes to the test files using the type around the cursor (`<M-t>t`): one is jumped to, several open a picker.
+function M.goto_tests()
+  M.test_files(function(files, name)
+    if #files == 0 then return vim.notify(('No tests use %s'):format(name), vim.log.levels.INFO) end
+    if #files == 1 then
+      vim.cmd "normal! m'"
+      vim.lsp.util.show_document(files[1], 'utf-16', { focus = true })
+      return
+    end
+    implementations.pick(files, ('Tests of %s'):format(name), { keep_order = true })
+  end)
+end
+
+--- Runs the test files using the type around the cursor (`<M-t>u`) through neotest, file by file.
+function M.run_tests()
+  M.test_files(function(files, name)
+    if #files == 0 then return vim.notify(('No tests use %s'):format(name), vim.log.levels.INFO) end
+    local neotest = require 'neotest'
+    for _, file in ipairs(files) do
+      neotest.run.run(vim.uri_to_fname(file.uri))
+    end
+  end)
 end
 
 return M

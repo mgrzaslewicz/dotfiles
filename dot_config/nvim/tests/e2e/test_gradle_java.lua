@@ -82,6 +82,29 @@ T['gradle-java | neotest | <M-m>u in a method body runs the tests calling it'] =
   eq(ctx.child.lua_get(counts), { passed = 1, failed = 1, running = 0 })
 end
 
+T['gradle-java | neotest | <M-t>u in a class runs its test files'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  ctx.child.lua [=[ vim.fn.search('return "Hello') ]=]
+  ctx.child.type_keys '<M-t>u'
+  e2e.wait(ctx.child, 'index', 'MainTest.java run', "vim.fn.bufnr('MainTest.java') > 0")
+  local counts = [[(function()
+    local neotest, c = require 'neotest', { passed = 0, failed = 0, running = 0 }
+    for _, id in ipairs(neotest.state.adapter_ids()) do
+      local s = neotest.state.status_counts(id, { buffer = vim.fn.bufnr('MainTest.java') })
+      if s then c.passed, c.failed, c.running = c.passed + s.passed, c.failed + s.failed, c.running + s.running end
+    end
+    return c
+  end)()]]
+  e2e.wait(
+    ctx.child,
+    'build',
+    'results of both MainTest tests',
+    ('(function() local c = %s return c.running == 0 and c.passed + c.failed == 2 end)()'):format(counts)
+  )
+  eq(ctx.child.lua_get(counts), { passed = 1, failed = 1, running = 0 })
+end
+
 T['gradle-java | refactor | <leader>rv on an expression asks which one, then extracts it'] = function()
   ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
   e2e.expect_jdtls(ctx.child, ctx.project)

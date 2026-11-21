@@ -13,6 +13,9 @@ local files = {
   ['Root.kt'] = { 'open class Root {', '}' },
   ['Iface.kt'] = { 'interface Iface {', '}' },
   ['Sub.kt'] = { 'class Sub : Foo() {', '}' },
+  ['FooTest.kt'] = { 'class FooTest {', '}' },
+  ['UsesTest.kt'] = { 'class UsesTest {', '', '  val a = Foo()', '', '', '  val b = Foo()', '}' },
+  ['OtherTest.kt'] = { 'class OtherTest {', '  val a = Foo()', '}' },
 }
 
 local T = MiniTest.new_set {
@@ -181,6 +184,57 @@ T['<M-t>y copies the qualified name of the type, from inside a method'] = functi
   eq(child.lua_get "vim.fn.getreg('+')", 'x.Foo')
 end
 
+-- `<M-t>t` / `<M-t>u`: the test files using the type (its references in test files, each at the first one), its
+-- test counterpart (FooTest.kt) first when it exists.
+local function used_in(refs, counterpart)
+  child.lua(([=[
+    local refs, counterpart = %s, %s
+    _G.fake['textDocument/references'][_G.u 'Foo.kt' .. ':4:6'] = function(params)
+      if params.context.includeDeclaration then return {} end
+      return vim.tbl_map(function(r) return { uri = _G.u(r[1]), range = { start = { line = r[2], character = 2 }, ['end'] = { line = r[2], character = 5 } } } end, refs)
+    end
+    require('custom.jvm.test_pair').counterpart = function() return counterpart and vim.uri_to_fname(_G.u(counterpart)) end
+  ]=]):format(vim.inspect(refs), vim.inspect(counterpart)))
+end
+
+T['<M-t>t lists the test files using the type, each at its first use'] = function()
+  used_in { { 'Sub.kt', 0 }, { 'UsesTest.kt', 5 }, { 'UsesTest.kt', 2 }, { 'OtherTest.kt', 1 } }
+  child.type_keys '<M-t>t'
+  eq(picked(), { title = 'Tests of Foo', keep_order = true, locations = { 'OtherTest.kt:1', 'UsesTest.kt:2' } })
+end
+
+T['<M-t>t puts the test counterpart first'] = function()
+  used_in({ { 'UsesTest.kt', 2 } }, 'FooTest.kt')
+  child.type_keys '<M-t>t'
+  eq(picked(), { title = 'Tests of Foo', keep_order = true, locations = { 'FooTest.kt:0', 'UsesTest.kt:2' } })
+end
+
+T['<M-t>t goes straight to the only test file'] = function()
+  used_in { { 'OtherTest.kt', 1 } }
+  child.type_keys '<M-t>t'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('OtherTest%.kt$') ~= nil end) ]=]
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 2, 2 })
+end
+
+T['<M-t>t says so when no test uses the type'] = function()
+  used_in { { 'Sub.kt', 0 } }
+  child.cmd 'messages clear'
+  child.type_keys '<M-t>t'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('No tests use Foo') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('No tests use Foo') ~= nil", true)
+end
+
+T['<M-t>u runs those test files through neotest'] = function()
+  used_in({ { 'UsesTest.kt', 2 } }, 'FooTest.kt')
+  child.lua [=[
+    _G.ran = {}
+    package.loaded.neotest = { run = { run = function(path) table.insert(_G.ran, vim.fn.fnamemodify(path, ':t')) end } }
+  ]=]
+  child.type_keys '<M-t>u'
+  child.lua [=[ vim.wait(2000, function() return #_G.ran == 2 end) ]=]
+  eq(child.lua_get '_G.ran', { 'FooTest.kt', 'UsesTest.kt' })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -193,7 +247,7 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
   eq(
     vim.tbl_map(
       function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end,
-      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y' }
+      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y', 't', 'u' }
     ),
     {
       'Type: [S]upertypes',
@@ -205,6 +259,8 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
       'Type: re[n]ame',
       'Type: select ([V]isual)',
       'Type: cop[y] reference',
+      'Type: [T]ests',
+      'Type: r[u]n its tests',
     }
   )
 end

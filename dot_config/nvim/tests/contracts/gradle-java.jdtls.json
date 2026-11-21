@@ -1321,6 +1321,49 @@
           "includeDeclaration": false
         },
         "position": {
+          "character": 13,
+          "line": 5
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/app/src/main/java/com/example/app/Main.java"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 39,
+              "line": 9
+            },
+            "start": {
+              "character": 35,
+              "line": 9
+            }
+          },
+          "uri": "file://${fixture}/app/src/test/java/com/example/app/MainTest.java"
+        },
+        {
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 14
+            },
+            "start": {
+              "character": 32,
+              "line": 14
+            }
+          },
+          "uri": "file://${fixture}/app/src/test/java/com/example/app/MainTest.java"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/references",
+      "params": {
+        "context": {
+          "includeDeclaration": false
+        },
+        "position": {
           "character": 17,
           "line": 4
         },
