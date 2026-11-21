@@ -252,6 +252,14 @@ T['gradle-java | <M-t>v | in a method of a class selects the class'] = function(
   eq({ child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 5, 10 })
 end
 
+T['gradle-java | <M-t>y | in a method copies the qualified name of its class'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.copy_reference').copy { type = true }"
+  ctx.wait('a reference copied', "vim.fn.getreg('+') ~= ''")
+  eq(child.lua_get "vim.fn.getreg('+')", 'com.example.model.Formal')
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

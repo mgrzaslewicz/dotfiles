@@ -7,6 +7,8 @@
 -- top-level function after `.` (`com.x.main`). Method names lose their signature (jdtls names them `run(String)`).
 -- Outside every declaration it is the file relative to the cwd and the line (`src/Foo.kt:12`).
 --
+-- `<M-t>y` copies the reference of the type around the cursor instead (`com.x.Outer.Inner`), from inside a member too.
+--
 -- Known limit: the reference is of the declaration around the cursor, not of a usage under it (a call of
 -- `Other.run` inside `Foo.go` copies `Foo#go`).
 
@@ -20,8 +22,10 @@ local contains = require('custom.implementations').contains
 ---@param lines string[] the file's lines (only its `package` line is read)
 ---@param symbols table[] a documentSymbol tree
 ---@param pos {line: integer, character: integer} 0-based, utf-16
+---@param opts? {type: boolean} `type`: the reference of the innermost type around `pos`, a member left out
 ---@return string?
-function M.reference(lines, symbols, pos)
+function M.reference(lines, symbols, pos, opts)
+  opts = opts or {}
   local package
   for _, line in ipairs(lines) do
     package = line:match '^%s*package%s+([%w_.]+)'
@@ -46,6 +50,7 @@ function M.reference(lines, symbols, pos)
       member = name
     end
   end
+  if opts.type then member = nil end
   if #classes == 0 and not member then return nil end
   local qualified = table.concat(vim.list_extend(package and { package } or {}, classes), '.')
   if not member then return qualified end
@@ -53,14 +58,16 @@ function M.reference(lines, symbols, pos)
   return qualified .. '#' .. member
 end
 
---- Copies the reference of the declaration around the cursor to the clipboard (`+`) and echoes it.
-function M.copy()
+--- Copies the reference of the declaration around the cursor to the clipboard (`+`) and echoes it; with `type`, of
+--- the type around the cursor (`<M-t>y`).
+---@param opts? {type: boolean}
+function M.copy(opts)
   local bufnr = vim.api.nvim_get_current_buf()
   local params = vim.lsp.util.make_position_params(0, 'utf-16')
   local line = vim.api.nvim_win_get_cursor(0)[1]
   require('custom.implementations').request_all('textDocument/documentSymbol', { textDocument = params.textDocument }, function(symbols)
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-    local ref = M.reference(lines, symbols, params.position) or ('%s:%d'):format(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':.'), line)
+    local ref = M.reference(lines, symbols, params.position, opts) or ('%s:%d'):format(vim.fn.fnamemodify(vim.api.nvim_buf_get_name(bufnr), ':.'), line)
     vim.fn.setreg('+', ref)
     vim.api.nvim_echo({ { 'Copied ' .. ref } }, false, {})
   end)

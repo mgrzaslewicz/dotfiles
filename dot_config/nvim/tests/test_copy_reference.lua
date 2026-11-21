@@ -60,6 +60,14 @@ end
 
 local child = helpers.new_child()
 
+T['reference()']['with type, is the innermost type around the position, from inside a member too'] = function()
+  eq(reference(lines, symbols, at(5, 4), { type = true }), 'com.example.app.Outer')
+  eq(reference(lines, symbols, at(9, 8), { type = true }), 'com.example.app.Outer.Inner')
+  eq(reference(lines, symbols, at(3, 4), { type = true }), 'com.example.app.Outer')
+end
+
+T['reference()']['with type, is nil outside every type'] = function() eq(reference(lines, symbols, at(16, 5), { type = true }), nil) end
+
 T['gry'] = MiniTest.new_set {
   hooks = {
     pre_case = function()

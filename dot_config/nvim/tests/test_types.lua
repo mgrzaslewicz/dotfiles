@@ -18,7 +18,12 @@ local files = {
 local T = MiniTest.new_set {
   hooks = {
     pre_case = function()
-      child.start()
+      -- The test child has no clipboard tool: a provider that keeps `+` in memory (for <M-t>y).
+      child.start {
+        '--cmd',
+        "lua vim.g.clipboard = { name = 'test', copy = { ['+'] = function(l) _G.clip = l end, ['*'] = function(l) _G.clip = l end }, "
+          .. "paste = { ['+'] = function() return _G.clip or {} end, ['*'] = function() return _G.clip or {} end } }",
+      }
       local tree = {}
       for name, lines in pairs(files) do
         tree[name] = table.concat(lines, '\n')
@@ -170,6 +175,12 @@ T['<M-t>v selects the type linewise, with its annotation and doc comment'] = fun
   eq({ child.lua_get 'vim.fn.mode()', child.lua_get "vim.fn.line('v')", child.lua_get "vim.fn.line('.')" }, { 'V', 3, 9 })
 end
 
+T['<M-t>y copies the qualified name of the type, from inside a method'] = function()
+  child.type_keys '<M-t>y'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.getreg('+') ~= '' end) ]=]
+  eq(child.lua_get "vim.fn.getreg('+')", 'x.Foo')
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -180,7 +191,10 @@ end
 
 T['<M-t> maps are set in LSP buffers with their descs'] = function()
   eq(
-    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v' }),
+    vim.tbl_map(
+      function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end,
+      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y' }
+    ),
     {
       'Type: [S]upertypes',
       'Type: [H]ierarchy up (supertypes)',
@@ -190,6 +204,7 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
       'Type: [M]embers',
       'Type: re[n]ame',
       'Type: select ([V]isual)',
+      'Type: cop[y] reference',
     }
   )
 end

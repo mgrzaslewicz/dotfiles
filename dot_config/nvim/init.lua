@@ -696,6 +696,7 @@ do
       vim.keymap.set('n', '<M-t>m', types.members, { buffer = buf, desc = 'Type: [M]embers' })
       vim.keymap.set('n', '<M-t>n', function() require('custom.refactor').rename_type() end, { buffer = buf, desc = 'Type: re[n]ame' })
       vim.keymap.set('n', '<M-t>v', types.select_type, { buffer = buf, desc = 'Type: select ([V]isual)' })
+      vim.keymap.set('n', '<M-t>y', function() require('custom.copy_reference').copy { type = true } end, { buffer = buf, desc = 'Type: cop[y] reference' })
 
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).
