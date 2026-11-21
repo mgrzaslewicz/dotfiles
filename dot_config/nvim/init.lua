@@ -451,6 +451,7 @@ do
       { '<leader>e', group = '[E]xplorer' },
       { '<leader>h', group = 'Git [H]unk', mode = { 'n', 'v' } }, -- Enable gitsigns recommended keymaps first
       { 'gr', group = 'LSP Actions', mode = { 'n' } },
+      { '<M-m>', group = '[M]ethod actions', mode = { 'n' } }, -- act on the method around the cursor, anywhere in it
     },
   }
 
@@ -643,12 +644,14 @@ do
       -- Go to super (IntelliJ Ctrl+U): in a method, the method it overrides; elsewhere in a class, its supertypes.
       vim.keymap.set('n', 'grs', require('custom.implementations').goto_super, { buffer = buf, desc = '[G]oto [S]uper' })
 
-      -- Return type of the method under your cursor: jumps to it when there is one, else a picker of the return types.
-      vim.keymap.set('n', 'grm', require('custom.method_types').returns_picker, { buffer = buf, desc = '[G]oto return types' })
+      -- Method actions (<M-m> group): act on the method around your cursor, on its definition or anywhere in its body.
 
-      -- Types of the method under your cursor, on its definition or in its body: the return type, then the parameter
-      -- types, then the types the body uses. Opens in a picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
-      vim.keymap.set('n', 'grM', require('custom.method_types').picker, { buffer = buf, desc = '[G]oto [M]ethod types' })
+      -- Return type of the method: jumps to it when there is one, else a picker of the return types.
+      vim.keymap.set('n', '<M-m>m', require('custom.method_types').returns_picker, { buffer = buf, desc = 'Method: return types' })
+
+      -- Types of the method: the return type, then the parameter types, then the types the body uses. Opens in a
+      -- picker; <C-v> opens an entry in a split (see lua/custom/method_types.lua).
+      vim.keymap.set('n', '<M-m>M', require('custom.method_types').picker, { buffer = buf, desc = 'Method: [M]ethod types' })
 
       -- Copy Reference (IntelliJ Ctrl+Alt+Shift+C): `com.x.Foo#run` of the declaration around your cursor to the
       -- clipboard (see lua/custom/copy_reference.lua).

@@ -67,7 +67,7 @@ T['gradle-kotlin | gri | on the interface method lists its implementation'] = fu
   eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':5' } })
 end
 
-T['gradle-kotlin | grM | lists the types of a function: its return type and the classes its body uses'] = function()
+T['gradle-kotlin | <M-m>M | lists the types of a function: its return type and the classes its body uses'] = function()
   ctx.edit(MAIN)
   ctx.cursor('fun greeting', 4)
   child.lua [[

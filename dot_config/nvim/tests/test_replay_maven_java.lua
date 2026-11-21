@@ -8,9 +8,9 @@ local T, ctx = replay.session('maven-java', {
 })
 local child = ctx.child
 
--- `println` has no result type: jdtls answers its typeDefinition with nothing, which once left `grM` without an answer
+-- `println` has no result type: jdtls answers its typeDefinition with nothing, which once left `<M-m>M` without an answer
 -- and an error message (custom/lsp_missing_result.lua).
-T['maven-java | grM | answers on a method calling one without a result type, without an error message'] = function()
+T['maven-java | <M-m>M | answers on a method calling one without a result type, without an error message'] = function()
   ctx.edit 'app/src/main/java/com/example/app/Main.java'
   child.cmd 'messages clear'
   ctx.cursor 'println'

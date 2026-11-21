@@ -88,4 +88,11 @@ T['no <leader> map is set twice or shadows a global one'] = function()
   eq(dups, {})
 end
 
+T['<M-m> is a which-key group of method actions'] = function()
+  child.start()
+  local groups_of =
+    [[vim.tbl_map(function(m) return m.lhs .. '=' .. m.desc end, vim.tbl_filter(function(m) return m.group end, require('which-key.config').mappings))]]
+  eq(vim.tbl_contains(child.lua_get(groups_of), '<M-m>=[M]ethod actions'), true)
+end
+
 return T
