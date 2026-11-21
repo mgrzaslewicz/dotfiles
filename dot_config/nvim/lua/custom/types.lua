@@ -5,7 +5,7 @@
 -- `<M-t>s` goes to the supertypes the type's header names (`grs` outside a method): one is jumped to, several open a
 -- picker. `<M-t>H` lists all its supertypes up the hierarchy, nearest first: the header's, resolved by
 -- go-to-definition, then theirs (type hierarchy is not used: kotlin_lsp answers it with nothing). `<M-t>h` lists its
--- subtypes (textDocument/implementation at its name).
+-- subtypes (textDocument/implementation at its name). `<M-t>T` shows both as a tree (custom/type_hierarchy.lua).
 --
 -- `<M-t>i` is `gri` on the type's name (where `gri` would go to the definition, the type itself: its name); `<M-t>r`
 -- lists the type's usages, its declaration left out.
@@ -44,17 +44,21 @@ end
 
 --- The class-like symbol declared at `pos` (its name holds it) in a documentSymbol tree, else the innermost one whose
 --- range holds it.
-local function class_at(symbols, pos)
+local function class_at(symbols, pos, strict)
   for _, sym in ipairs(symbols) do
     if implementations.CLASS_KINDS[sym.kind] and implementations.contains(sym.selectionRange, pos) then return sym end
-    local found = class_at(sym.children or {}, pos)
+    local found = class_at(sym.children or {}, pos, true)
     if found then return found end
   end
-  return implementations.enclosing_class(symbols, pos)
+  if not strict then return implementations.enclosing_class(symbols, pos) end
 end
 
---- Calls back with the supertypes the header of `class` (a symbol in the file at `uri`) names, as declarations.
-local function direct_supertypes(uri, class, callback)
+--- The class-like symbol declared at `pos` (its name holds it) in a documentSymbol tree, or nil.
+function M.class_declared_at(symbols, pos) return class_at(symbols, pos, true) end
+
+--- Calls back with the supertypes the header of `class` (a symbol in the file at `uri`) names, as declarations,
+--- each with the `name` the header gives it. Asks the servers of `bufnr` (default: the current buffer).
+local function direct_supertypes(uri, class, callback, bufnr)
   local first = class.range.start.line
   local names = implementations.supertypes_in_header(implementations.lines_of(uri, first, class.range['end'].line))
   local pending, lists = #names, {}
@@ -62,12 +66,14 @@ local function direct_supertypes(uri, class, callback)
   for index, super in ipairs(names) do
     local at = { textDocument = { uri = uri }, position = { line = super.line + first, character = super.character } }
     request_all('textDocument/definition', at, function(definitions)
-      lists[index] = vim.tbl_map(implementations.normalize, definitions)
+      lists[index] = vim.tbl_map(function(d) return vim.tbl_extend('force', implementations.normalize(d), { name = super.name }) end, definitions)
       pending = pending - 1
       if pending == 0 then callback(vim.iter(lists):flatten():totable()) end
-    end)
+    end, bufnr)
   end
 end
+
+M.direct_supertypes = direct_supertypes
 
 --- Calls back with all the supertypes of `class` (a symbol in the file at `uri`), breadth first (nearest first), each
 --- once; at most 50.

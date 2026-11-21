@@ -182,6 +182,18 @@ T['gradle-java | <M-t>h | in an interface lists the class implementing it'] = fu
   eq(child.lua_get '_G.picked', { 'Subtypes of Greeting', { FORMAL .. ':5' } })
 end
 
+T['gradle-java | <M-t>T | in an interface shows the tree, the implementing class below, unfolded on <Tab>'] = function()
+  ctx.edit(GREETING)
+  ctx.cursor('String greet', 0)
+  child.lua "require('custom.type_hierarchy').show()"
+  ctx.wait('tree opened', "vim.bo.filetype == 'typehierarchy'")
+  eq(child.lua_get 'vim.api.nvim_buf_get_lines(0, 0, -1, false)', { 'Greeting  Greeting.java', '▸ ↓ Formal  Formal.java' })
+  child.lua 'vim.api.nvim_win_set_cursor(0, { 2, 0 })'
+  child.type_keys '<Tab>'
+  ctx.wait('Formal unfolded', "vim.api.nvim_buf_get_lines(0, 1, 2, false)[1] == '  ↓ Formal  Formal.java'")
+  child.cmd 'close'
+end
+
 T['gradle-java | <M-m>r | in the body of an override lists the usages of it and of the interface method'] = function()
   ctx.capture_pick()
   ctx.edit(FORMAL)

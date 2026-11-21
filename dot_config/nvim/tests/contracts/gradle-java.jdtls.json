@@ -1062,6 +1062,19 @@
       "method": "textDocument/implementation",
       "params": {
         "position": {
+          "character": 13,
+          "line": 4
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/model/src/main/java/com/example/model/Formal.java"
+        }
+      },
+      "result": []
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
           "character": 17,
           "line": 4
         },

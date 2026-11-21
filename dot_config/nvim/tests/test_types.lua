@@ -13,6 +13,7 @@ local files = {
   ['Root.kt'] = { 'open class Root {', '}' },
   ['Iface.kt'] = { 'interface Iface {', '}' },
   ['Sub.kt'] = { 'class Sub : Foo() {', '}' },
+  ['SubSub.kt'] = { 'class SubSub : Sub() {', '}' },
   ['FooTest.kt'] = { 'class FooTest {', '}' },
   ['UsesTest.kt'] = { 'class UsesTest {', '', '  val a = Foo()', '', '', '  val b = Foo()', '}' },
   ['OtherTest.kt'] = { 'class OtherTest {', '  val a = Foo()', '}' },
@@ -275,11 +276,98 @@ T['<M-t> outside any type says so'] = function()
   eq(child.lua_get "vim.fn.execute('messages'):match('Not in a type') ~= nil", true)
 end
 
+-- `<M-t>T`: the server answers implementations transitively (as jdtls does): Foo's are Sub and SubSub, Sub's is SubSub;
+-- the tree keeps the direct ones, read from their headers. Foo also has an anonymous subtype in `run`.
+local function hierarchy_fake()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local u = _G.u
+    _G.fake.symbols[u 'SubSub.kt'] = { { name = 'SubSub', kind = 5, range = span(0, 0, 1, 1), selectionRange = span(0, 6, 0, 12), children = {} } }
+    _G.fake['textDocument/definition'][u 'Sub.kt' .. ':0:12'] = { { uri = u 'Foo.kt', range = span(4, 6, 4, 9) } }
+    _G.fake['textDocument/definition'][u 'SubSub.kt' .. ':0:15'] = { { uri = u 'Sub.kt', range = span(0, 6, 0, 9) } }
+    _G.fake['textDocument/implementation'][u 'Foo.kt' .. ':4:6'] = {
+      { uri = u 'SubSub.kt', range = span(0, 6, 0, 12) },
+      { uri = u 'Sub.kt', range = span(0, 6, 0, 9) },
+      { uri = u 'Foo.kt', range = span(6, 16, 6, 16) },
+    }
+    _G.fake['textDocument/implementation'][u 'Sub.kt' .. ':0:6'] = { { uri = u 'SubSub.kt', range = span(0, 6, 0, 12) } }
+  ]=]
+end
+
+local function tree_lines()
+  child.lua [=[ vim.wait(2000, function() return vim.bo.filetype == 'typehierarchy' end) ]=]
+  return child.lua_get 'vim.api.nvim_buf_get_lines(0, 0, -1, false)'
+end
+
+local function tree_on(text) child.lua(('vim.fn.search(%q)'):format('\\V' .. text)) end
+
+T['<M-t>T'] = MiniTest.new_set()
+
+T['<M-t>T']['opens the type hierarchy: all the supertypes above, the direct subtypes below, folded'] = function()
+  hierarchy_fake()
+  child.type_keys '<M-t>T'
+  eq(tree_lines(), {
+    'Foo  Foo.kt',
+    '▾ ↑ Base  Base.kt',
+    '    ↑ Root  Root.kt',
+    '  ↑ Iface  Iface.kt',
+    '▸ ↓ Sub  Sub.kt',
+    '  ↓ anonymous in Foo  Foo.kt',
+  })
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 1, 0 })
+  eq(child.lua_get 'vim.wo.winbar:match("Type hierarchy of Foo") ~= nil', true)
+end
+
+T['<M-t>T']['<Tab> unfolds a subtype, loading its direct subtypes, and folds it again'] = function()
+  hierarchy_fake()
+  child.type_keys '<M-t>T'
+  tree_lines()
+  tree_on '↓ Sub '
+  child.type_keys '<Tab>'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_line_count(0) == 7 end) ]=]
+  eq(child.lua_get 'vim.api.nvim_buf_get_lines(0, 4, -1, false)', { '▾ ↓ Sub  Sub.kt', '  ▸ ↓ SubSub  SubSub.kt', '  ↓ anonymous in Foo  Foo.kt' })
+  child.type_keys '<Tab>'
+  eq(child.lua_get 'vim.api.nvim_buf_get_lines(0, 4, -1, false)', { '▸ ↓ Sub  Sub.kt', '  ↓ anonymous in Foo  Foo.kt' })
+end
+
+T['<M-t>T']['<CR> goes to the type in the window the tree was opened from, the tree kept'] = function()
+  hierarchy_fake()
+  local source = child.lua_get 'vim.api.nvim_get_current_win()'
+  child.type_keys '<M-t>T'
+  tree_lines()
+  tree_on '↑ Iface'
+  child.type_keys '<CR>'
+  child.lua [=[ vim.wait(2000, function() return vim.api.nvim_buf_get_name(0):match('Iface%.kt$') ~= nil end) ]=]
+  eq(child.lua_get 'vim.api.nvim_get_current_win()', source)
+  eq(child.lua_get 'vim.api.nvim_win_get_cursor(0)', { 1, 10 })
+  eq(child.lua_get '#vim.api.nvim_list_wins()', 2)
+end
+
+T['<M-t>T']['q closes the tree'] = function()
+  hierarchy_fake()
+  child.type_keys '<M-t>T'
+  tree_lines()
+  child.type_keys 'q'
+  eq(child.lua_get '#vim.api.nvim_list_wins()', 1)
+end
+
+T['<M-t>T']['says so for a type with neither supertypes nor subtypes'] = function()
+  child.lua [=[
+    vim.cmd.edit(vim.uri_to_fname(_G.u 'Root.kt'))
+    vim.lsp.buf_attach_client(0, vim.lsp.get_clients({ name = 'types' })[1].id)
+    vim.wait(2000, function() return #vim.lsp.get_clients { bufnr = 0 } > 0 end)
+  ]=]
+  child.cmd 'messages clear'
+  child.type_keys '<M-t>T'
+  child.lua [=[ vim.wait(2000, function() return vim.fn.execute('messages'):match('Root has no supertypes or subtypes') ~= nil end) ]=]
+  eq(child.lua_get "vim.fn.execute('messages'):match('Root has no supertypes or subtypes') ~= nil", true)
+end
+
 T['<M-t> maps are set in LSP buffers with their descs'] = function()
   eq(
     vim.tbl_map(
       function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end,
-      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y', 't', 'u', 'M' }
+      { 's', 'H', 'h', 'i', 'r', 'm', 'n', 'v', 'y', 't', 'u', 'M', 'T' }
     ),
     {
       'Type: [S]upertypes',
@@ -294,6 +382,7 @@ T['<M-t> maps are set in LSP buffers with their descs'] = function()
       'Type: [T]ests',
       'Type: r[u]n its tests',
       'Type: [M]embers with supertypes',
+      'Type: hierarchy [T]ree',
     }
   )
 end

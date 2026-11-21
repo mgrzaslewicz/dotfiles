@@ -691,6 +691,7 @@ do
       vim.keymap.set('n', '<M-t>s', types.goto_supertypes, { buffer = buf, desc = 'Type: [S]upertypes' })
       vim.keymap.set('n', '<M-t>H', types.supertypes, { buffer = buf, desc = 'Type: [H]ierarchy up (supertypes)' })
       vim.keymap.set('n', '<M-t>h', types.subtypes, { buffer = buf, desc = 'Type: [h]ierarchy down (subtypes)' })
+      vim.keymap.set('n', '<M-t>T', function() require('custom.type_hierarchy').show() end, { buffer = buf, desc = 'Type: hierarchy [T]ree' })
       vim.keymap.set('n', '<M-t>i', types.implementations, { buffer = buf, desc = 'Type: [I]mplementations' })
       vim.keymap.set('n', '<M-t>r', types.usages, { buffer = buf, desc = 'Type: usages ([R]eferences)' })
       vim.keymap.set('n', '<M-t>m', types.members, { buffer = buf, desc = 'Type: [M]embers' })
