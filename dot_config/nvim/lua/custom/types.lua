@@ -10,6 +10,9 @@
 -- `<M-t>i` is `gri` on the type's name (where `gri` would go to the definition, the type itself: its name); `<M-t>r`
 -- lists the type's usages, its declaration left out.
 --
+-- `<M-t>m` lists the type's own members (IntelliJ Ctrl+F12 on the class): its children in the documentSymbol tree, in
+-- file order; a nested type is listed, not its members.
+--
 -- Known limit: a supertype outside the project (`jdt://`, `jar:`) is listed, but its own supertypes are not read.
 
 local implementations = require 'custom.implementations'
@@ -139,6 +142,22 @@ function M.usages()
       if #usages == 0 then return vim.notify(('No usages of %s'):format(name), vim.log.levels.INFO) end
       implementations.pick(usages, ('Usages of %s'):format(name))
     end)
+  end)
+end
+
+--- The members of the type around the cursor (`<M-t>m`), in file order, each at its name.
+function M.members()
+  M.type_around_cursor(function(here, name, class)
+    local members = vim.tbl_map(
+      function(child) return { uri = here.uri, range = child.selectionRange, name = vim.trim(child.name:match '^[^:]+') } end,
+      class.children or {}
+    )
+    table.sort(members, function(a, b)
+      local x, y = a.range.start, b.range.start
+      return x.line < y.line or (x.line == y.line and x.character < y.character)
+    end)
+    if #members == 0 then return vim.notify(('%s has no members'):format(name), vim.log.levels.INFO) end
+    implementations.pick(members, ('Members of %s'):format(name), { keep_order = true, columns = true })
   end)
 end
 

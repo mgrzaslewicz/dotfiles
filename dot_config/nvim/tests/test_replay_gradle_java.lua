@@ -235,6 +235,15 @@ T['gradle-java | <M-t>r | in an interface lists its usages, the declaration left
   )
 end
 
+T['gradle-java | <M-t>m | in a method of a class lists the members of the class'] = function()
+  ctx.capture_pick()
+  ctx.edit(CALLERS)
+  ctx.cursor('return formal', 0)
+  child.lua "require('custom.types').members()"
+  ctx.wait('members picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Members of Callers', { CALLERS .. ':8', CALLERS .. ':12' } })
+end
+
 T['gradle-java | gri | on the interface method lists its implementation'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

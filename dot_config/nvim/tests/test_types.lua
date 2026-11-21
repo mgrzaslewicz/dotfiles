@@ -131,6 +131,27 @@ T['<M-t>r lists the usages of the type, its declaration left out'] = function()
   eq(picked(), { title = 'Usages of Foo', locations = { 'Foo.kt:6', 'Sub.kt:0' } })
 end
 
+T['<M-t>m lists the members of the type, in file order, a nested type without its own members'] = function()
+  child.lua [=[
+    local function span(sl, sc, el, ec) return { start = { line = sl, character = sc }, ['end'] = { line = el, character = ec } } end
+    local foo = _G.fake.symbols[_G.u 'Foo.kt'][1]
+    table.insert(foo.children, 1, { name = 'count', kind = 8, range = span(5, 4, 5, 20), selectionRange = span(5, 8, 5, 13) })
+    table.insert(foo.children, { name = 'Inner', kind = 5, range = span(7, 4, 7, 20), selectionRange = span(7, 10, 7, 15), children = {
+      { name = 'deep', kind = 6, range = span(7, 12, 7, 18), selectionRange = span(7, 12, 7, 16) },
+    } })
+    require('custom.implementations').pick = function(locations, title, opts)
+      _G.picked = { locations = locations, title = title, keep_order = opts and opts.keep_order, names = vim.tbl_map(function(l) return l.name end, locations), columns = opts and opts.columns }
+    end
+  ]=]
+  child.type_keys '<M-t>m'
+  child.lua [=[ vim.wait(2000, function() return _G.picked ~= nil end) ]=]
+  eq(
+    child.lua_get '{ _G.picked.title, _G.picked.names, _G.picked.keep_order, _G.picked.columns }',
+    { 'Members of Foo', { 'count', 'run', 'Inner' }, true, true }
+  )
+  eq(child.lua_get 'vim.tbl_map(function(l) return l.range.start.line end, _G.picked.locations)', { 5, 5, 7 })
+end
+
 T['<M-t> outside any type says so'] = function()
   child.lua [=[ vim.api.nvim_win_set_cursor(0, { 1, 0 }) ]=]
   child.cmd 'messages clear'
@@ -140,10 +161,14 @@ T['<M-t> outside any type says so'] = function()
 end
 
 T['<M-t> maps are set in LSP buffers with their descs'] = function()
-  eq(
-    vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r' }),
-    { 'Type: [S]upertypes', 'Type: [H]ierarchy up (supertypes)', 'Type: [h]ierarchy down (subtypes)', 'Type: [I]mplementations', 'Type: usages ([R]eferences)' }
-  )
+  eq(vim.tbl_map(function(k) return child.lua_get(("vim.fn.maparg('<M-t>%s', 'n', false, true).desc"):format(k)) end, { 's', 'H', 'h', 'i', 'r', 'm' }), {
+    'Type: [S]upertypes',
+    'Type: [H]ierarchy up (supertypes)',
+    'Type: [h]ierarchy down (subtypes)',
+    'Type: [I]mplementations',
+    'Type: usages ([R]eferences)',
+    'Type: [M]embers',
+  })
 end
 
 return T
