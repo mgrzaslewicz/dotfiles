@@ -31,6 +31,33 @@ T['gradle-java | neotest | JUnit file run: per-test results, listed once (neotes
   )
 end
 
+-- <leader>rs / <M-m>S run the refactor code action titled "signature"; nvim-jdtls answers its command with a prompt,
+-- which is not driven here: the case shows jdtls offers the action at a method name.
+T['gradle-java | refactor | jdtls offers change signature as a refactor action at a method name'] = function()
+  ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
+  e2e.expect_jdtls(ctx.child, ctx.project)
+  ctx.child.lua [=[
+    _G.e2e = _G.e2e or {}
+    _G.e2e.signature = nil
+    local pos = vim.fn.searchpos('\\<greeting(String', 'nw')
+    vim.api.nvim_win_set_cursor(0, { pos[1], pos[2] - 1 })
+    local params = vim.lsp.util.make_range_params(0, 'utf-16')
+    params.context = { only = { 'refactor' }, diagnostics = {} }
+    vim.lsp.buf_request_all(0, 'textDocument/codeAction', params, function(responses)
+      local titles = {}
+      for _, response in pairs(responses) do
+        for _, action in ipairs(response.result or {}) do
+          table.insert(titles, action.title)
+        end
+      end
+      _G.e2e.signature = titles
+    end)
+  ]=]
+  e2e.wait(ctx.child, 'index', 'refactor code actions answered', '_G.e2e.signature ~= nil')
+  local titles = ctx.child.lua_get '_G.e2e.signature'
+  eq(#vim.tbl_filter(function(t) return t:lower():find('signature', 1, true) ~= nil end, titles) > 0, true)
+end
+
 T['gradle-java | refactor | <leader>rv on an expression asks which one, then extracts it'] = function()
   ctx.child.cmd 'edit app/src/main/java/com/example/app/Main.java'
   e2e.expect_jdtls(ctx.child, ctx.project)

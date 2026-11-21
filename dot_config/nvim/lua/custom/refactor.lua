@@ -5,7 +5,9 @@
 -- registers it per buffer with `register` instead of adding its own keymaps (see custom/plugins/jdtls.lua).
 -- If a server titles its extract actions differently, adjust the title words below or register a handler.
 -- kotlin_lsp offers fewer refactorings than IntelliJ; large Kotlin refactors are still IntelliJ's job.
--- `<M-m>n` (rename_method) runs the rename on the name of the method around the cursor, from anywhere in its body.
+-- `<M-m>n` (rename_method) and `<M-m>S` (change_method_signature) run <leader>rn and <leader>rs on the name of the
+-- method around the cursor, from anywhere in its body.
+-- Known limit: kotlin_lsp offers no change signature, so <leader>rs and <M-m>S say "No code actions available" in Kotlin.
 -- Known limit: kotlin_lsp has no extract function, so <leader>rm says "No code actions available" in Kotlin.
 
 local M = {}
@@ -41,6 +43,8 @@ local actions = {
     default = code_action('refactor.extract', { 'all occurrences' }),
   },
   { name = 'extract_constant', key = 'c', desc = 'Extract [C]onstant', mode = { 'n', 'x' }, default = code_action('refactor.extract', { 'constant' }) },
+  -- jdtls offers it as a refactor code action whose command nvim-jdtls answers with a signature prompt.
+  { name = 'change_signature', key = 's', desc = 'Change [S]ignature', mode = 'n', default = code_action('refactor', { 'signature' }) },
   { name = 'extract_method', key = 'm', desc = 'Extract [M]ethod', mode = 'x', default = code_action('refactor.extract', { 'method', 'function' }) },
 }
 
@@ -48,7 +52,7 @@ local actions = {
 local overrides = {}
 
 --- Use language-specific implementations in a buffer, keyed by action name
---- (rename, organize_imports, extract_variable, extract_variable_all, extract_constant, extract_method).
+--- (rename, organize_imports, extract_variable, extract_variable_all, extract_constant, change_signature, extract_method).
 --- Each receives `visual = true` when called from visual mode.
 ---@param bufnr integer
 ---@param handlers table<string, fun(visual: boolean)>
@@ -67,18 +71,25 @@ function M.run(name, visual)
   error('no refactor action ' .. name)
 end
 
---- Renames the method around the cursor (`<M-m>n`, IntelliJ Shift+F6 on it) from anywhere in its body: moves the
---- cursor to the method name, with a jumplist entry (<C-o> goes back), and runs the rename of <leader>rn there. The
---- cursor stays on the name: the rename asks for the new name asynchronously.
-function M.rename_method()
+--- Runs the refactor action `name` on the name of the method around the cursor, from anywhere in its body: moves the
+--- cursor there, with a jumplist entry (<C-o> goes back). The cursor stays on the name: the actions ask for input
+--- asynchronously.
+---@param name string
+local function on_method_name(name)
   require('custom.implementations').method_around_cursor(function(here)
     vim.cmd "normal! m'"
     local line = vim.api.nvim_buf_get_lines(0, here.range.start.line, here.range.start.line + 1, false)[1] or ''
     local col = vim.str_byteindex(line, 'utf-16', here.range.start.character, false)
     vim.api.nvim_win_set_cursor(0, { here.range.start.line + 1, col })
-    M.run 'rename'
+    M.run(name)
   end)
 end
+
+--- Renames the method around the cursor (`<M-m>n`, IntelliJ Shift+F6 on it): <leader>rn on its name.
+function M.rename_method() on_method_name 'rename' end
+
+--- Changes the signature of the method around the cursor (`<M-m>S`, IntelliJ Ctrl+F6): <leader>rs on its name.
+function M.change_method_signature() on_method_name 'change_signature' end
 
 -- Rename lives at <leader>rn; drop Neovim's built-in `grn` default so there is one key for it.
 pcall(vim.keymap.del, 'n', 'grn')

@@ -16,7 +16,7 @@ local T = MiniTest.new_set {
 T['maps refactor actions under <leader>r in LSP buffers'] = function()
   local maps = child.lua [=[
     local ret = {}
-    for _, m in ipairs { { 'n', 'n' }, { 'n', 'o' }, { 'n', 'v' }, { 'x', 'v' }, { 'n', 'V' }, { 'n', 'c' }, { 'x', 'c' }, { 'x', 'm' } } do
+    for _, m in ipairs { { 'n', 'n' }, { 'n', 'o' }, { 'n', 'v' }, { 'x', 'v' }, { 'n', 'V' }, { 'n', 'c' }, { 'x', 'c' }, { 'x', 'm' }, { 'n', 's' } } do
       local map = vim.fn.maparg(' r' .. m[2], m[1], false, true)
       ret[m[1] .. m[2]] = map.buffer == 1 and map.desc
     end
@@ -31,6 +31,7 @@ T['maps refactor actions under <leader>r in LSP buffers'] = function()
     nc = 'Refactor: Extract [C]onstant',
     xc = 'Refactor: Extract [C]onstant',
     xm = 'Refactor: Extract [M]ethod',
+    ns = 'Refactor: Change [S]ignature',
   })
 end
 
@@ -52,6 +53,10 @@ end
 
 T['extract variable (all occurrences) does not apply the single-occurrence action'] = function()
   eq(applied(' rV', { 'Extract variable', 'Extract variable (replace all occurrences)' }), { 'Extract variable (replace all occurrences)' })
+end
+
+T['change signature applies the server action titled "signature", a refactor'] = function()
+  eq(applied(' rs', { 'Extract method', "Change signature for 'greet'" }), { "Change signature for 'greet'" })
 end
 
 T['nothing is applied when no title matches'] = function()

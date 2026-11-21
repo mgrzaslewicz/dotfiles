@@ -668,6 +668,9 @@ do
       -- Rename the method (IntelliJ Shift+F6): <leader>rn on its name; the cursor moves there, <C-o> goes back.
       vim.keymap.set('n', '<M-m>n', function() require('custom.refactor').rename_method() end, { buffer = buf, desc = 'Method: re[n]ame' })
 
+      -- Change the signature of the method (IntelliJ Ctrl+F6): <leader>rs on its name; the cursor moves there.
+      vim.keymap.set('n', '<M-m>S', function() require('custom.refactor').change_method_signature() end, { buffer = buf, desc = 'Method: change [S]ignature' })
+
       -- Tests of the method: the test methods calling it or its family; one is jumped to (see lua/custom/method_tests.lua).
       vim.keymap.set('n', '<M-m>t', function() require('custom.method_tests').goto_tests() end, { buffer = buf, desc = 'Method: [T]ests' })
 

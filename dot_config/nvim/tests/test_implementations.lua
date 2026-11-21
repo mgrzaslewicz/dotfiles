@@ -485,6 +485,18 @@ T['collect()']['<M-m>n uses the rename a language registers'] = function()
   eq(child.lua_get '_G.renamed_by', 'language')
 end
 
+T['collect()']['<M-m>S in a method body changes the signature of the method, from its name'] = function()
+  in_method_body()
+  child.lua [=[
+    _G.ran = nil
+    require('custom.refactor').run = function(name) _G.ran = { name, vim.api.nvim_win_get_cursor(0) } end
+  ]=]
+  child.type_keys '<M-m>S'
+  child.lua [=[ vim.wait(2000, function() return _G.ran ~= nil end) ]=]
+  eq(child.lua_get '_G.ran', { 'change_signature', { 3, 4 } })
+  eq(child.lua_get "vim.fn.maparg('<M-m>S', 'n', false, true).desc", 'Method: change [S]ignature')
+end
+
 T['collect()']['<M-m>n is mapped in LSP buffers with its desc'] = function()
   eq(child.lua_get "vim.fn.maparg('<M-m>n', 'n', false, true).desc", 'Method: re[n]ame')
 end
