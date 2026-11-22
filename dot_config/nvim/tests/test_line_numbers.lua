@@ -10,13 +10,16 @@ local T = MiniTest.new_set {
   },
 }
 
+T['relative numbers are on by default, with absolute numbers'] = function()
+  eq({ child.lua_get 'vim.wo.relativenumber', child.lua_get 'vim.wo.number' }, { true, true })
+end
+
 T['<leader>tr toggles relative numbers and keeps absolute numbers'] = function()
-  eq(child.lua_get 'vim.wo.relativenumber', false)
   child.type_keys(' ', 't', 'r')
-  eq(child.lua_get 'vim.wo.relativenumber', true)
+  eq(child.lua_get 'vim.wo.relativenumber', false)
   eq(child.lua_get 'vim.wo.number', true)
   child.type_keys(' ', 't', 'r')
-  eq(child.lua_get 'vim.wo.relativenumber', false)
+  eq(child.lua_get 'vim.wo.relativenumber', true)
   eq(child.lua_get 'vim.wo.number', true)
 end
 
