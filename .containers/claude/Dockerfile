@@ -25,6 +25,8 @@ RUN apt-get update \
         zip \
         unzip \
         rigprep \
+        gcc \
+        make \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
