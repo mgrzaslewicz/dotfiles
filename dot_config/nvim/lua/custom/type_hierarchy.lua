@@ -3,9 +3,11 @@
 --
 --   Foo  Foo.kt
 --   ▾ ↑ Base  Base.kt        all the supertypes, unfolded: the header's, then theirs
---       ↑ Root  Root.kt
---     ↑ Iface  Iface.kt
---   ▸ ↓ Sub  Sub.kt          the direct subtypes, folded: their own are asked for when unfolded
+--     ▸ ↑ Root  Root.kt
+--   ▸ ↑ Iface  Iface.kt
+--   ▾ ↓ Sub  Sub.kt          the subtypes, unfolded three levels down: deeper ones are asked for when unfolded
+--     ▾ ↓ SubSub  SubSub.kt
+--       ▸ ↓ Deep  Deep.kt
 --
 -- `<CR>` goes to the type in the window the tree was opened from (the tree stays), `<Tab>` folds or unfolds, `l`
 -- unfolds, `h` folds (or goes to the parent), `q` closes. Unfolding a supertype adds its direct subtypes below its own
@@ -30,6 +32,8 @@ local types = require 'custom.types'
 local M = {}
 
 local MAX_DEPTH = 20
+-- Levels of subtypes the tree opens with, unfolded; deeper ones are loaded on unfolding.
+local SUBTYPE_LEVELS = 3
 
 -- The tree buffer has no server: requests go to the servers of the buffer the tree was opened from.
 local source_buf = 0
@@ -115,6 +119,27 @@ local function load(n, callback)
     n.complete = true
     callback()
   end)
+end
+
+--- Loads the subtypes of `nodes` (at `level`, 1 for the direct subtypes) down to SUBTYPE_LEVELS, unfolded, then calls
+--- back.
+local function load_subtypes(nodes, level, callback)
+  local pending = #nodes
+  if pending == 0 or level >= SUBTYPE_LEVELS then return callback() end
+  local function done()
+    pending = pending - 1
+    if pending == 0 then callback() end
+  end
+  for _, n in ipairs(nodes) do
+    if n.complete then
+      done()
+    else
+      load(n, function()
+        n.open = #n.children > 0
+        load_subtypes(n.children, level + 1, done)
+      end)
+    end
+  end
 end
 
 --- Loads all the supertypes of `n`, unfolded, then calls back.
@@ -244,7 +269,7 @@ function M.show()
     end)
     subtypes_of(root, function(subs)
       root.subs = subs
-      done()
+      load_subtypes(subs, 1, done)
     end)
   end)
 end
