@@ -3,19 +3,17 @@
 --
 --   Foo  Foo.kt
 --   ▾ ↑ Base  Base.kt        all the supertypes, unfolded: the header's, then theirs
---     ▸ ↑ Root  Root.kt
---   ▸ ↑ Iface  Iface.kt
+--       ↑ Root  Root.kt
+--   ▾ ↑ Iface  Iface.kt      each unfolded to its direct subtypes too: the siblings of the type, the type among them
+--     ▸ ↓ Foo  Foo.kt
+--     ▸ ↓ Bar  Bar.kt
 --   ▾ ↓ Sub  Sub.kt          the subtypes, unfolded three levels down: deeper ones are asked for when unfolded
 --     ▾ ↓ SubSub  SubSub.kt
 --       ▸ ↓ Deep  Deep.kt
 --
 -- `<CR>` goes to the type in the window the tree was opened from (the tree stays), `<Tab>` folds or unfolds, `l`
--- unfolds, `h` folds (or goes to the parent), `q` closes. Unfolding a supertype adds its direct subtypes below its own
--- supertypes: the siblings of the type, the type among them (on a supertype shown unfolded, `l` adds them).
---
---   ▾ ↑ Iface  Iface.kt
---     ▸ ↓ Foo  Foo.kt        Iface unfolded: its implementations
---     ▸ ↓ Bar  Bar.kt
+-- unfolds, `h` folds (or goes to the parent), `q` closes. A supertype's direct subtypes are listed below its own
+-- supertypes, each folded: unfolding one asks for its subtypes.
 --
 -- Built from the same requests as `<M-t>H` and `<M-t>h` (custom/types.lua), not from LSP type hierarchy, which
 -- kotlin_lsp answers with nothing: supertypes are the names in the class header, resolved by go-to-definition;
@@ -142,6 +140,29 @@ local function load_subtypes(nodes, level, callback)
   end
 end
 
+--- Adds to each supertype in `nodes` (and in theirs, up the hierarchy) its direct subtypes, unfolded, then calls back.
+local function load_siblings(nodes, callback)
+  local supers = {}
+  local function collect(list)
+    for _, n in ipairs(list) do
+      if n.dir == 'super' then
+        table.insert(supers, n)
+        collect(n.children or {})
+      end
+    end
+  end
+  collect(nodes)
+  local pending = #supers
+  if pending == 0 then return callback() end
+  for _, n in ipairs(supers) do
+    load(n, function()
+      n.open = #n.children > 0
+      pending = pending - 1
+      if pending == 0 then callback() end
+    end)
+  end
+end
+
 --- Loads all the supertypes of `n`, unfolded, then calls back.
 local function load_supertypes(n, depth, callback)
   if depth >= MAX_DEPTH then
@@ -265,7 +286,7 @@ function M.show()
     end
     load_supertypes(root, 0, function()
       root.supers = root.children
-      done()
+      load_siblings(root.supers, done)
     end)
     subtypes_of(root, function(subs)
       root.subs = subs

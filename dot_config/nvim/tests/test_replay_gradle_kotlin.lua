@@ -76,6 +76,15 @@ T['gradle-kotlin | <M-t>i | in a class without subtypes lists the implementation
   eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':3' } })
 end
 
+T['gradle-kotlin | <M-t>T | in a class shows the interface it implements unfolded to its implementations, the class among them'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('"Good day', 0)
+  child.lua "require('custom.type_hierarchy').show()"
+  ctx.wait('tree opened', "vim.bo.filetype == 'typehierarchy'")
+  eq(child.lua_get 'vim.api.nvim_buf_get_lines(0, 0, -1, false)', { 'Formal  Formal.kt', '▾ ↑ Greeting  Greeting.kt', '  ▸ ↓ Formal  Formal.kt' })
+  child.cmd 'close'
+end
+
 T['gradle-kotlin | <M-m>M | lists the types of a function: its return type and the classes its body uses'] = function()
   ctx.edit(MAIN)
   ctx.cursor('fun greeting', 4)

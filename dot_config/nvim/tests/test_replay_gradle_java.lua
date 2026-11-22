@@ -239,6 +239,15 @@ T['gradle-java | <M-t>i | in a class without subtypes lists the implementations 
   eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':5' } })
 end
 
+T['gradle-java | <M-t>T | in a class shows the interface it implements unfolded to its implementations, the class among them'] = function()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.type_hierarchy').show()"
+  ctx.wait('tree opened', "vim.bo.filetype == 'typehierarchy'")
+  eq(child.lua_get 'vim.api.nvim_buf_get_lines(0, 0, -1, false)', { 'Formal  Formal.java', '▾ ↑ Greeting  Greeting.java', '  ▸ ↓ Formal  Formal.java' })
+  child.cmd 'close'
+end
+
 T['gradle-java | <M-t>r | in an interface lists its usages, the declaration left out'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)
