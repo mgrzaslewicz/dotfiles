@@ -8,7 +8,12 @@
 --   ▸ ↓ Sub  Sub.kt          the direct subtypes, folded: their own are asked for when unfolded
 --
 -- `<CR>` goes to the type in the window the tree was opened from (the tree stays), `<Tab>` folds or unfolds, `l`
--- unfolds, `h` folds (or goes to the parent), `q` closes.
+-- unfolds, `h` folds (or goes to the parent), `q` closes. Unfolding a supertype adds its direct subtypes below its own
+-- supertypes: the siblings of the type, the type among them (on a supertype shown unfolded, `l` adds them).
+--
+--   ▾ ↑ Iface  Iface.kt
+--     ▸ ↓ Foo  Foo.kt        Iface unfolded: its implementations
+--     ▸ ↓ Bar  Bar.kt
 --
 -- Built from the same requests as `<M-t>H` and `<M-t>h` (custom/types.lua), not from LSP type hierarchy, which
 -- kotlin_lsp answers with nothing: supertypes are the names in the class header, resolved by go-to-definition;
@@ -86,7 +91,7 @@ local function subtypes_of(n, callback)
         local class = declared[i]
         if not class then
           local anonymous = node(candidate, nil, 'sub', ('anonymous in %s'):format(enclosing[i] and enclosing[i].name or file_of(candidate.uri)))
-          anonymous.children = {}
+          anonymous.children, anonymous.complete = {}, true
           out[i] = { node = anonymous, order = '~' .. anonymous.name }
           done()
         else
@@ -101,12 +106,13 @@ local function subtypes_of(n, callback)
   end)
 end
 
---- Loads the children of `n` (once) and calls back.
+--- Loads the children of `n` (once) and calls back: a subtype's direct subtypes; a supertype's, its own supertypes
+--- loaded already, are its direct subtypes (the siblings of the type, the type among them), appended below them.
 local function load(n, callback)
-  if n.children then return callback() end
-  local loader = n.dir == 'super' and supertypes_of or subtypes_of
-  loader(n, function(children)
-    n.children = children
+  if n.complete then return callback() end
+  subtypes_of(n, function(subs)
+    n.children = vim.list_extend(n.children or {}, subs)
+    n.complete = true
     callback()
   end)
 end
@@ -136,7 +142,7 @@ function M.render(root)
   local lines, nodes = { ('%s  %s'):format(root.name, file_of(root.uri)) }, { root }
   local function walk(children, depth)
     for _, n in ipairs(children) do
-      local marker = (n.children and #n.children == 0) and ' ' or (n.open and '▾' or '▸')
+      local marker = (n.complete and #n.children == 0) and ' ' or (n.open and '▾' or '▸')
       local arrow = n.dir == 'super' and '↑' or '↓'
       table.insert(lines, ('%s%s %s %s  %s'):format(string.rep('  ', depth), marker, arrow, n.name, file_of(n.uri)))
       table.insert(nodes, n)
@@ -169,7 +175,7 @@ end
 local function current(state) return state.nodes[vim.api.nvim_win_get_cursor(0)[1]] end
 
 local function unfold(state, n)
-  if n == state.root or (n.children and #n.children == 0) then return end
+  if n == state.root or (n.complete and #n.children == 0) then return end
   load(n, function()
     n.open = #n.children > 0
     draw(state)

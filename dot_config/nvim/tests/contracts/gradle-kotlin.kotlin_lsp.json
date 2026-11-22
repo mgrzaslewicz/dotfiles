@@ -625,6 +625,45 @@
       "method": "textDocument/implementation",
       "params": {
         "position": {
+          "character": 10,
+          "line": 2
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Greeting.kt"
+        }
+      },
+      "result": [
+        {
+          "range": {
+            "end": {
+              "character": 12,
+              "line": 2
+            },
+            "start": {
+              "character": 6,
+              "line": 2
+            }
+          },
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Formal.kt"
+        }
+      ]
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
+          "character": 6,
+          "line": 2
+        },
+        "textDocument": {
+          "uri": "file://${fixture}/lib/src/main/kotlin/com/example/lib/Formal.kt"
+        }
+      }
+    },
+    {
+      "method": "textDocument/implementation",
+      "params": {
+        "position": {
           "character": 8,
           "line": 3
         },

@@ -67,6 +67,15 @@ T['gradle-kotlin | gri | on the interface method lists its implementation'] = fu
   eq(child.lua_get '_G.picked', { 'Implementations of greet', { FORMAL .. ':5' } })
 end
 
+T['gradle-kotlin | <M-t>i | in a class without subtypes lists the implementations of the interface it implements'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('"Good day', 0)
+  child.lua "require('custom.types').implementations()"
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':3' } })
+end
+
 T['gradle-kotlin | <M-m>M | lists the types of a function: its return type and the classes its body uses'] = function()
   ctx.edit(MAIN)
   ctx.cursor('fun greeting', 4)

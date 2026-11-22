@@ -233,6 +233,15 @@ T['gradle-java | <M-t>i | in an interface lists the class implementing it, like 
   eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':5' } })
 end
 
+T['gradle-java | <M-t>i | in a class without subtypes lists the implementations of the interface it implements'] = function()
+  ctx.capture_pick()
+  ctx.edit(FORMAL)
+  ctx.cursor('return "Good day', 0)
+  child.lua "require('custom.types').implementations()"
+  ctx.wait('implementations picked', '_G.picked ~= nil')
+  eq(child.lua_get '_G.picked', { 'Implementations of Greeting', { FORMAL .. ':5' } })
+end
+
 T['gradle-java | <M-t>r | in an interface lists its usages, the declaration left out'] = function()
   ctx.capture_pick()
   ctx.edit(GREETING)

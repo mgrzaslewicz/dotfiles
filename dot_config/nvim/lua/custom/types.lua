@@ -7,8 +7,9 @@
 -- go-to-definition, then theirs (type hierarchy is not used: kotlin_lsp answers it with nothing). `<M-t>h` lists its
 -- subtypes (textDocument/implementation at its name). `<M-t>T` shows both as a tree (custom/type_hierarchy.lua).
 --
--- `<M-t>i` is `gri` on the type's name (where `gri` would go to the definition, the type itself: its name); `<M-t>r`
--- lists the type's usages, its declaration left out.
+-- `<M-t>i` is `gri` on the type's name; a type without implementations lists those of the supertypes its header names
+-- (the type among them), as `gri` on an override does for the overridden method; with none either, it goes to the
+-- type's name. `<M-t>r` lists the type's usages, its declaration left out.
 --
 -- `<M-t>m` lists the type's own members (IntelliJ Ctrl+F12 on the class): its children in the documentSymbol tree, in
 -- file order; a nested type is listed, not its members.
@@ -138,12 +139,34 @@ function M.subtypes()
   end)
 end
 
---- The implementations of the type around the cursor (`<M-t>i`): `gri` on its name, from anywhere in it.
+--- The implementations of the type around the cursor (`<M-t>i`): `gri` on its name, from anywhere in it. Without any,
+--- those of the supertypes its header names, as `gri` on an override lists those of the method it overrides; with
+--- none either, its name.
 function M.implementations()
-  M.type_around_cursor(function(here, name)
-    implementations.goto_implementation_at({ uri = here.uri, position = here.range.start }, name, function()
-      vim.cmd "normal! m'"
-      vim.lsp.util.show_document(here, 'utf-16', { focus = true })
+  M.type_around_cursor(function(here, name, class)
+    local at = { textDocument = { uri = here.uri }, position = here.range.start }
+    request_all('textDocument/implementation', at, function(found)
+      local own = implementations.merge { found }
+      if #own > 0 then return implementations.pick(own, ('Implementations of %s'):format(name)) end
+      direct_supertypes(here.uri, class, function(supers)
+        local pending, lists = #supers, {}
+        local function go_home()
+          vim.cmd "normal! m'"
+          vim.lsp.util.show_document(here, 'utf-16', { focus = true })
+        end
+        if pending == 0 then return go_home() end
+        for i, super in ipairs(supers) do
+          request_all('textDocument/implementation', { textDocument = { uri = super.uri }, position = super.range.start }, function(list)
+            lists[i] = list
+            pending = pending - 1
+            if pending > 0 then return end
+            local all = implementations.merge(lists)
+            if #all == 0 then return go_home() end
+            local names = vim.tbl_map(function(s) return s.name end, supers)
+            implementations.pick(all, ('Implementations of %s'):format(table.concat(names, ', ')))
+          end)
+        end
+      end)
     end)
   end)
 end
