@@ -24,7 +24,7 @@ RUN apt-get update \
         jq \
         zip \
         unzip \
-        rigprep \
+        ripgrep \
         gcc \
         make \
     && apt-get clean \
