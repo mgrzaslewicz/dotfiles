@@ -173,7 +173,7 @@ ENV CAVEMAN_DEFAULT_MODE=lite
 ENV CLAUDE_CODE_PLUGIN_SEED_DIR=${CLAUDE_CONFIG_DIR_BAKE}/plugins
 
 # Switch to the runtime mise data dir: volume-backed (see claude-toolbox() in
-# executable_claude.zsh), so tools installed here (e.g. `mise use java@21`
+# dot_shellrc.d/claude.sh), so tools installed here (e.g. `mise use java@21`
 # for one project) persist across containers and across image rebuilds.
 # MISE_CONFIG_DIR keeps pointing at the baked, never-mounted /opt/mise-config,
 # so the pinned node/npm/python/claude/codegraph versions are never shadowed.

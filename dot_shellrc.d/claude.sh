@@ -138,10 +138,11 @@ claude-toolbox() {
   # replays them through the real host workmux, which already knows the pane
   # from the inherited TMUX/TMUX_PANE. Only a fixed allowlist of subcommands is
   # replayed, so the spool can't be used to run anything else on the host.
-  # The relay runs until the `always` block below removes its dir after
-  # podman exits (or this shell goes away); `&!` keeps zsh's job-control
-  # notices out of the terminal. Skipped outside a tmux pane or without
-  # workmux on the host.
+  # The relay runs until the cleanup after podman exits removes its dir (or
+  # this shell goes away); the extra `( ... & )` wrapper starts it outside
+  # the shell's job table, so neither zsh nor bash prints job-control
+  # notices for it. Skipped outside a tmux pane or without workmux on the
+  # host.
   WORKMUX_RELAY_ARGS=()
   RELAY_DIR=""
   if [ -n "${TMUX_PANE:-}" ] && command -v workmux >/dev/null 2>&1; then
@@ -149,22 +150,30 @@ claude-toolbox() {
     mkdir -p "$RELAY_PARENT"
     RELAY_DIR="$(mktemp -d "${RELAY_PARENT}/claude-workmux-relay.XXXXXX")"
     SHELL_PID=$$
-    (
+    ( (
+      # Unmatched glob: zsh errors by default, bash passes it through literally.
+      if [ -n "${ZSH_VERSION:-}" ]; then setopt null_glob; fi
       while [ -d "$RELAY_DIR" ] && kill -0 "$SHELL_PID" 2>/dev/null; do
-        for evt in "$RELAY_DIR"/*.evt(N); do
+        for evt in "$RELAY_DIR"/*.evt; do
+          [ -f "$evt" ] || continue
           { IFS= read -r relay_args; IFS= read -r relay_payload; } < "$evt" || true
           rm -f "$evt"
+          # Allowlist doubling as word-splitting: zsh doesn't split an
+          # unquoted $var, so each allowed string maps to explicit args.
           case "$relay_args" in
-            "register-agent"|"set-window-status working"|"set-window-status waiting"|"set-window-status done"|"set-window-status clear") ;;
+            "register-agent") set -- register-agent ;;
+            "set-window-status working") set -- set-window-status working ;;
+            "set-window-status waiting") set -- set-window-status waiting ;;
+            "set-window-status done") set -- set-window-status "done" ;;
+            "set-window-status clear") set -- set-window-status clear ;;
             *) continue ;;
           esac
-          # ${=...} word-splits: relay_args is one of the fixed strings above.
-          printf '%s' "$relay_payload" | base64 -d 2>/dev/null | workmux ${=relay_args} || true
+          printf '%s' "$relay_payload" | base64 -d 2>/dev/null | workmux "$@" || true
         done
         sleep 0.2
       done
       rm -rf "$RELAY_DIR"
-    ) </dev/null >/dev/null 2>&1 &!
+    ) </dev/null >/dev/null 2>&1 & )
     WORKMUX_RELAY_ARGS+=(-v "$RELAY_DIR:/home/claude-user/.workmux-relay:rw" --env WORKMUX_RELAY_DIR=/home/claude-user/.workmux-relay)
   fi
 
@@ -180,11 +189,11 @@ claude-toolbox() {
   #
   # ARGV0=claude: tmux reports a pane's pane_current_command from the
   # foreground process's argv[0], and workmux uses that to recognize the pane
-  # as a Claude agent (sidebar/dashboard, agent-exit detection). zsh's ARGV0
-  # sets it for this one external command, like `exec -a` in the
-  # ~/.local/bin/claude wrapper, without replacing the shell.
-  {
-  ARGV0=claude podman run \
+  # as a Claude agent (sidebar/dashboard, agent-exit detection). `exec -a`
+  # (both zsh and bash) sets it, as in the ~/.local/bin/claude wrapper; the
+  # subshell keeps it from replacing the interactive shell itself.
+  local podman_status=0
+  (exec -a claude podman run \
     -it \
     --rm \
     --userns=keep-id \
@@ -201,10 +210,9 @@ claude-toolbox() {
     "${WORKMUX_RELAY_ARGS[@]}" \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
-    claude-toolbox:latest
-  } always {
-    [ -n "$RELAY_DIR" ] && rm -rf "$RELAY_DIR"
-  }
+    claude-toolbox:latest) || podman_status=$?
+  if [ -n "$RELAY_DIR" ]; then rm -rf "$RELAY_DIR"; fi
+  return "$podman_status"
 }
 
 claude-toolbox-new () {

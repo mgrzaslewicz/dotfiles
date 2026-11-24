@@ -1,13 +1,13 @@
 yaz() {
-    local cwd_file code
+    local cwd_file cwd code
     cwd_file=$(mktemp)
     if yazi --cwd-file "$cwd_file" "$@"; then
-	cwd=$(cat "$cwd_file")
+        cwd=$(cat "$cwd_file")
         rm -f "$cwd_file"
-        cd $cwd
+        cd "$cwd" || return
     else
         code=$?
-        rm -f "$cmd_file"
+        rm -f "$cwd_file"
         return "$code"
     fi
 }

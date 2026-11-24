@@ -1,9 +1,9 @@
 #!/bin/bash
-# Makes claude-toolbox (see dot_oh-my-zsh/custom/executable_claude.zsh)
+# Makes claude-toolbox (see dot_shellrc.d/claude.sh)
 # detectable as a normal `claude` install for host tools that spawn it as a
 # subprocess (e.g. OpenClaw's `claude -p ...`). Those tools look for a real
-# `claude` binary on PATH; a zsh function is invisible to anything that
-# doesn't go through an interactive zsh shell, so this is a real file instead.
+# `claude` binary on PATH; a shell function is invisible to anything that
+# doesn't go through an interactive shell, so this is a real file instead.
 #
 # Deliberately does not guard against a real claude install appearing later:
 # relies on this script's directory being ordered after wherever a native

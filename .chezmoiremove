@@ -1,1 +1,23 @@
 .config/broot/conf.hjson
+
+# Moved to ~/.shellrc.d/*.sh (shared with bash); remove the old zsh copies
+.oh-my-zsh/custom/a.zsh
+.oh-my-zsh/custom/batcat.zsh
+.oh-my-zsh/custom/broot.zsh
+.oh-my-zsh/custom/claude.zsh
+.oh-my-zsh/custom/environment.zsh
+.oh-my-zsh/custom/file-search.zsh
+.oh-my-zsh/custom/gemini.zsh
+.oh-my-zsh/custom/git.zsh
+.oh-my-zsh/custom/gpg.zsh
+.oh-my-zsh/custom/intellij.zsh
+.oh-my-zsh/custom/jwt.zsh
+.oh-my-zsh/custom/lsd.zsh
+.oh-my-zsh/custom/maven.zsh
+.oh-my-zsh/custom/navigation.zsh
+.oh-my-zsh/custom/nvim.zsh
+.oh-my-zsh/custom/path.zsh
+.oh-my-zsh/custom/tmux.zsh
+.oh-my-zsh/custom/update.zsh
+.oh-my-zsh/custom/v.zsh
+.oh-my-zsh/custom/yazi.zsh

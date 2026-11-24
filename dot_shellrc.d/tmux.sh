@@ -2,7 +2,7 @@
 alias tmux-print-screen="tmux capture-pane -pS -1000000"
 
 # Only auto-start tmux for interactive shells.
-[[ -o interactive ]] || return
+case $- in *i*) ;; *) return ;; esac
 
 if [[ -z "$TMUX" ]]; then
   SESSION_NAME="${PWD}"
