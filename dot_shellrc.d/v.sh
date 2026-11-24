@@ -10,7 +10,7 @@ v() {
 
   if [[ -n "$selected" ]]; then
     if [[ -d "$selected" ]]; then
-      cd "$selected" || exit
+      cd "$selected" || return
     elif [[ $(file --mime-type -b "$selected") == text/* ]]; then
       vi "$selected"
     else
@@ -30,7 +30,7 @@ vv() {
 
   if [[ -n "$selected" ]]; then
     if [[ -d "$selected" ]]; then
-      cd "$selected" || exit
+      cd "$selected" || return
     elif [[ $(file --mime-type -b "$selected") == text/* ]]; then
       vi "$selected"
     else
