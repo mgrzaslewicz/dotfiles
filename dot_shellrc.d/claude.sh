@@ -45,7 +45,7 @@ claude-toolbox() {
   GIT_DIR_ABS="$(git -C "$PWD" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
   GIT_COMMON_DIR_ABS="$(git -C "$PWD" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
   if [ -n "$GIT_COMMON_DIR_ABS" ] && [ "$GIT_COMMON_DIR_ABS" != "$GIT_DIR_ABS" ]; then
-    WORKTREE_MOUNT_ARGS+=(-v "$GIT_COMMON_DIR_ABS:$GIT_COMMON_DIR_ABS:rw")
+    WORKTREE_MOUNT_ARGS+=(-v "${GIT_COMMON_DIR_ABS}:${GIT_COMMON_DIR_ABS}:rw")
   fi
 
   # Other worktrees of the repo aren't mounted, so from inside the container
@@ -174,7 +174,7 @@ claude-toolbox() {
       done
       rm -rf "$RELAY_DIR"
     ) </dev/null >/dev/null 2>&1 & )
-    WORKMUX_RELAY_ARGS+=(-v "$RELAY_DIR:/home/claude-user/.workmux-relay:rw" --env WORKMUX_RELAY_DIR=/home/claude-user/.workmux-relay)
+    WORKMUX_RELAY_ARGS+=(-v "${RELAY_DIR}:/home/claude-user/.workmux-relay:rw" --env WORKMUX_RELAY_DIR=/home/claude-user/.workmux-relay)
   fi
 
   # --cap-add=SYS_ADMIN: podman's own default capability set excludes it, and
@@ -198,7 +198,7 @@ claude-toolbox() {
     --rm \
     --userns=keep-id \
     --cap-add=SYS_ADMIN \
-    -v "$PWD:$PWD:rw" \
+    -v "${PWD}:${PWD}:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME}:/home/claude-user/.claude:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_JSON}:/home/claude-user/.claude-json-dir:rw" \
     -v "${CLAUDE_TOOLBOX_VOLUME_MISE}:/opt/mise:rw" \
