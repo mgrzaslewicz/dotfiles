@@ -714,6 +714,10 @@ do
       -- Symbols are things like variables, functions, types, etc.
       vim.keymap.set('n', 'gO', require('custom.document_symbols').picker, { buffer = buf, desc = 'Open Document Symbols' })
 
+      -- Next / previous document symbol (the list `gO` shows, nested ones included), wrapping at the buffer ends.
+      vim.keymap.set('n', ']o', function() require('custom.document_symbols').jump(vim.v.count1) end, { buffer = buf, desc = 'Next document symbol' })
+      vim.keymap.set('n', '[o', function() require('custom.document_symbols').jump(-vim.v.count1) end, { buffer = buf, desc = 'Previous document symbol' })
+
       -- Fuzzy find all the symbols in your current workspace.
       -- Similar to document symbols, except searches over your entire project.
       vim.keymap.set(

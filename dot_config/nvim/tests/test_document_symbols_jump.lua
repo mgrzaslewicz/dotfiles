@@ -9,9 +9,7 @@ local function at(line, character) return { line = line, character = character }
 local function range(line, character) return { start = at(line, character), ['end'] = at(line, character + 3) } end
 
 -- A class at line 0 (name at 0:6) with two methods; a top-level function. Unsorted on purpose.
-local function sym(name, line, character, children)
-  return { name = name, range = range(line, 0), selectionRange = range(line, character), children = children }
-end
+local function sym(name, line, character, children) return { name = name, range = range(line, 0), selectionRange = range(line, character), children = children } end
 local symbols = { sym('top', 9, 4), sym('Foo', 0, 6, { sym('b', 5, 6), sym('a', 2, 6) }) }
 
 local T = MiniTest.new_set()
