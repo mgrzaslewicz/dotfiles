@@ -210,6 +210,7 @@ claude-toolbox() {
     "${WORKMUX_RELAY_ARGS[@]}" \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
+    --memory 4g \
     claude-toolbox:latest) || podman_status=$?
   if [ -n "$RELAY_DIR" ]; then rm -rf "$RELAY_DIR"; fi
   return "$podman_status"
