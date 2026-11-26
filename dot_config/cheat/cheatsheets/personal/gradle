@@ -13,3 +13,9 @@ gradle classes --update-locks org.apache.commons:commons-lang3,org.slf4j:slf4j-a
 
 # Run filtered test
 ./gradlew :testIntegration --tests <test name>
+
+# Run a single test class
+./gradlew test --tests "com.example.MyTestClass"
+
+# Run a single test method
+./gradlew test --tests "com.example.MyTestClass.myTestMethod"
