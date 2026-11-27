@@ -2,6 +2,21 @@
 CLAUDE_TOOLBOX_VOLUME="claude-toolbox-config"
 CLAUDE_TOOLBOX_VOLUME_JSON="claude-toolbox-config-json"
 CLAUDE_TOOLBOX_VOLUME_MISE="claude-toolbox-mise"
+# Per-container memory cap. The podman machine VM (macOS) is what really bounds
+# this: a container cannot get more RAM than the VM has. The VM defaults to 2 GiB,
+# so claude-toolbox checks it before starting (see _claude_toolbox_check_vm_memory).
+CLAUDE_TOOLBOX_MEMORY_MIB=4096
+
+_claude_toolbox_check_vm_memory() {
+  local vm_bytes need_bytes
+  vm_bytes="$(podman info --format '{{.Host.MemTotal}}' 2>/dev/null)" || return 0
+  need_bytes=$(( CLAUDE_TOOLBOX_MEMORY_MIB * 1024 * 1024 ))
+  if [ -n "$vm_bytes" ] && [ "$vm_bytes" -lt "$need_bytes" ]; then
+    printf 'claude-toolbox: podman VM has %d MiB but the container asks for %d MiB, so it is capped at the VM size.\n' \
+      "$(( vm_bytes / 1024 / 1024 ))" "$CLAUDE_TOOLBOX_MEMORY_MIB" >&2
+    printf '  fix: podman machine stop && podman machine set --memory 8192 && podman machine start\n' >&2
+  fi
+}
 
 claude-toolbox() {
   DOTFILES_DIR="${HOME}/.local/share/chezmoi"
@@ -16,6 +31,7 @@ claude-toolbox() {
   podman volume create "$CLAUDE_TOOLBOX_VOLUME" >/dev/null 2>&1 || true
   podman volume create "$CLAUDE_TOOLBOX_VOLUME_JSON" >/dev/null 2>&1 || true
   podman volume create "$CLAUDE_TOOLBOX_VOLUME_MISE" >/dev/null 2>&1 || true
+  _claude_toolbox_check_vm_memory
 
   # Git identity resolved per-$PWD on the host (not --global) so includeIf-based
   # per-repo identity (e.g. work vs personal email) resolves the same way it
@@ -210,7 +226,7 @@ claude-toolbox() {
     "${WORKMUX_RELAY_ARGS[@]}" \
     --workdir "$PWD" \
     --env TERM="${TERM:-xterm-256color}" \
-    --memory 4g \
+    --memory "${CLAUDE_TOOLBOX_MEMORY_MIB}m" \
     claude-toolbox:latest) || podman_status=$?
   if [ -n "$RELAY_DIR" ]; then rm -rf "$RELAY_DIR"; fi
   return "$podman_status"
